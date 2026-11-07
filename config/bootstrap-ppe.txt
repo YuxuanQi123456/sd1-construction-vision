@@ -1,0 +1,7 @@
+# Portable direct dependencies, verified on official PyPI; Torch is installed separately.
+streamlit==1.51.0
+ultralytics==8.3.228
+opencv-python==4.12.0.88
+numpy==2.2.6
+scipy==1.16.3
+pillow==11.3.0

@@ -1,0 +1,149 @@
+{
+  "task": "R01_PORTABLE",
+  "timestamp_utc": "2026-11-07T14:13:03.699811+00:00",
+  "base_commit": "17cd33334a533590d075e88659e36c927d87cc0c",
+  "system": {
+    "python": "3.12.3",
+    "system": "Linux",
+    "machine": "x86_64"
+  },
+  "checks": [
+    {
+      "command": "python3 -m unittest discover -s tests -p test_*runtime*.py -v",
+      "exit_code": 0,
+      "tests_run": 28,
+      "result": "passed",
+      "output_sha256": "f62cc547c51b86c3ab05ee9f0561867c1c259523cc5805b21d6f0d92dcdc1e22"
+    },
+    {
+      "command": "bootstrap --plan --no-cache-dir (ppe/full); restore --plan (ppe/full/full+training) against integration manifest",
+      "exit_code": 0,
+      "result": "no runtime directory created"
+    },
+    {
+      "command": "git diff --cached --check; git diff --check; python3 -m py_compile scripts/restore_runtime_assets.py scripts/bootstrap_runtime.py",
+      "exit_code": 0,
+      "result": "passed"
+    }
+  ],
+  "integration_manifest": {
+    "path": "config/runtime-assets.json (integration checkout, read-only)",
+    "sha256": "221c2cf97d8503511daec628e6ad11659998d69d02d944ac0ea3b0f5b609c73c",
+    "plans": [
+      {
+        "profile": "ppe",
+        "include_training": false,
+        "files": 21,
+        "verified_existing": 0,
+        "download_bytes_upper_bound": 167077224,
+        "output_bytes_missing": 167074394
+      },
+      {
+        "profile": "full",
+        "include_training": false,
+        "files": 34,
+        "verified_existing": 0,
+        "download_bytes_upper_bound": 3052643751,
+        "output_bytes_missing": 3052638953
+      },
+      {
+        "profile": "full",
+        "include_training": true,
+        "files": 226,
+        "verified_existing": 0,
+        "download_bytes_upper_bound": 3086667971,
+        "output_bytes_missing": 3086613295
+      }
+    ]
+  },
+  "resource_validation": {
+    "actual_inputs": "Temporary localhost HTTP and offline ZIP, raw-parts and external file bytes",
+    "positive": [
+      "exact relative output bytes",
+      "per-asset and assembled SHA256/size",
+      "external User-Agent/Referer",
+      "full/ppe/training selection",
+      "verified restored bundles skip unavailable sources"
+    ],
+    "negative": [
+      "manifest/archive path traversal",
+      "archive symlink and extra member",
+      "destination/offline-input symlinks",
+      "bad part/member/total SHA",
+      "different existing target preserved",
+      "verify-only missing target"
+    ],
+    "network_fixture_only": true
+  },
+  "bootstrap_validation": {
+    "actual": "Real temporary minimal venv and isolated interpreter; installation and package/operator stages mocked",
+    "cases": [
+      "manager-compatible relative links",
+      "repeat run verifies without reinstall",
+      "ppe to full upgrade",
+      "failed-install retry",
+      "unmanaged env and external package paths refused",
+      "executable external pth refused",
+      "system Python alias across directories",
+      "no-cache-dir plan"
+    ],
+    "large_packages_installed": false,
+    "cuda_executed": false,
+    "model_loaded": false
+  },
+  "dependency_metadata": {
+    "direct_pins_checked": 14,
+    "source_template": "https://pypi.org/pypi/{name}/{version}/json",
+    "compatible_non_yanked_wheels": true,
+    "direct_dependency_intersections": "passed",
+    "torch": "2.8.0",
+    "torchvision": "0.23.0",
+    "channels": [
+      "cpu",
+      "cu128"
+    ],
+    "official_cp312_torch_wheel_metadata_checked": 4,
+    "sources": [
+      "https://pytorch.org/get-started/previous-versions/",
+      "https://huggingface.co/docs/bitsandbytes/v0.49.2/installation",
+      "https://docs.nvidia.com/cuda/archive/12.8.0/cuda-toolkit-release-notes/index.html"
+    ],
+    "metadata_only_resolver": {
+      "engine": "pip 24 resolvelib; skip post-resolution wheel preparation and stop before report/install",
+      "command_shape": "--isolated install --dry-run --ignore-installed --no-cache-dir --only-binary=:all: --report - --quiet --retries 0 --timeout 10 --index-url https://pypi.org/simple torch@official-cp312-wheel torchvision@official-cp312-wheel -r config/bootstrap-ppe.txt [-r config/bootstrap-full.txt]",
+      "ppe": {
+        "exit_code": 0,
+        "metadata_requests": 58,
+        "selected_packages": 58,
+        "elapsed_seconds": 13.12
+      },
+      "full": {
+        "exit_code": 0,
+        "metadata_requests": 117,
+        "selected_packages": 117,
+        "elapsed_seconds": 28.26
+      },
+      "source_domains": [
+        "download-r2.pytorch.org",
+        "files.pythonhosted.org"
+      ],
+      "binary_wheel_requests": 0,
+      "binary_wheels_downloaded": 0
+    },
+    "standard_dry_run_attempt": {
+      "exit_code": 2,
+      "reason": "Unmodified pip attempted wheel preparation, deliberately blocked by binary-download guard; superseded by metadata-only resolver, not an install success"
+    }
+  },
+  "review": {
+    "independent_read_only_review": "Ready to merge after fixing system Python alias idempotence",
+    "critical_open": 0,
+    "important_open": 0
+  },
+  "limitations": [
+    "No complete portable Torch environment installed in this task",
+    "No new-machine CPU application or GPU/NF4/model acceptance claimed",
+    "Root integration independently validates resource and runtime behavior",
+    "Runtime baseline is Linux x86_64/Python 3.12/glibc>=2.28; full driver>=570.26 and GPU capability>=7.0"
+  ]
+}
