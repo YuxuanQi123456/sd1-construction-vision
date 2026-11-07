@@ -1,0 +1,304 @@
+{
+  "schema": "sd1-v13-safety-demo-v1",
+  "status": "passed",
+  "scope": "Fixed leadership demonstration: PPE monitoring, selected head GPT review and original evidence export. No new training or model download.",
+  "code_commit": "1df4e7c5a88d9c5b658bffda0d46ccbfe51aed3e",
+  "model_selection": "V13_MODEL_SELECTION.json",
+  "catalog": {
+    "videos": 3,
+    "photos": 3,
+    "default": "site-action",
+    "rail_menu_entries_removed": [
+      "original-1080",
+      "existing-video"
+    ],
+    "rail_originals_preserved": true
+  },
+  "unit_tests": {
+    "passed": 61,
+    "scope": "review API/manager, CPU bootstrap, resource restore; real API excluded"
+  },
+  "provenance": {
+    "pristine": 27,
+    "adapted": 13,
+    "canonical_and_deployed_patch_reconstruction_passed": true
+  },
+  "assets": {
+    "all_runtime_and_optional_files_sha_verified": 214,
+    "remote_qwen_attachments_deleted": 689,
+    "remote_qwen_bytes_removed": 2885566371,
+    "retained_resource_attachments": 41,
+    "official_originals": 5
+  },
+  "actual_flow": {
+    "schema": "sd1-v13-real-flow-v1",
+    "at": "2026-11-07T19:02:00.505319+00:00",
+    "passed": true,
+    "api_calls": 1,
+    "torch": "2.8.0+cpu",
+    "cuda_version": null,
+    "method": "Streamlit AppTest + real CPU YOLO + configured real GPT API",
+    "video": {
+      "source_sha256": "53734aaf05d235e72e44bdac3c7164c9906e8cd2305a804b07f0e1f646a1af6c",
+      "model": "sitewatch",
+      "timestamps": [
+        0.0,
+        1.0010000000000001,
+        2.0020000000000002
+      ],
+      "native_dimensions": [
+        1920,
+        1080
+      ],
+      "native_pixels_verified": true,
+      "raw_classes": [
+        [
+          "Hardhat",
+          "Safety Vest",
+          "Person",
+          "Person",
+          "Safety Vest",
+          "Hardhat",
+          "Safety Vest",
+          "Safety Vest",
+          "Person",
+          "Safety Vest",
+          "Person",
+          "Safety Vest"
+        ],
+        [
+          "Hardhat",
+          "Hardhat",
+          "Safety Vest",
+          "Person",
+          "Person",
+          "Safety Vest",
+          "Safety Vest",
+          "Safety Vest",
+          "Safety Vest",
+          "Person",
+          "Hardhat",
+          "Person",
+          "Safety Vest"
+        ],
+        [
+          "Hardhat",
+          "Safety Vest",
+          "Safety Vest",
+          "Person",
+          "Safety Vest",
+          "Safety Vest",
+          "Person",
+          "Person",
+          "Person"
+        ]
+      ],
+      "detection_seconds": 4.991427222000311,
+      "no_api_during_detection": true
+    },
+    "gpt": {
+      "actual_model": "gpt-6.1-sol",
+      "reasoning_effort": "max",
+      "response_model": "gpt-6.1-sol",
+      "option": "A",
+      "raw_answer": "A",
+      "comparison": "agree",
+      "seconds": 9.1,
+      "usage": {
+        "input_tokens": 130,
+        "output_tokens": 65,
+        "total_tokens": 195,
+        "output_tokens_details": {
+          "reasoning_tokens": 58
+        }
+      },
+      "classification_confidence": null,
+      "crop_sha256": "f5d30ce301ae59503fe31cd1a2747ede43ca3f5b2d0c59a5469938cb1ca16c42"
+    },
+    "original_detector_json_unchanged": true,
+    "export_includes_original_and_actual_opinion": true,
+    "key_not_in_evidence": true,
+    "wall_seconds": 52.74,
+    "configuration_switch_clears_old_results": true
+  },
+  "bricklayer_comparison": {
+    "source_sha256": "b2d280ecdabdfbc80ff447225d49faddbd36da0995ce0d517a7bd1d80260d9a4",
+    "no_additional_api_call": true,
+    "actual_GPT_B_previously_verified": "docs/validation/V12_GPT_API_LIVE.json"
+  },
+  "backup": {
+    "model": "constructelligence-v03",
+    "frames": 3,
+    "source_sha256": "f44a8a34012478cf92f14c45a7672280487b020e805aba3a5b4bf214975b77b7",
+    "classes": [
+      "hardhat",
+      "person"
+    ]
+  },
+  "handoff": {
+    "passed": true,
+    "code_commit": "1df4e7c5a88d9c5b658bffda0d46ccbfe51aed3e",
+    "bytes": 160385161,
+    "sha256": "cc5d68f29e790376b64fa592e6331a9a1c0adeb42e397f7e6990d8ec8bdb971e",
+    "resource_files": 209,
+    "qwen_current_tree_absent": true,
+    "zip_crc_passed": true,
+    "offline_clone_passed": true,
+    "only_five_official_originals_missing": true,
+    "github_resource_downloads_needed": false
+  },
+  "limitations": [
+    "Fixed sample/configuration verification; no independent site-level accuracy claim.",
+    "Some duplicate boxes and occluded PPE remain; original predictions retained.",
+    "PPE labels and GPT second opinions do not establish regulatory violations.",
+    "Sampled frames only; no live camera, action classification or full-video assurance."
+  ],
+  "browser": {
+    "at": "2026-11-07T19:04:50.451670+00:00",
+    "url": "http://127.0.0.1:8767",
+    "passed": true,
+    "blocked_external": [],
+    "download_storage": "Full native downloads hashed and matched in memory; originals remain in the project runtime.",
+    "official_logo_embedded_locally": true,
+    "chinese_branding_and_workflow": true,
+    "quality_switch_clears_result": true,
+    "comparison_changes_display_only": true,
+    "model_switch_clears_result": true,
+    "api_opinion_switch_checks_executed": false,
+    "manual_model_override_verified": true,
+    "old_upload_flow_retained": true,
+    "switching_asset_clears_old_result": true,
+    "automatic_model_for_upload_is_sitewatch": true,
+    "manifest_entries": 6,
+    "mobile_layout": {
+      "left": 16,
+      "right": 364,
+      "viewport": 390,
+      "pageWidth": 390
+    },
+    "cases": [
+      {
+        "id": "site-action",
+        "media_type": "video",
+        "source_sha256": "53734aaf05d235e72e44bdac3c7164c9906e8cd2305a804b07f0e1f646a1af6c",
+        "model_id": "sitewatch",
+        "profile": "standard",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "original_download_sha_equal": true,
+        "input_png_sha256": "22cc6ad4131b3b082bb6660fc95d2a69dc5429e1990f70e766618bdc9b9d964f",
+        "detection_png_sha256": "d10636027f7eaaa4a7d35063685d0e536319288e4697490f2e515c518cc0ba9f",
+        "download_matches_native_saved_bytes": true,
+        "native_source_pixels_equal": true,
+        "source_decoder_opencv": "4.12.0",
+        "native_pixels_sha256": "a6dd09c4f1950db0673597ef988a087dc8972d200be37dd4d798c3f5f402f81b",
+        "large_view_css_width": 1094,
+        "raw_classes": [
+          "Hardhat",
+          "Safety Vest",
+          "Person",
+          "Person",
+          "Safety Vest",
+          "Hardhat",
+          "Safety Vest",
+          "Safety Vest",
+          "Person",
+          "Safety Vest",
+          "Person",
+          "Safety Vest"
+        ]
+      },
+      {
+        "id": "portrait-photo",
+        "media_type": "image",
+        "source_sha256": "34dfb5b46ee3794c3ec5fd4a15bdba43be012fb38d38916eeb2b809f49388393",
+        "model_id": "constructelligence-v03",
+        "profile": "standard",
+        "dimensions": [
+          4000,
+          2667
+        ],
+        "original_download_sha_equal": true,
+        "input_png_sha256": "29bd0115f1d84da58da4abd8513cf79c7180b1b9c57cb27df234c63397504e6f",
+        "detection_png_sha256": "9783282d8109354c1d645c58232edd540b48d7f15cd45fbc17f919796118ebc8",
+        "download_matches_native_saved_bytes": true,
+        "native_source_pixels_equal": true,
+        "source_decoder_opencv": "4.12.0",
+        "native_pixels_sha256": "f19bcbc3470bad39e59c20d946764de4d8522f978a5d46d2962836f08e8d1e77",
+        "large_view_css_width": 1094,
+        "raw_classes": [
+          "hardhat",
+          "person"
+        ]
+      },
+      {
+        "id": "portrait-photo",
+        "media_type": "image",
+        "source_sha256": "34dfb5b46ee3794c3ec5fd4a15bdba43be012fb38d38916eeb2b809f49388393",
+        "model_id": "sitewatch",
+        "profile": "standard",
+        "dimensions": [
+          4000,
+          2667
+        ],
+        "original_download_sha_equal": true,
+        "input_png_sha256": "29bd0115f1d84da58da4abd8513cf79c7180b1b9c57cb27df234c63397504e6f",
+        "detection_png_sha256": "d5e10dbfe4ca9462f6e555e0a27155185672ff055c3be10db02c42bf3fd48325",
+        "download_matches_native_saved_bytes": true,
+        "native_source_pixels_equal": true,
+        "source_decoder_opencv": "4.12.0",
+        "native_pixels_sha256": "f19bcbc3470bad39e59c20d946764de4d8522f978a5d46d2962836f08e8d1e77",
+        "large_view_css_width": 1094,
+        "raw_classes": [
+          "Person",
+          "NO-Mask",
+          "Hardhat",
+          "NO-Hardhat"
+        ]
+      },
+      {
+        "id": "retained-upload-video",
+        "media_type": "video",
+        "source_sha256": "f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062",
+        "model_id": "sitewatch",
+        "profile": "distant",
+        "dimensions": [
+          960,
+          540
+        ],
+        "original_download_sha_equal": true,
+        "input_png_sha256": "221a07cbef928f1adf4c3cdddcec4827fc445fe572a0c8186823d9201056413e",
+        "detection_png_sha256": "804761cd7a0a4693e5262ab805ac15f5d3d26c063ce9b7acf94c86d1c48b3933",
+        "download_matches_native_saved_bytes": true,
+        "native_source_pixels_equal": true,
+        "source_decoder_opencv": "4.12.0",
+        "native_pixels_sha256": "839ff72fc1d2107c17980be02c25bef744575a5caa1535d4ef0e4ed15b34adcd",
+        "large_view_css_width": 1094,
+        "raw_classes": [
+          "Excavator",
+          "Person"
+        ]
+      }
+    ]
+  },
+  "cpu_migration": {
+    "status": "complete",
+    "ready_profile": "ppe",
+    "managed_environment": "project-local isolated CPU; no vision/shared project .pth",
+    "runtime_files": 1237,
+    "runtime_bytes": 2900882440,
+    "runtime_sha_equal_at_migration": true,
+    "protected_videos": 75,
+    "protected_video_paths_and_sha_equal": true,
+    "root_independent_protected_check": true,
+    "ppe_weights_sha_equal": 5,
+    "vision_directory_deleted": true,
+    "old_dependency_backup_deleted": true,
+    "additional_packaged_videos_preserved": 3,
+    "shared_other_project_environment_untouched": true
+  },
+  "passed": true,
+  "validation_scope": "Actual CPU models, configured real GPT single call, real Chromium browser; fixed demonstration inputs only."
+}

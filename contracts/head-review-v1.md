@@ -1,5 +1,7 @@
 # 头部区域 AI 第二意见 v1
 
+> 历史v1记录：本地Qwen已于2026-11-08移除。当前运行后端与错误语义以[GPT API v2](head-review-api-v2.md)为准；下列Gradio服务条款不再适用于当前代码。
+
 同一施工影像复核范围内复用已运行的Qwen官方Gradio应用，不更改检测分数，不自动认定违规。`region_review.py`接口冻结如下，供原生SiteWatch页面调用：
 
 - `head_indices(frame)`：返回该帧直接头部检测的原始索引，支持Hardhat/NO-Hardhat及已登记同义类，不从Person位置猜头部。

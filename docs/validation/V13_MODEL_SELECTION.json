@@ -3,7 +3,7 @@
   "scope": "fixed leadership demo; no new training or model download; no API calls in comparison",
   "inferences": 36,
   "decision": {
-    "default": "action-10294766",
+    "default": "site-action",
     "default_model": "sitewatch",
     "default_profile": "standard",
     "default_threshold": 0.4,
@@ -23,7 +23,8 @@
       "original-1080",
       "existing-video"
     ],
-    "preserve_original_track_and_training_acceptance_files": true
+    "preserve_original_track_and_training_acceptance_files": true,
+    "source_audit_id": "action-10294766"
   },
   "manual_judgments": [
     {
