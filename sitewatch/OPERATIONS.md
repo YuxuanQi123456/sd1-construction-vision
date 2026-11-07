@@ -1,5 +1,7 @@
 # SiteWatch 原生应用本机复现
 
+**新clone先看[项目内环境与资源恢复](../docs/RUNTIME_SETUP.md)。** 现在使用`restore_runtime_assets.py`和`bootstrap_runtime.py`，支持不依赖旧机器路径的PPE CPU模式与full视觉复核模式。下方`prepare.py`和旧环境版本仅为原机历史部署记录，不适用于新机器。
+
 ## 水电一局演示界面
 
 页面标题“水电一局 · 施工视觉AI”，使用官网原始组合标识、本地蓝白样式与中文操作。默认进入“清晰演示素材”，自己的照片/视频在侧栏切“自己上传”；启动识别按钮为“开始识别与复核”。模型、场景仍可手动覆盖；阈值与增强位于“高级识别设置”，来源许可保留在折叠区。结果卡仅取本次实际帧数、待复核框次数和耗时，完整原始输出仍可下载。
@@ -52,13 +54,13 @@ python3 sitewatch/run.py --project-root /mnt/e/workspace/云枢/水电一局演�
 
 离线上传复核不调用运动、像素距离、形状或“未检出即缺少”的规则。上游运动和实时监控源码完整保留；本机启动入口明确禁用实时摄像头，不导入 WebRTC、不申请相机权限。`ppe_compliant` / `ppe_violation` 是为保持上游绘框兼容而沿用的内部类别字段，不是合规结论。
 
-已跑的真实照片和视频不属于水电一局现场。NIOSH 照片是公有领域；角磨机照片为 Mungai Kiroga / CC BY-SA 4.0；Florenc 视频为 ŠJů / CC BY 4.0。完整来源见 `evidence/V05/MEDIA-SOURCES.json`。
+已跑的真实照片和视频不属于水电一局现场。NIOSH 照片是公有领域；角磨机照片为 Mungai Kiroga / CC BY-SA 4.0；Florenc 视频为 ŠJů / CC BY 4.0。完整来源见`media-sources.json`和`../vision/config/samples.json`。
 
-## 安装记录与恢复
+## 历史原机安装记录（不用于新clone）
 
 专用环境路径为 `<project-root>/.runtime/sitewatch-env`。它只读绑定原有 `vision/.venv/lib/python3.12/site-packages` 的 Torchvision 等包，以及 `/home/meg/venvs/qyx_patent/lib/python3.12/site-packages` 的 Torch，不修改这两套环境。此次实际版本包括 Python 3.12.3、Torch 2.14.0、Torchvision 0.29.2、Ultralytics 8.3.228、Streamlit 1.51.0。所有在专用环境中新装的包固定在 `requirements-lock.txt`；外部依赖版本与来源在 `evidence/V05/runtime-packages.json`。
 
-恢复可运行环境：
+以下命令依赖原机外部环境，仅保留作历史记录；新机请使用页首的新恢复入口：
 
 ```bash
 python3 sitewatch/prepare.py --project-root /mnt/e/workspace/云枢/水电一局演示Demo

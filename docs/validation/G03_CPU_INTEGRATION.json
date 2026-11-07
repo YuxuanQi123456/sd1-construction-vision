@@ -1,0 +1,143 @@
+{
+  "schema": "sd1-handoff-integration-v1",
+  "at": "2026-11-07T14:24:49.913849+00:00",
+  "profile": "ppe",
+  "environment_created_from_zero": true,
+  "isolated_root": "/tmp/sd1-handoff-cpu-20261107",
+  "bootstrap_exit": 0,
+  "bootstrap_second_run_exit": 0,
+  "package_check": "passed",
+  "tensor_nms": "passed",
+  "resource_files_verified": 21,
+  "resource_restore": "real release ZIPs plus original external media, offline; not remote download",
+  "versions": {
+    "streamlit": "1.51.0",
+    "ultralytics": "8.3.228",
+    "torch": "2.8.0+cpu",
+    "torchvision": "0.23.0+cpu",
+    "numpy": "2.2.6",
+    "opencv-python": "4.12.0.88",
+    "scipy": "1.16.3"
+  },
+  "technical_inference_passed": true,
+  "inference_inputs": [
+    {
+      "name": "niosh-runway-worker.jpg",
+      "frames": 1,
+      "detections": 6
+    },
+    {
+      "name": "working-the-grinder.jpg",
+      "frames": 1,
+      "detections": 0
+    },
+    {
+      "name": "window-florenc-0-8.0.mp4",
+      "frames": 3,
+      "detections": null
+    }
+  ],
+  "failure_controls": [
+    {
+      "name": "missing_model",
+      "passed": true,
+      "error": "Required SiteWatch PPE model missing: /tmp/sd1-handoff-cpu-20261107/.runtime/portable-env/runtime/never-existing-sitewatch.pt. COCO fallback is disabled."
+    },
+    {
+      "name": "wrong_sha",
+      "passed": true,
+      "error": "SiteWatch model SHA256 mismatch: 6bd7f91296f0334bff2137856357fdab824ff8e32a0704485270da436b0bd1cb"
+    },
+    {
+      "name": "invalid_image",
+      "passed": true,
+      "error": "Could not decode uploaded image"
+    },
+    {
+      "name": "premature_video_decode",
+      "passed": true,
+      "error": "Video decode ended early at frame 48; expected 200 frames in requested range. Completed frame evidence is retained.",
+      "retained_frames": 2,
+      "decoded_frames": 48
+    }
+  ],
+  "ui": {
+    "method": "Streamlit AppTest (not browser)",
+    "model": {
+      "id": "constructelligence-v03",
+      "repository": "https://huggingface.co/constructelligence/construction-site-safety-hazards",
+      "commit": "79673cff5a8bb249fc8ec9cca3daa19e2ef95191",
+      "sha256": "ab31a6b2ddcd21a081d6393a11e8062a058c218c333be11481fc0678a9c67e2e",
+      "names": {
+        "0": "person",
+        "1": "hardhat",
+        "2": "no-hardhat",
+        "3": "safety vest",
+        "4": "no-safety vest",
+        "5": "no-mask",
+        "6": "gloves",
+        "7": "safety shoes",
+        "8": "excavator",
+        "9": "wheel loader",
+        "10": "dump truck",
+        "11": "goggles",
+        "12": "no-goggles",
+        "13": "no-gloves"
+      },
+      "weight_license": "AGPL-3.0",
+      "device": "cpu",
+      "profile": "standard",
+      "inference_imgsz": 640
+    },
+    "status": "complete",
+    "frames": 1,
+    "detections": 2,
+    "source_dimensions_wh": [
+      4000,
+      2667
+    ],
+    "saved_dimensions_wh": [
+      4000,
+      2667
+    ],
+    "source_sha256": "34dfb5b46ee3794c3ec5fd4a15bdba43be012fb38d38916eeb2b809f49388393",
+    "ui_success": [
+      "识别完成：1 个画面；待人工复核框 0 次。"
+    ],
+    "exceptions": [],
+    "download_controls": 5
+  },
+  "owned_service_started_healthy_and_stopped": true,
+  "portable_tests": {
+    "run": 28,
+    "failures": 0
+  },
+  "full_system_unittest": {
+    "run": 38,
+    "errors": 2,
+    "reason": "old material tests missing system httpx; no change to material implementation"
+  },
+  "gpu_validation_this_phase": false,
+  "business_model_changes": false,
+  "final_manifest_sha256": "9172a938e495d983a5ce5a16eb6d2ea99b549cd0c2869c9f30f69560a816da76",
+  "repacked_resources": {
+    "bundles": 14,
+    "assets": 730,
+    "restore_exit": 0,
+    "real_raw_parts_and_zips_restored": 21,
+    "all_target_path_size_sha_unchanged": true,
+    "independent_review": "all 730 source slices and ZIPs verified; no Critical/Important"
+  },
+  "publication_gate_tests": {
+    "run": 13,
+    "failures": 0,
+    "mode": "offline Guard and simulated publication flow; no GitHub writes",
+    "checks": [
+      "missing file blocks publication",
+      "wrong frozen manifest blocks writes",
+      "metadata uploaded before publication",
+      "published release reentry read-only",
+      "unknown/changed asset deletion refused"
+    ]
+  }
+}

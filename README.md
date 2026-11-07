@@ -14,7 +14,7 @@
 
 **入口：http://127.0.0.1:8767**
 
-新机器先按[运行说明](docs/RUNTIME_SETUP.md)恢复资源、安装仓库内环境；支持 Ubuntu / WSL2、Linux x86_64、Python 3.12。仅检测可执行 `python3.12 scripts/restore_runtime_assets.py --profile ppe` 和 `python3.12 scripts/bootstrap_runtime.py --profile ppe`；带千问使用 `full`，需可用 NVIDIA GPU。完整新机安装与 GPU 业务推理仍须在目标机验收。
+新机器先按[运行说明](docs/RUNTIME_SETUP.md)恢复资源、安装仓库内环境；支持 Ubuntu / WSL2、Linux x86_64、Python 3.12。仅检测可执行 `python3.12 scripts/restore_runtime_assets.py --profile ppe` 和 `python3.12 scripts/bootstrap_runtime.py --profile ppe`；带千问使用 `full`，需可用 NVIDIA GPU。本轮已在独立新目录完成 CPU 安装、21资源恢复与真实照片/视频推理；GPU 业务推理仍须在目标机验收。
 
 环境就绪后，Windows双击 [启动施工视觉.cmd](启动施工视觉.cmd) 启动检测与本地区域模型，冷启动需等待几分钟；结束时运行 [停止施工视觉.cmd](停止施工视觉.cmd)。命令行分别使用 `python3 scripts/manage_ppe.py start --wait` 和 `python3 vision/scripts/manage.py start --wait`，各自支持status/stop。操作顺序见 [演示说明](docs/PPE_DEMO.md)，新目录安装与迁移以[运行说明](docs/RUNTIME_SETUP.md)为准，原机操作参考 [SiteWatch 运行记录](sitewatch/OPERATIONS.md)。
 

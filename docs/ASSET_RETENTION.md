@@ -21,6 +21,6 @@ GitHub协作项目：`https://github.com/YuxuanQi123456/sd1-construction-vision`
 | Hostivar窗口 | `f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062` | `.runtime/vision-media/window-hostivar-0-8.0.mp4` |
 | 故意损坏的视频负控 | `44f508c2f0b72adfaefd0b01ca55bb8e55856195e85527b0ea7f22ef64ca37e7` | `.runtime/sitewatch-env/runtime/uploads/44f508c2f0b72adfaefd0b01ca55bb8e55856195e85527b0ea7f22ef64ca37e7/broken-video.mp4` |
 
-4K/1080p/旧540p素材及其他公开视频以`sitewatch/demo-media.json`、`sitewatch/media-sources.json`和`vision/config/samples.json`为恢复清单；原字节、署名、许可随清单保留。资源不随GitHub源码上传，朋友应另行接收资源或按清单恢复并核SHA。
+4K/1080p/旧540p素材及其他公开视频以`sitewatch/demo-media.json`、`sitewatch/media-sources.json`和`vision/config/samples.json`为恢复清单；原字节、署名、许可随清单保留。资源不写入Git源码历史；本轮按用户进一步授权将必要模型、可再分发原片、90图测试子集发布为Release附件。4份Pexels原件由恢复脚本从原站下载并核SHA，保留画质。新清单以`config/runtime-assets.json`为准，恢复方式见[运行环境恢复](RUNTIME_SETUP.md)；上传是否完成以Release发布状态和最新进度为准。
 
 新开发目录的Windows启动器按自身所在目录启动，避免误启动原运行目录。新目录仍需重建Python/Torch环境并准备模型，不能把修复路径说成新机器安装已通过。旧运行目录启动器保留其原有工作方式。

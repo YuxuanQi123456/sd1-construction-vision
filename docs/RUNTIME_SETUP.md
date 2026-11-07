@@ -93,4 +93,4 @@ env -u PYTHONPATH -u PYTHONHOME -u PYTHONUSERBASE python3.12 vision/scripts/mana
 
 访问 `http://127.0.0.1:8766`，并在 PPE 页面实际提交一次区域第二意见。服务健康、算子通过和模型业务效果分别核验；4GB 显存仍可能因输入/输出规模不足而失败。停止时分别执行相同管理器的 `stop`。虚拟环境内含绝对启动路径；移动整个仓库后应在新路径重建环境，已恢复资源可继续核验复用。
 
-本轮机器证据见 [R01_PORTABLE.json](validation/R01_PORTABLE.json)：资源恢复使用真实临时 HTTP 与离线字节完成验证；bootstrap 使用真实轻量 venv 配合模拟依赖安装验证路径、幂等与恢复。未在本机安装大型 Torch 环境，未宣称完成全新机器 GPU/模型验收。
+本轮机器证据见 [R01_PORTABLE.json](validation/R01_PORTABLE.json)：资源恢复使用真实临时 HTTP 与离线字节完成验证；bootstrap 使用真实轻量 venv 配合模拟依赖安装验证路径、幂等与恢复。随后主智能体在独立新目录安装了真实CPU环境，恢复并校验21资源，实跑两照片/3帧视频、四项失败控制和高清照片AppTest，见[G03_CPU_INTEGRATION.json](validation/G03_CPU_INTEGRATION.json)。未启动Qwen，未完成新环境GPU验收。

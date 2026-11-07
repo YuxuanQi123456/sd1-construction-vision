@@ -33,9 +33,11 @@ env -u PYTHONPATH -u PYTHONHOME -u PYTHONUSERBASE python3.12 scripts/manage_ppe.
 
 检测页面为 `http://127.0.0.1:8767`。需要千问时将资源恢复与安装的 profile 改为 `full`，确认 NVIDIA 驱动/GPU 条件后，再运行 `python3.12 vision/scripts/manage.py start --wait`，区域模型页面为 `http://127.0.0.1:8766`。两者均只监听本机；关机后需要重新启动。当前原服务保持停止，上传代码/资源不会自动启动服务。
 
-新脚本在本仓库 `.runtime/portable-env/` 安装环境，管理器经相对链接使用它，不再复用原机 `/home/meg` 的包。Torch / torchvision 配对为 2.8.0 / 0.23.0；PPE 用 CPU wheel，full 用 cu128 wheel。直接依赖及安装验证见运行说明。脚本测试和依赖元数据解析已完成；**完整新机器安装、CUDA/NF4 和业务推理仍需在目标机实际验收**，不能直接复制原 venv 当成迁移完成。
+新脚本在本仓库 `.runtime/portable-env/` 安装环境，管理器经相对链接使用它，不再复用原机 `/home/meg` 的包。Torch / torchvision 配对为 2.8.0 / 0.23.0；PPE 用 CPU wheel，full 用 cu128 wheel。直接依赖及安装验证见运行说明。脚本测试、依赖元数据解析和独立目录CPU完整安装/真实照片视频推理已完成，见[CPU集成证据](validation/G03_CPU_INTEGRATION.json)；**CUDA/NF4和目标机业务推理仍需实际验收**，不能直接复制原venv当成迁移完成。
 
 ## 资源在哪里
+
+原机上传中可查看`.runtime/release-staging/background-status.json`与`upload-progress.json`；断电后在原机运行仓库外`水电一局_Git交接/继续上传资源.cmd`续传。已校验附件会跳过，只有全部服务端SHA一致后才自动发布。
 
 统一清单为 `config/runtime-assets.json`，固定目标路径、字节数、SHA256、许可和下载地址。[运行资源 Release](https://github.com/YuxuanQi123456/sd1-construction-vision/releases/tag/runtime-20261107-v1) 的可用性以正式发布为准。
 
