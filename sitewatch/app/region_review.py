@@ -1,4 +1,4 @@
-"""Second opinion via the existing local, official Qwen Gradio application."""
+"""Independent second opinion via the selected GPT API or local Qwen backend."""
 from datetime import datetime, timezone
 from functools import lru_cache
 import hashlib
@@ -12,6 +12,9 @@ import time
 import threading
 import urllib.request
 import uuid
+
+from review_api import (api_backend_status, load_review_config, request_image_opinion,
+                        review_backend_snapshot, ReviewAPIError)
 
 # gradio_client 1.13 treats an explicit False as the environment default.
 # Set these before its import as well as in the launcher.
@@ -67,6 +70,20 @@ def checkpoint_digest(path, size, mtime_ns):
 
 
 def backend_status(project_root):
+    """Read API configuration or inspect an explicitly selected local backend."""
+    try:
+        config = load_review_config(project_root)
+    except ReviewAPIError:
+        return api_backend_status(project_root)
+    if config['provider'] == 'openai':
+        return api_backend_status(project_root)
+    status = _qwen_backend_status(project_root)
+    return {**status, 'provider': 'qwen_local', 'execution': 'local',
+            'label': 'Qwen3-VL-4B 本地模型',
+            'configured': status['ready'], 'connectivity_verified': status['ready']}
+
+
+def _qwen_backend_status(project_root):
     """Do not send imagery to an unknown process listening on the review port."""
     root = Path(project_root).resolve()
     try:
@@ -136,9 +153,26 @@ def cancel_job(client, job):
 
 
 def classify_crop(crop_path, project_root):
+    """Preserve the selected provider; never silently fall back to another one."""
+    config = load_review_config(project_root)
+    return _classify_crop_configured(crop_path, project_root, config)
+
+
+def _classify_crop_configured(crop_path, project_root, config):
+    if config['provider'] == 'qwen_local':
+        return _classify_crop_qwen(crop_path, project_root)
+    result = request_image_opinion(crop_path, project_root, PROMPT, _config=config)
+    option = parse_option(result['raw_answer'])
+    return {**result, 'option': option,
+            'label': LABELS.get(option, '回答格式未确认，请查看原文'),
+            'classification_confidence': None, 'prompt': PROMPT,
+            'prompt_sha256': hashlib.sha256(PROMPT.encode()).hexdigest()}
+
+
+def _classify_crop_qwen(crop_path, project_root):
     """Reuse native upload and submit APIs, each call with a fresh chat session."""
     from gradio_client import Client, handle_file
-    backend = backend_status(project_root)
+    backend = {**_qwen_backend_status(project_root), 'provider': 'qwen_local', 'execution': 'local'}
     if not backend['ready']:
         raise RuntimeError('本地复核模型未就绪，请先运行视觉AI启动脚本。' + backend.get('error', ''))
     started = time.perf_counter()
@@ -253,9 +287,15 @@ def review_head_region(review_dir, frame_position, detection_index, project_root
               'detector_model': original['model'], 'detector_detection': detection,
               'crop_file': str(crop_path.relative_to(directory)), 'crop_sha256': sha(crop_path),
               'crop_box_in_input': clipped, 'padding_fraction': .2,
-              'notice': '第二意见不改写原检测类别或分数；模型分歧待人工复核，不是法规违规结论。'}
+              'notice': '第二意见不改写原检测类别或分数；模型分歧待人工复核，不是法规违规结论。',
+              'prompt': PROMPT, 'prompt_sha256': hashlib.sha256(PROMPT.encode()).hexdigest(),
+              'classification_confidence': None}
     try:
-        opinion = classify_crop(crop_path, project_root)
+        # One configuration snapshot supplies both request provenance and transport.
+        config = load_review_config(project_root)
+        record['request_backend'] = review_backend_snapshot(config, project_root)
+        atomic_json(attempt / 'review.json', record)
+        opinion = _classify_crop_configured(crop_path, project_root, config)
         record['opinion'] = opinion
         model_label = HEAD_LABELS[detection['class_name']]
         option = opinion['option']
