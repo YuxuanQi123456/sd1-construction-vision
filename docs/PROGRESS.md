@@ -6,7 +6,7 @@
 
 用户指定自己的GPT API、GPT-6.1 Sol和Max，Key后填。默认复核已改为Responses图片接口，保留显式qwen_local；只发送所选头部PNG裁图与原固定问题，原YOLO输出不改。Key仅放本机忽略文件config/review-api.local.json，初始化保留已有值，状态不触网；API模式启动不加载千问。原演示目录已精确同步代码、创建空Key配置并验证source patch，原模型/视频未改，服务保持停止。
 
-26项API/管理器测试、28项可移植回归、27份上游源/13份适配补丁重建均通过。主智能体用真实CPU YOLO、Streamlit AppTest和localhost HTTP fixture完成照片检测→缺Key禁用→配置后按点击发送→成功/HTTP401失败/恢复→ZIP全链；裁图字节/像素和原检测JSON保持，失败提示/模型Max快照可追溯，证据无Key。Windows真实WSL管理器调用exit0且无Key不启Qwen。未使用真实Key、未调用真实GPT，识别效果与服务连通待用户填写后实测，见[验收摘要](validation/V12_GPT_API.json)和[填写位置](GPT_API_SETUP.md)。
+26项API/管理器测试、28项可移植回归、27份上游源/13份适配补丁重建均通过。主智能体用真实CPU YOLO、Streamlit AppTest和localhost HTTP fixture完成照片检测→缺Key禁用→配置后按点击发送→成功/HTTP401失败/恢复→ZIP全链；裁图字节/像素和原检测JSON保持，失败提示/模型Max快照可追溯，证据无Key。Windows真实WSL管理器调用exit0且无Key不启Qwen。此前无Key阶段仅模拟接口通过，见[初期验收摘要](validation/V12_GPT_API.json)。用户填Key后已进行2次真实gpt-6.1-sol/Max调用：高清帽图约12秒返回A；裸头砌筑工在YOLO误判Hardhat时返回B，形成可核验分歧。两例原检测JSON与ZIP保持，Key未进入证据。仅为固定演示图验证，见[真实调用证据](validation/V12_GPT_API_LIVE.json)和[填写位置](GPT_API_SETUP.md)。
 
 ## G04：无需千问的基础视觉共同开发包（2026-11-08）
 

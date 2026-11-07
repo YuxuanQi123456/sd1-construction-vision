@@ -79,4 +79,4 @@ V5/V6是已批准施工影像复核内的模型实现调整，不扩展到其它
 |---|---|---|---|
 | API适配 | 用户指定GPT-6.1 Sol Max；head-review-api-v2 | 原裁图/提示/原检测保持，Responses图片请求/Max/store=false，Key本机隔离，错误不伪造成功 | 26项接口/管理器测试与本地HTTP fixture通过 |
 | UI/启动/交接 | API接口稳定 | API模式不启Qwen，无Key检测仍可用，来源真实标注，Key填写路径清楚，patch可重建 | 实际CPU/AppTest成功-失败-恢复/ZIP与Windows调用通过 |
-| 实际模型效果 | 用户后填Key | 同实拍与原检测对照，真实API调用证据 | 待Key，不计为已通过 |
+| 实际模型效果 | 用户后填Key | 同实拍与原检测对照，真实API调用证据 | Key已填，2次真实API调用及两固定样例已通过；见V12_GPT_API_LIVE.json |

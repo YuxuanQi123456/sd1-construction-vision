@@ -1,0 +1,58 @@
+{
+  "task": "V12_GPT_API_LIVE",
+  "at": "2026-11-07T18:06:10.537234+00:00",
+  "model_requested": "gpt-6.1-sol",
+  "reasoning_effort": "max",
+  "real_api_calls": 2,
+  "passed": true,
+  "cases": [
+    {
+      "sample": "高清安全帽照片",
+      "http_status": 200,
+      "response_model": "gpt-6.1-sol",
+      "wall_seconds": 12.05,
+      "answer": "A",
+      "label": "可见工业安全帽",
+      "comparison": "agree",
+      "usage": {
+        "input_tokens": 3054,
+        "output_tokens": 76,
+        "total_tokens": 3130,
+        "output_tokens_details": {
+          "reasoning_tokens": 69
+        }
+      },
+      "source_sha256": "34dfb5b46ee3794c3ec5fd4a15bdba43be012fb38d38916eeb2b809f49388393",
+      "crop_sha256": "c569800bc0ebcf86b3620d2b9f17501c82902237e870236f4bd6997331e7a16d",
+      "method": "Real CPU YOLO + Streamlit AppTest + real API",
+      "detector_json_unchanged": true,
+      "zip_verified": true
+    },
+    {
+      "sample": "砌筑工裸头误判对照",
+      "response_model": "gpt-6.1-sol",
+      "wall_seconds": 4.03,
+      "detector_class": "Hardhat",
+      "detector_confidence": 0.5987057685852051,
+      "answer": "B",
+      "label": "头发或头皮可见，未见工业安全帽",
+      "comparison": "disagree",
+      "usage": {
+        "input_tokens": 188,
+        "output_tokens": 61,
+        "total_tokens": 249,
+        "output_tokens_details": {
+          "reasoning_tokens": 54
+        }
+      },
+      "source_sha256": "b2d280ecdabdfbc80ff447225d49faddbd36da0995ce0d517a7bd1d80260d9a4",
+      "crop_sha256": "9643ca090bc0f68ee09920d8619b4ec9e0d182ab1d0b0b3788ab9f2cc09715e1",
+      "method": "Real CPU YOLO + real API",
+      "detector_json_unchanged": true,
+      "zip_verified": true
+    }
+  ],
+  "key_not_in_evidence": true,
+  "scope": "Two fixed demonstration photos only; not a general accuracy evaluation",
+  "calibrated_language_confidence": null
+}
