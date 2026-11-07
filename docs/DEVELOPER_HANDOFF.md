@@ -21,7 +21,7 @@ git switch -c feat/你的功能名
 
 ## 没有千问也能共同开发
 
-基础照片/视频检测、前端与导出使用PPE CPU模式，千问区域第二意见在后端未就绪时不可用。若收到“基础视觉协作包_无千问”ZIP，按包内说明从bundle克隆代码、复制resources到新仓库，再运行`restore_runtime_assets.py --profile ppe --include-training`。已附209份资源；只从原站补齐4份Pexels素材约41MB，无需等完整Release。依赖安装仍需联网，不包含可复制使用的venv；使用下面的PPE管理命令单独启动。后续需要千问再恢复full环境。
+基础照片/视频检测、前端与导出使用PPE CPU模式；默认第二意见已改接GPT-6.1 Sol Max API，按[API说明](GPT_API_SETUP.md)填本机Key即可，无需千问权重。若收到“基础视觉协作包_无千问”ZIP，按包内说明从bundle克隆代码、复制resources到新仓库，再运行`restore_runtime_assets.py --profile ppe --include-training`。已附209份资源；只从原站补齐4份Pexels素材约41MB，无需等完整Release。依赖安装仍需联网，不包含可复制使用的venv；使用下面的PPE管理命令单独启动。旧协作ZIP代码固定6a08cb2，克隆后先`git pull --ff-only`更新API适配代码；资源无需重传。显式需要本地千问时才恢复full环境。
 
 ## 恢复资源和环境
 
@@ -59,7 +59,7 @@ Git 历史不保存 `downloads/`、`.runtime/`、虚拟环境、模型权重和�
 
 ## 两种视觉模型的分工
 
-**Qwen 是千问，Qwen3-VL 是视觉语言模型。** YOLO 产生人员/防护装备的框、类别和检测分数；千问读取选中的头部画面并返回文字第二意见，帮助人工对照分歧。千问不改写 YOLO 分数，两者均在本机推理。只有 CPU 时可以先使用 PPE，区域复核在千问后端未就绪时不可用；这不是另一个新增 Agent 业务。
+YOLO在本机产生人员/防护装备的框、类别和检测分数。默认GPT API读取选中的头部裁图，返回文字第二意见；请求发送到所配置服务并消耗API额度，Key各自本地填写。显式Qwen3-VL保留本地视觉语言复核；两种后端均不改写YOLO分数。API未配置时基础检测与导出可独立使用。
 
 `vision/config/qwen4b-files.json` 记录官方原始 4B 模型的来源与 13 文件锁，不能用它校验本地 NF4 量化文件。当前可分发量化结果在 `downloads/qwen3-vl-4b-nf4/`，以 `config/runtime-assets.json` 的实际字节与哈希为准。配置优化没有改写模型分数，也不代表重新训练。
 

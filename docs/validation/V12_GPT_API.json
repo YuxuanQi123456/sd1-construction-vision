@@ -1,0 +1,105 @@
+{
+  "task": "V12_GPT_API",
+  "at": "2026-11-07T17:49:04.234044+00:00",
+  "requested_model": "gpt-6.1-sol",
+  "reasoning_effort": "max",
+  "api_key_supplied": false,
+  "live_gpt_called": false,
+  "unit_tests": {
+    "api_and_manager": 26,
+    "portable_regression": 28,
+    "failures": 0
+  },
+  "ui_integration": {
+    "method": "Streamlit AppTest + real CPU YOLO + localhost Responses fixture; not live GPT",
+    "source_sha256": "34dfb5b46ee3794c3ec5fd4a15bdba43be012fb38d38916eeb2b809f49388393",
+    "detector": "constructelligence-v03",
+    "frames": 1,
+    "detections": 2,
+    "missing_key_no_request": true,
+    "key_configured_no_automatic_request": true,
+    "user_click_requests": 3,
+    "requested_model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "store": false,
+    "crop_bytes_and_pixels_unchanged": true,
+    "original_detector_json_unchanged": true,
+    "success_failure_recovery": true,
+    "previous_attempt_preserved": true,
+    "evidence_zip_no_key": true,
+    "ui_actual_provider_model_label": true,
+    "live_gpt_called": false,
+    "real_key_required_next": true
+  },
+  "windows_dispatch": {
+    "windows_wsl_dispatch_exit": 0,
+    "provider": "openai",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "ready_without_key": false,
+    "local_qwen_started": false,
+    "scope": "Review backend helper only, no browser or PPE service launched"
+  },
+  "deployment": {
+    "at": "2026-11-07T17:47:43.413482+00:00",
+    "runtime_project": "/mnt/e/workspace/云枢/水电一局演示Demo",
+    "config_path": "/mnt/e/workspace/云枢/水电一局演示Demo/config/review-api.local.json",
+    "provider": "openai",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "api_key_filled": false,
+    "source_provenance_verified": true,
+    "original_assets_changed": false,
+    "runtime_services_started": false,
+    "deployed_files": [
+      "sitewatch/app/app.py",
+      "sitewatch/app/region_review.py",
+      "sitewatch/app/review_api.py",
+      "sitewatch/patches/local-review.patch",
+      "scripts/manage_review_api.py",
+      "config/review-api.example.json",
+      "docs/GPT_API_SETUP.md",
+      "contracts/head-review-api-v2.md",
+      "sitewatch/region_probe.py",
+      "启动施工视觉.cmd"
+    ],
+    "code_backup": "/mnt/e/workspace/云枢/水电一局演示Demo/.runtime/gpt-api-code-backup-20261108"
+  },
+  "provenance": {
+    "at": "2026-11-07T17:45:24.787731+00:00",
+    "source_commit": "72c4d18135fd07afd188fecaac37c5b90ec674b4",
+    "pristine_source_files_checked": 27,
+    "adapted_files_checked": [
+      "app.py",
+      "region_review.py",
+      "review_api.py",
+      "review_evidence.py",
+      "cv_pipeline/detection.py",
+      "cv_pipeline/enhancement.py",
+      "cv_pipeline/fusion.py",
+      "cv_pipeline/motion.py",
+      "cv_pipeline/shapes.py",
+      "cv_pipeline/__init__.py",
+      "utils/benchmark.py",
+      "utils/drawing.py",
+      "utils/__init__.py"
+    ],
+    "patch_output": "patching file app.py\npatching file cv_pipeline/detection.py\npatching file region_review.py\npatching file review_api.py\npatching file review_evidence.py\npatching file utils/drawing.py\n",
+    "exit_code": 0,
+    "passed": true
+  },
+  "files_sha256": {
+    "sitewatch/app/review_api.py": "1afcd42b446b93a764d5c551d189b87c6714fba4a0c6abde5c13039a6dc78eb9",
+    "sitewatch/app/region_review.py": "4501a6333a605f42b42839320e2dbaff70215990961a5f35d8f25eeba8a650d2",
+    "sitewatch/app/app.py": "3909a8794d69cfe677757afc4a8d7745e79a09d7920bf530b43e37c838c2a63c",
+    "scripts/manage_review_api.py": "66912586301c74e810b0b3f46690761d4f998ff810ba3ab83336f575cc3870f4",
+    "config/review-api.example.json": "9c20e1ea6e321feaaea5cd420670cbd1041841234f61a01bd379c8082c7edcbc",
+    "sitewatch/patches/local-review.patch": "ed5b7cb3a0d4cea48481b4cea8b9574efe99c1a570c133493a32fe77d26a1a1b"
+  },
+  "review": {
+    "critical_open": 0,
+    "important_open": 0,
+    "independent_backend_and_integration_review": "passed"
+  },
+  "remaining": "User fills local API key; live provider connectivity and real-model classification still need validation"
+}

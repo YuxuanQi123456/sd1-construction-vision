@@ -2,6 +2,12 @@
 
 更新：2026-11-08。负责人：本会话主智能体。
 
+## V12：GPT-6.1 Sol Max区域第二意见（2026-11-08）
+
+用户指定自己的GPT API、GPT-6.1 Sol和Max，Key后填。默认复核已改为Responses图片接口，保留显式qwen_local；只发送所选头部PNG裁图与原固定问题，原YOLO输出不改。Key仅放本机忽略文件config/review-api.local.json，初始化保留已有值，状态不触网；API模式启动不加载千问。原演示目录已精确同步代码、创建空Key配置并验证source patch，原模型/视频未改，服务保持停止。
+
+26项API/管理器测试、28项可移植回归、27份上游源/13份适配补丁重建均通过。主智能体用真实CPU YOLO、Streamlit AppTest和localhost HTTP fixture完成照片检测→缺Key禁用→配置后按点击发送→成功/HTTP401失败/恢复→ZIP全链；裁图字节/像素和原检测JSON保持，失败提示/模型Max快照可追溯，证据无Key。Windows真实WSL管理器调用exit0且无Key不启Qwen。未使用真实Key、未调用真实GPT，识别效果与服务连通待用户填写后实测，见[验收摘要](validation/V12_GPT_API.json)和[填写位置](GPT_API_SETUP.md)。
+
 ## G04：无需千问的基础视觉共同开发包（2026-11-08）
 
 用户询问朋友没有千问权重能否开发。现有PPE CPU模式可独立开发和运行照片/视频YOLO检测、原分数/框展示、原画质保存及导出；千问只用于所选头部第二意见。原机已生成约160MB的基础视觉协作ZIP，含精简Git bundle、209份PPE/可选测试资源和交接说明，不含千问权重或虚拟环境。已实际解包、离线clone至6a08cb2、逐SHA核209文件、ZIP CRC及原manifest计划验证；仅缺4份Pexels原站素材约41MB，基础路径无需等待GitHub Release。首次安装仍需联网下载CPU依赖与原站素材，见[验证回执](validation/G04_QWEN_FREE_HANDOFF.json)。

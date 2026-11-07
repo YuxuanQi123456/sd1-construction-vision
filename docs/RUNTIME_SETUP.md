@@ -1,6 +1,6 @@
 # 在新目录恢复视觉演示
 
-本页覆盖 SiteWatch PPE 视频检测和可选的 Qwen3-VL 区域第二意见。资源由 `config/runtime-assets.json` 固定 SHA256 和字节数，环境由 `config/bootstrap-ppe.txt`、`config/bootstrap-full.txt` 固定直接依赖版本。旧库存/物料应用的环境不在本轮交付范围。
+本页覆盖SiteWatch PPE检测、默认GPT API第二意见及可选本地Qwen。GPT API使用`ppe`资源/环境即可，Key填写见[GPT API设置](GPT_API_SETUP.md)。资源由 `config/runtime-assets.json` 固定 SHA256 和字节数，环境由 `config/bootstrap-ppe.txt`、`config/bootstrap-full.txt` 固定直接依赖版本。旧库存/物料应用的环境不在本轮交付范围。
 
 ## 1. 目标机器
 
@@ -83,7 +83,7 @@ Full 会把共享环境的 CPU Torch 换成 cu128 构建；PPE 管理器仍明�
 env -u PYTHONPATH -u PYTHONHOME -u PYTHONUSERBASE python3.12 scripts/manage_ppe.py start --wait
 ```
 
-浏览器访问 `http://127.0.0.1:8767`，使用恢复的真实素材执行一次检测，核对模型、图片框与可下载证据。PPE 的区域复核入口在没有 Qwen 后端时显示未就绪，主页面顶层不导入 `gradio_client`；实时摄像头分支由现有启动器禁用。
+浏览器访问 `http://127.0.0.1:8767`，使用恢复的真实素材执行一次检测，核对模型、图片框与可下载证据。默认区域复核通过GPT API，在本机配置中填Key后点击调用；缺Key时按钮显示配置提示。`qwen_local`才需要本地Qwen后端与Gradio，主页面顶层不导入`gradio_client`；实时摄像头分支禁用。
 
 Full 在依赖/算子验证后，另启动已有 Qwen 管理器：
 

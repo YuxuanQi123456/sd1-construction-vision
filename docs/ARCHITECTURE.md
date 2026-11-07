@@ -8,7 +8,7 @@
 
 ## 当前：施工影像 PPE 检测复核
 
-Qwen 是千问，当前使用的 Qwen3-VL 是视觉语言模型。YOLO 给出检测框、类别和分数；本地 Qwen3-VL-4B NF4 读取选中头部画面并给文字第二意见。PPE CPU 检测可独立运行，full 模式才需要恢复并启用千问；它沿用已批准的视觉复核流程。
+默认采用本机YOLO检测＋GPT-6.1 Sol Max API局部复核。选中头部的未画框PNG与固定问题发送到本机配置的Responses接口；模型名和推理强度分开配置，Key仅在忽略文件`config/review-api.local.json`保存。API模式不依赖Qwen权重或GPU，`ppe`环境足够；显式`qwen_local`保留原Qwen3-VL-4B NF4路径。接口见[复核API契约](../contracts/head-review-api-v2.md)与[填写Key说明](GPT_API_SETUP.md)。缺Key不触网，状态已配置不等于已验证，实际回答和来源逐次保存。
 
 V11仅为现有页面加品牌与中文展示：官网组合PNG按原字节本地保存，`sitewatch/branding/SOURCE.json`记录来源与SHA；CSS与logo本地嵌入，不依赖外部字体/图像请求。流程引导是操作说明，统计卡仅从本次真实result取帧数、待复核框次数与耗时。文件与模型输出字段保持V10契约。模型资源缓存最多两组参数变体，断开会话过期门槛60秒且按惰性缓存机制淘汰；不保证关页60秒即释放内存，也不清理全局模型缓存。此项限制缓存项数，不代表对Torch/大图下载总内存设置硬上限。
 
@@ -28,23 +28,23 @@ flowchart LR
   Original --> Decode[照片解码 / 视频按间隔采样]
   Decode --> PPE[默认SiteWatch / 显式候选 CPU 推理]
   PPE --> Boxes[直接类别 / 框 / 置信度]
-  Boxes --> Head[用户选择直接头部框 / 未绘框JPEG裁剪]
-  Head --> Qwen[既有Qwen官方API / 本地4B NF4]
-  Qwen --> Opinion[原始回答 / 分歧 / 不确定]
+  Boxes --> Head[用户选择直接头部框 / 未画框PNG裁图]
+  Head --> Backend[默认GPT API Max / 显式本地Qwen]
+  Backend --> Opinion[原始回答 / 分歧 / 不确定]
   Opinion --> Review[人工对照原图]
   Boxes --> Review
   Review --> Export[原件 / 原检测 / 裁剪 / 第二意见 ZIP]
 ```
 
-专用权重不可用时明确失败，禁止回退普通 COCO 后仍宣称 PPE 检测成功。离线复核不运行距离、运动和形状规则，不由未检出正类推断缺少装备。所有 NO-* 来自模型自身训练类别，仍需现场人员确认；视频只对列明的采样帧负责，时间由帧序号/容器 FPS 估算。源码、权重及素材分别保留许可，PPE 固定使用 CPU，Qwen 使用 GPU，二者由独立管理器启动。页面默认显示人员与 PPE，完整类别框及误检仍保留；模型初筛有成功实例，但零检出和误判确实存在，自动违规判定未通过验证。
+专用权重不可用时明确失败，禁止回退普通 COCO 后仍宣称 PPE 检测成功。离线复核不运行距离、运动和形状规则，不由未检出正类推断缺少装备。所有 NO-* 来自模型自身训练类别，仍需现场人员确认；视频只对列明的采样帧负责，时间由帧序号/容器 FPS 估算。源码、权重及素材分别保留许可，PPE固定使用CPU；默认GPT复核走外部API，显式本地Qwen才使用GPU。页面默认显示人员与 PPE，完整类别框及误检仍保留；模型初筛有成功实例，但零检出和误判确实存在，自动违规判定未通过验证。
 
 入口 `http://127.0.0.1:8767`；根目录启动/停止 `.cmd` 调用 `scripts/manage_ppe.py`。管理器以绝对启动参数、进程启动时刻、文件锁及独立进程组核验归属；重复启动等待健康，不接管未知端口；停止须等待端口释放。原件、采样、框图和来源许可在 `.runtime/sitewatch-env/runtime/reviews/`，成功时下载完整ZIP；失败时保留已完成证据并明确报错。结果文件契约见 [ppe-review-v1.md](../contracts/ppe-review-v1.md)。
 
 V07比较固定四模型及已下载的 RF100 90 图测试子集。无模型通过已声明的全部实拍门槛，默认未替换；侧栏可显式选择Constructelligence v0.3对照。Detector的cache和本次输入签名均含model_id，严格核对模型SHA/实际names，界面类别数和来源随选择更新；输入、模型或配置改变清除session显示引用，历史证据文件保留。
 
-`region_review.py`仅使用直接Hardhat/NO-Hardhat等头部框，四边20%padding并夹紧，不从person猜头位置。crop读取保存的未画框JPEG，记录真实输入SHA而不声称与检测未压缩数组相同。`backend_status`核对Qwen启动参数、PID持有的精确loopback监听socket及固定4B NF4权重SHA；只调用已归属的8766本地官方`/add_file`和`/submit_and_predict`。每次新会话，禁用telemetry，不传检测类别/预期答案。上传/生成等待30/120秒，取消后台best effort。接口见 [head-review-v1.md](../contracts/head-review-v1.md)。
+`region_review.py`仅使用直接Hardhat/NO-Hardhat等头部框，四边20%padding并夹紧，不从person猜头位置。crop读取保存的未画框采样帧并输出PNG裁图，记录真实输入SHA；兼容模式输入可能为JPEG，原片保留模式为PNG。API模式的`backend_status`只读配置并返回未进行连通验证的状态；用户点击后单次发起Responses图像请求，无自动重试。显式本地模式的`backend_status`核对Qwen启动参数、PID持有的精确loopback监听socket及固定4B NF4权重SHA；只调用已归属的8766本地官方`/add_file`和`/submit_and_predict`。每次新会话，禁用telemetry，不传检测类别/预期答案。上传/生成等待30/120秒，取消后台best effort。接口见 [head-review-v1.md](../contracts/head-review-v1.md)。
 
-第二意见原文和attempt写入`head-reviews/`，原始`detections.json`不修改；分歧只为两模型意见对照，不作法规判定，Qwen分类置信度为null。嵌套crop/原答/来源均递归包含在ZIP中。根启动/停止.cmd现同时调用CPU与Qwen管理器；CPU可独立用，Qwen未就绪时按钮禁用并给恢复提示。
+第二意见原文和attempt写入`head-reviews/`，原始`detections.json`不修改；分歧只为两模型意见对照，不作法规判定，Qwen分类置信度为null。嵌套crop/原答/来源均递归包含在ZIP中。根启动.cmd按provider调度，API模式不启动Qwen；Key缺失或本地服务未就绪时只禁用区域复核，检测可独立使用。根停止入口保留对既有归属进程的释放。
 
 ## 辅助对照：Qwen 施工影像问答
 

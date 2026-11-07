@@ -1,4 +1,7 @@
-"""Exercise the native local Gradio API without changing the current detector."""
+"""Exercise the configured review backend without changing the detector.
+
+Uses real API credits when the openai provider has a key; choose a new output path.
+"""
 import argparse
 import json
 import os

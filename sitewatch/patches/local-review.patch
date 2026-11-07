@@ -2,7 +2,7 @@
 +++ b/app.py
 @@ -2,7 +2,11 @@
  from __future__ import annotations
-
+ 
  import csv
 +import base64
  import logging
@@ -11,7 +11,7 @@
 +import os
  import time
  from pathlib import Path
-
+ 
 @@ -14,18 +18,68 @@
  from cv_pipeline.enhancement import enhance
  from cv_pipeline.fusion import LOG_PATH, fuse
@@ -20,9 +20,9 @@
 +from review_evidence import NOTICE, REVIEW_LABELS, evidence_zip, new_review_dir, review_file
 +from region_review import backend_status, head_indices, latest_region_review, review_head_region
  from utils.drawing import draw_overlay
-
+ 
  logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
-
+ 
 -st.set_page_config(page_title="SiteWatch", layout="wide")
 +st.set_page_config(page_title="水电一局 · 施工视觉AI", page_icon="🏗️", layout="wide")
 +RUNTIME = Path(os.environ["SITEWATCH_RUNTIME_DIR"])
@@ -74,8 +74,8 @@
 +    return {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
 +            '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
 +            '.avi': 'video/x-msvideo'}.get(path.suffix.lower(), 'application/octet-stream')
-
-
+ 
+ 
  # ----- cached singletons ----------------------------------------------------
 -@st.cache_resource(show_spinner="Loading YOLO models…")
 -def get_detector(conf_threshold: float) -> Detector:
@@ -83,12 +83,12 @@
 +@st.cache_resource(show_spinner="正在加载视觉识别模型…", max_entries=2)
 +def get_detector(conf_threshold: float, model_id: str, profile: str) -> Detector:
 +    return Detector(conf_threshold=conf_threshold, model_id=model_id, profile=profile)
-
-
+ 
+ 
  # ----- pipeline -------------------------------------------------------------
 @@ -62,11 +116,55 @@
-
-
+ 
+ 
  # ----- sidebar --------------------------------------------------------------
 -st.sidebar.title("SiteWatch")
 -do_enhance = st.sidebar.toggle("Enable image enhancement", value=True)
@@ -144,7 +144,7 @@
 +    st.sidebar.caption('原尺寸无损保存，可下载原图与检测框图。')
 +do_motion = False
 +proximity_px = 80
-
+ 
  def render_violation_log() -> None:
      """Render the recent-violations table in the sidebar.
 @@ -74,7 +172,7 @@
@@ -156,14 +156,14 @@
          rows: list[list[str]] = []
          header: list[str] | None = None
          if LOG_PATH.exists():
-@@ -91,164 +189,291 @@
+@@ -91,164 +189,298 @@
                  height=300,
              )
          else:
 -            st.caption("No violations logged yet.")
 +            st.caption("离线复核不运行距离、运动或形状安全规则。")
-
-
+ 
+ 
  # ----- shared resources ----------------------------------------------------
 -detector = get_detector(conf_threshold)
 -detector.conf_threshold = conf_threshold
@@ -188,13 +188,13 @@
 +max_seconds = st.sidebar.slider("视频复核起始时长（秒）", 1, 30, 8)
 +st.sidebar.caption("仅分析指定范围内的采样画面。")
 +
-
-
+ 
+ 
  # ----- tabs ----------------------------------------------------------------
 -tab_live, tab_review = st.tabs(["Live monitoring", "Review footage"])
 +tab_review, tab_live = st.tabs(["影像识别与复核", "摄像头接入说明"])
-
-
+ 
+ 
  with tab_live:
 -    st.markdown("### Live monitoring")
 -    st.caption("Webcam feed. Grant camera access when prompted.")
@@ -536,20 +536,27 @@
 +                detection = frame["detections"][detection_index]
 +                available = backend_status(PROJECT_ROOT)
 +                if not available["ready"]:
-+                    st.info("区域复核模型未就绪，请先运行 vision/启动视频AI.cmd；已有检测结果仍可查看和导出。")
++                    st.info(available.get("error", "区域复核尚未配置；已有检测结果仍可查看和导出。"))
++                elif available.get("provider") == "openai":
++                    st.caption("GPT API 已配置，点击时联网复核所选裁图；连通性与效果以本次实际调用为准。")
 +                if st.button("复核所选头部", disabled=not available["ready"],
 +                             key=f"review-head-{destination.name}-{selected}-{detection_index}"):
 +                    try:
-+                        with st.spinner("本地 AI 正在观察所选头部…"):
++                        with st.spinner("AI 正在观察所选头部…"):
 +                            review_head_region(destination, selected, detection_index, PROJECT_ROOT)
 +                    except Exception:
-+                        st.error("区域复核失败；原检测结果已保留。请确认本地模型就绪后重试。")
++                        st.error("区域复核失败；原检测结果与失败记录已保留，请检查复核配置或连接后重试。")
 +                opinion = latest_region_review(destination, selected, detection_index)
 +                if opinion and opinion["status"] == "complete":
 +                    st.image(str(destination / opinion["crop_file"]), caption="本次复核的未画框裁剪图", width=320)
 +                    st.write(f"检测器原结论：{detection['class_name']}；原检测分数 {detection['confidence']:.3f}")
-+                    st.write("Qwen 区域意见：" + opinion["opinion"]["label"])
-+                    st.caption("Qwen3-VL-4B 本地模型；文字意见无校准概率，不沿用检测器分数。")
++                    st.write("AI 区域意见：" + opinion["opinion"]["label"])
++                    actual_backend = opinion["opinion"].get("backend", {})
++                    actual_model = actual_backend.get("model", "Qwen3-VL-4B-Instruct local NF4")
++                    actual_effort = actual_backend.get("reasoning_effort")
++                    actual_location = "远程 API" if actual_backend.get("provider") == "openai" else "本地模型"
++                    st.caption(f"实际来源：{actual_model}" + (f" · {actual_effort}" if actual_effort else "")
++                               + f" · {actual_location}；文字意见无校准概率，不沿用检测器分数。")
 +                    if opinion["comparison"] == "disagree":
 +                        st.warning("两模型意见不同，请结合原图人工复核。")
 +                    elif opinion["comparison"] == "uncertain":
@@ -582,8 +589,8 @@
 +st.markdown('''<div class="sd1-footer">水电一局 · 施工视觉AI演示<br>
 +AI 检测用于辅助人工复核，识别框不等于违规结论；仅分析已列出的采样画面。<br>
 +基于 SiteWatch 开源应用适配 · 模型与源码许可见侧栏“模型来源与许可”。</div>''', unsafe_allow_html=True)
-
-
+ 
+ 
  # Render the sidebar violation log last, so it includes anything logged during
  # this run (e.g. a just-uploaded image) instead of only the pre-processing state.
 -render_violation_log()
@@ -595,7 +602,7 @@
 -"""YOLO detection wrapper. Merges COCO baseline with the custom SiteWatch model."""
 +"""Pinned native PPE inference and the upstream optional person companion on CPU."""
  from __future__ import annotations
-
+ 
  import logging
 +import hashlib
 +import json
@@ -605,20 +612,20 @@
 +import threading
  from dataclasses import dataclass
  from pathlib import Path
-
+ 
 @@ -10,6 +15,9 @@
  import numpy as np
-
+ 
  log = logging.getLogger(__name__)
 +
 +MODEL_SHA256 = "c2db52b9be8ccd5bcc09d6e0f9498a6e442e47eb6f6b62850db11530b77651ab"
 +MODEL_NAMES = ["Excavator", "Gloves", "Hardhat", "Ladder", "Mask", "NO-Hardhat", "NO-Mask", "NO-Safety Vest", "Person", "SUV", "Safety Cone", "Safety Vest", "bus", "dump truck", "fire hydrant", "machinery", "mini-van", "sedan", "semi", "trailer", "truck and trailer", "truck", "van", "vehicle", "wheel loader"]
-
+ 
  # Categories used downstream by fusion / drawing.
  CATEGORIES = {
 @@ -22,6 +30,12 @@
-
-
+ 
+ 
  def _category_for(name: str) -> str:
 +    if name in {'no-hardhat', 'no-safety vest', 'no-mask', 'no-goggles', 'no-gloves'}:
 +        return 'ppe_violation'
@@ -639,12 +646,12 @@
 +    class_id: int = -1
 +    bbox_xyxy: tuple[float, float, float, float] | None = None
 +    canonical_class: str | None = None
-
-
+ 
+ 
  def _iou(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> float:
 @@ -52,36 +69,76 @@
-
-
+ 
+ 
  class Detector:
 -    """Runs the COCO YOLO and (when available) the custom SiteWatch YOLO,
 -    merges the predictions, and deduplicates overlapping boxes."""
@@ -653,7 +660,7 @@
 +    Category names are retained for the upstream drawing API. They are model
 +    labels, not a determination of regulatory compliance.
 +    """
-
+ 
      def __init__(
          self,
 -        coco_path: str = "models/yolov8n.pt",
@@ -750,7 +757,7 @@
                  )
              )
          return out
-
+ 
 +    def _detect(self, frame: np.ndarray) -> list[Detection]:
 +        if frame is None or frame.size == 0:
 +            self.last_branch_detections = {}
@@ -791,13 +798,13 @@
 +            detections = self._detect(frame)
 +            branches = {source: list(values) for source, values in self.last_branch_detections.items()}
 +            return detections, branches, self.last_inference_ms
-
-
+ 
+ 
  def _cli(path: str) -> None:
---- /dev/null
+--- a/region_review.py
 +++ b/region_review.py
-@@ -0,0 +1,272 @@
-+"""Second opinion via the existing local, official Qwen Gradio application."""
+@@ -0,0 +1,312 @@
++"""Independent second opinion via the selected GPT API or local Qwen backend."""
 +from datetime import datetime, timezone
 +from functools import lru_cache
 +import hashlib
@@ -811,6 +818,9 @@
 +import threading
 +import urllib.request
 +import uuid
++
++from review_api import (api_backend_status, load_review_config, request_image_opinion,
++                        review_backend_snapshot, ReviewAPIError)
 +
 +# gradio_client 1.13 treats an explicit False as the environment default.
 +# Set these before its import as well as in the launcher.
@@ -866,6 +876,20 @@
 +
 +
 +def backend_status(project_root):
++    """Read API configuration or inspect an explicitly selected local backend."""
++    try:
++        config = load_review_config(project_root)
++    except ReviewAPIError:
++        return api_backend_status(project_root)
++    if config['provider'] == 'openai':
++        return api_backend_status(project_root)
++    status = _qwen_backend_status(project_root)
++    return {**status, 'provider': 'qwen_local', 'execution': 'local',
++            'label': 'Qwen3-VL-4B 本地模型',
++            'configured': status['ready'], 'connectivity_verified': status['ready']}
++
++
++def _qwen_backend_status(project_root):
 +    """Do not send imagery to an unknown process listening on the review port."""
 +    root = Path(project_root).resolve()
 +    try:
@@ -935,9 +959,26 @@
 +
 +
 +def classify_crop(crop_path, project_root):
++    """Preserve the selected provider; never silently fall back to another one."""
++    config = load_review_config(project_root)
++    return _classify_crop_configured(crop_path, project_root, config)
++
++
++def _classify_crop_configured(crop_path, project_root, config):
++    if config['provider'] == 'qwen_local':
++        return _classify_crop_qwen(crop_path, project_root)
++    result = request_image_opinion(crop_path, project_root, PROMPT, _config=config)
++    option = parse_option(result['raw_answer'])
++    return {**result, 'option': option,
++            'label': LABELS.get(option, '回答格式未确认，请查看原文'),
++            'classification_confidence': None, 'prompt': PROMPT,
++            'prompt_sha256': hashlib.sha256(PROMPT.encode()).hexdigest()}
++
++
++def _classify_crop_qwen(crop_path, project_root):
 +    """Reuse native upload and submit APIs, each call with a fresh chat session."""
 +    from gradio_client import Client, handle_file
-+    backend = backend_status(project_root)
++    backend = {**_qwen_backend_status(project_root), 'provider': 'qwen_local', 'execution': 'local'}
 +    if not backend['ready']:
 +        raise RuntimeError('本地复核模型未就绪，请先运行视觉AI启动脚本。' + backend.get('error', ''))
 +    started = time.perf_counter()
@@ -1052,9 +1093,15 @@
 +              'detector_model': original['model'], 'detector_detection': detection,
 +              'crop_file': str(crop_path.relative_to(directory)), 'crop_sha256': sha(crop_path),
 +              'crop_box_in_input': clipped, 'padding_fraction': .2,
-+              'notice': '第二意见不改写原检测类别或分数；模型分歧待人工复核，不是法规违规结论。'}
++              'notice': '第二意见不改写原检测类别或分数；模型分歧待人工复核，不是法规违规结论。',
++              'prompt': PROMPT, 'prompt_sha256': hashlib.sha256(PROMPT.encode()).hexdigest(),
++              'classification_confidence': None}
 +    try:
-+        opinion = classify_crop(crop_path, project_root)
++        # One configuration snapshot supplies both request provenance and transport.
++        config = load_review_config(project_root)
++        record['request_backend'] = review_backend_snapshot(config, project_root)
++        atomic_json(attempt / 'review.json', record)
++        opinion = _classify_crop_configured(crop_path, project_root, config)
 +        record['opinion'] = opinion
 +        model_label = HEAD_LABELS[detection['class_name']]
 +        option = opinion['option']
@@ -1069,7 +1116,312 @@
 +        atomic_json(attempt / 'review.json', record)
 +        atomic_json(destination / 'latest.json', record)
 +    return record
---- /dev/null
+--- a/review_api.py
++++ b/review_api.py
+@@ -0,0 +1,302 @@
++"""Small Responses API adapter for an explicitly requested head-region opinion.
++
++Credentials belong to this checkout's ignored local JSON. Status checks never
++contact a service, and a paid request is never retried or redirected here.
++"""
++from __future__ import annotations
++
++import base64
++from http.client import HTTPException
++import ipaddress
++import json
++import math
++from pathlib import Path
++import re
++import socket
++import time
++from urllib.error import HTTPError, URLError
++from urllib.parse import urlsplit
++from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
++
++LOCAL_CONFIG = "config/review-api.local.json"
++DEFAULT_CONFIG = {
++    "provider": "openai",
++    "base_url": "https://api.openai.com/v1",
++    "model": "gpt-6.1-sol",
++    "reasoning_effort": "max",
++    "api_key": "",
++    "timeout_seconds": 180,
++    "max_output_tokens": 4096,
++}
++MAX_CONFIG_BYTES = 64 * 1024
++MAX_CROP_BYTES = 20 * 1024 * 1024
++MAX_RESPONSE_BYTES = 2 * 1024 * 1024
++EFFORTS = {"low", "medium", "high", "xhigh", "max"}
++
++
++class ReviewAPIError(ValueError):
++    """An intentionally safe error suitable for the page and saved attempt."""
++
++
++def _redact(value, secret=""):
++    text = str(value)
++    if secret:
++        text = text.replace(secret, "[REDACTED]")
++    text = re.sub(r"(?i)\bBearer\s+[^\s,;]+", "Bearer [REDACTED]", text)
++    return re.sub(r"\bsk-[A-Za-z0-9_-]{8,}\b", "[REDACTED]", text)
++
++
++def _loopback(host):
++    if host == "localhost":
++        return True
++    try:
++        return ipaddress.ip_address(host).is_loopback
++    except ValueError:
++        return False
++
++
++def _base_url(value):
++    if not isinstance(value, str) or not value.strip() or any(c.isspace() for c in value):
++        raise ReviewAPIError("复核配置中的 base_url 无效")
++    value = value.rstrip("/")
++    try:
++        parsed = urlsplit(value)
++        port = parsed.port
++    except ValueError:
++        raise ReviewAPIError("复核配置中的 base_url 无效") from None
++    if (not parsed.hostname or parsed.username is not None or parsed.password is not None
++            or parsed.query or parsed.fragment or "\\" in value
++            or parsed.scheme not in {"http", "https"}
++            or (parsed.scheme == "http" and not _loopback(parsed.hostname))
++            or (port is not None and not 1 <= port <= 65535)):
++        raise ReviewAPIError("base_url 须为无账户、查询参数的 HTTPS 根地址；HTTP 仅用于本机调试")
++    if parsed.path.endswith("/responses"):
++        raise ReviewAPIError("base_url 请填写接口根地址，不包含 /responses")
++    return value
++
++
++def load_review_config(project_root):
++    """Return internal configuration. The returned api_key must never be logged."""
++    root = Path(project_root).resolve()
++    path = root / LOCAL_CONFIG
++    config = dict(DEFAULT_CONFIG)
++    if path.is_symlink() or not path.parent.resolve().is_relative_to(root):
++        raise ReviewAPIError("本机复核配置须为本仓库中的普通文件")
++    if path.exists():
++        try:
++            if path.stat().st_size > MAX_CONFIG_BYTES:
++                raise ReviewAPIError("本机复核配置文件过大")
++            with path.open("rb") as source:
++                raw = source.read(MAX_CONFIG_BYTES + 1)
++            if len(raw) > MAX_CONFIG_BYTES:
++                raise ReviewAPIError("本机复核配置文件过大")
++            saved = json.loads(raw)
++        except (OSError, ValueError, UnicodeError):
++            raise ReviewAPIError("无法读取本机复核配置，请检查 JSON 格式和文件权限") from None
++        if not isinstance(saved, dict) or set(saved) - set(DEFAULT_CONFIG):
++            raise ReviewAPIError("本机复核配置字段无效，请参考 review-api.example.json")
++        config.update(saved)
++    if not isinstance(config["provider"], str) or config["provider"] not in {"openai", "qwen_local"}:
++        raise ReviewAPIError("未知复核后端，provider 仅支持 openai 或 qwen_local")
++    if not isinstance(config["api_key"], str):
++        raise ReviewAPIError("复核配置中的 api_key 必须是字符串")
++    config["api_key"] = config["api_key"].strip()
++    if any(ord(c) < 33 or ord(c) > 126 for c in config["api_key"]):
++        raise ReviewAPIError("复核配置中的 api_key 含有无效字符")
++    if config["provider"] == "openai":
++        config["base_url"] = _base_url(config["base_url"])
++        if (not isinstance(config["model"], str) or not config["model"].strip()
++                or len(config["model"]) > 256 or any(ord(c) < 32 for c in config["model"])):
++            raise ReviewAPIError("复核配置中的 model 无效")
++        config["model"] = config["model"].strip()
++        if not isinstance(config["reasoning_effort"], str) or config["reasoning_effort"] not in EFFORTS:
++            raise ReviewAPIError("复核配置中的 reasoning_effort 无效")
++        timeout = config["timeout_seconds"]
++        if (isinstance(timeout, bool) or not isinstance(timeout, (int, float))
++                or not 1 <= timeout <= 600 or not math.isfinite(timeout)):
++            raise ReviewAPIError("timeout_seconds 须为 1 到 600 秒")
++        maximum = config["max_output_tokens"]
++        if isinstance(maximum, bool) or not isinstance(maximum, int) or not 1 <= maximum <= 16000:
++            raise ReviewAPIError("max_output_tokens 须为 1 到 16000 的整数")
++    return config
++
++
++def _safe_backend(config, project_root, *, connected=False):
++    secret = config["api_key"]
++    return {
++        "ready": bool(secret),
++        "configured": bool(secret),
++        "connectivity_verified": connected,
++        "provider": "openai",
++        "model": _redact(config["model"], secret),
++        "reasoning_effort": config["reasoning_effort"],
++        "url": _redact(config["base_url"], secret),
++        "config_path": str(Path(project_root).resolve() / LOCAL_CONFIG),
++        "label": _redact(f'{config["model"]} · {config["reasoning_effort"]}（API）', secret),
++        "transport": "responses",
++        "execution": "remote_api",
++    }
++
++
++def review_backend_snapshot(config, project_root):
++    """Safe request provenance from the same internal snapshot used to send it."""
++    if config["provider"] == "openai":
++        return _safe_backend(config, project_root)
++    return {"provider": "qwen_local", "model": "Qwen3-VL-4B-Instruct local NF4",
++            "url": "http://127.0.0.1:8766", "execution": "local",
++            "config_path": str(Path(project_root).resolve() / LOCAL_CONFIG)}
++
++
++def api_backend_status(project_root):
++    """Report configuration only; this function performs no network request."""
++    try:
++        config = load_review_config(project_root)
++        if config["provider"] != "openai":
++            return {"ready": False, "configured": False, "connectivity_verified": False,
++                    "provider": "qwen_local", "config_path": str(Path(project_root).resolve() / LOCAL_CONFIG),
++                    "error": "当前选择本地千问，请使用本地模型状态检查"}
++        status = _safe_backend(config, project_root)
++        if not status["ready"]:
++            status["error"] = "复核 API 尚未填写 Key，请编辑 config/review-api.local.json 的 api_key"
++        return status
++    except ReviewAPIError as exc:
++        return {"ready": False, "configured": False, "connectivity_verified": False,
++                "provider": "openai", "config_path": str(Path(project_root).resolve() / LOCAL_CONFIG),
++                "error": str(exc)}
++
++
++class _NoRedirect(HTTPRedirectHandler):
++    def redirect_request(self, req, fp, code, msg, headers, newurl):
++        return None
++
++
++def _usage(value):
++    if not isinstance(value, dict):
++        return {}
++    clean = {}
++    for name in ("input_tokens", "output_tokens", "total_tokens"):
++        item = value.get(name)
++        if isinstance(item, int) and not isinstance(item, bool) and item >= 0:
++            clean[name] = item
++    details = value.get("output_tokens_details")
++    if isinstance(details, dict):
++        count = details.get("reasoning_tokens")
++        if isinstance(count, int) and not isinstance(count, bool) and count >= 0:
++            clean["output_tokens_details"] = {"reasoning_tokens": count}
++    return clean
++
++
++def _answer(payload, secret):
++    if not isinstance(payload, dict) or payload.get("status") != "completed":
++        raise ReviewAPIError("复核 API 响应尚未完整完成，没有生成复核结论")
++    if payload.get("error") or payload.get("incomplete_details"):
++        raise ReviewAPIError("复核 API 返回未完成或错误状态，没有生成复核结论")
++    output = payload.get("output")
++    if not isinstance(output, list):
++        raise ReviewAPIError("复核 API 返回格式无效，缺少 output 消息")
++    parts = []
++    for message in output:
++        if not isinstance(message, dict) or message.get("type") != "message":
++            continue
++        if message.get("role") != "assistant":
++            continue
++        if message.get("status") not in (None, "completed"):
++            raise ReviewAPIError("复核 API 消息未完成，没有生成复核结论")
++        content = message.get("content")
++        if not isinstance(content, list):
++            raise ReviewAPIError("复核 API 返回的消息格式无效")
++        for item in content:
++            if not isinstance(item, dict):
++                raise ReviewAPIError("复核 API 返回的消息格式无效")
++            if item.get("type") == "refusal":
++                raise ReviewAPIError("复核 API 拒绝回答，没有生成复核结论")
++            if item.get("type") == "output_text":
++                text = item.get("text")
++                if not isinstance(text, str):
++                    raise ReviewAPIError("复核 API 返回的文本格式无效")
++                parts.append(text)
++    raw = "\n".join(parts)
++    if not raw.strip():
++        raise ReviewAPIError("复核 API 没有返回可用文字，没有生成复核结论")
++    return _redact(raw, secret)
++
++
++def request_image_opinion(crop_path, project_root, prompt, *, _config=None):
++    """Send only the unannotated crop and fixed question, once, after user action."""
++    config = dict(_config) if _config is not None else load_review_config(project_root)
++    if config["provider"] != "openai":
++        raise ReviewAPIError("当前未选择 API 复核后端")
++    if not config["api_key"]:
++        raise ReviewAPIError("复核 API 尚未填写 Key，请编辑 config/review-api.local.json 的 api_key")
++    started = time.perf_counter()
++    try:
++        path = Path(crop_path)
++        if path.stat().st_size > MAX_CROP_BYTES:
++            raise ReviewAPIError("所选头部裁图超过 20MiB，未发送 API 请求")
++        with path.open("rb") as source:
++            image = source.read(MAX_CROP_BYTES + 1)
++    except OSError:
++        raise ReviewAPIError("无法读取所选头部裁图，未发送 API 请求") from None
++    if len(image) > MAX_CROP_BYTES:
++        raise ReviewAPIError("所选头部裁图超过 20MiB，未发送 API 请求")
++    if image.startswith(b"\x89PNG\r\n\x1a\n"):
++        mime = "image/png"
++    elif image.startswith(b"\xff\xd8"):
++        mime = "image/jpeg"
++    else:
++        raise ReviewAPIError("所选头部裁图必须为 PNG 或 JPEG，未发送 API 请求")
++    if not isinstance(prompt, str) or not prompt.strip():
++        raise ReviewAPIError("复核提示不能为空，未发送 API 请求")
++    payload = {
++        "model": config["model"],
++        "reasoning": {"effort": config["reasoning_effort"]},
++        "store": False,
++        "max_output_tokens": config["max_output_tokens"],
++        "input": [{"role": "user", "content": [
++            {"type": "input_text", "text": prompt},
++            {"type": "input_image", "image_url": "data:" + mime + ";base64," + base64.b64encode(image).decode("ascii"), "detail": "high"},
++        ]}],
++    }
++    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
++    request = Request(config["base_url"] + "/responses", data=data,
++                      headers={"Authorization": "Bearer " + config["api_key"],
++                               "Content-Type": "application/json", "Accept": "application/json",
++                               "User-Agent": "sd1-construction-vision/region-review"}, method="POST")
++    handlers = [_NoRedirect()]
++    if _loopback(urlsplit(config["base_url"]).hostname):
++        handlers.insert(0, ProxyHandler({}))
++    opener = build_opener(*handlers)
++    try:
++        with opener.open(request, timeout=config["timeout_seconds"]) as response:
++            body = response.read(MAX_RESPONSE_BYTES + 1)
++        if len(body) > MAX_RESPONSE_BYTES:
++            raise ReviewAPIError("复核 API 响应过大，没有生成复核结论")
++        try:
++            answer = json.loads(body)
++        except (ValueError, UnicodeError):
++            raise ReviewAPIError("复核 API 未返回有效 JSON，没有生成复核结论") from None
++    except HTTPError as exc:
++        code = exc.code
++        exc.close()
++        if 300 <= code < 400:
++            raise ReviewAPIError("复核 API 重定向已拒绝，请检查接口根地址") from None
++        raise ReviewAPIError(f"复核 API 返回 HTTP {code}，请检查 Key、模型权限或服务额度") from None
++    except (TimeoutError, socket.timeout):
++        raise ReviewAPIError("复核 API 请求超时，原检测结果保留；没有自动重试") from None
++    except ReviewAPIError:
++        raise
++    except HTTPException:
++        raise ReviewAPIError("复核 API 返回无效 HTTP 响应，没有生成复核结论") from None
++    except (URLError, OSError, ValueError):
++        raise ReviewAPIError("无法连接复核 API，请检查接口地址和网络；没有自动重试") from None
++    raw = _answer(answer, config["api_key"])
++    backend = _safe_backend(config, project_root, connected=True)
++    metadata = {}
++    for target, source in (("response_id", "id"), ("response_model", "model")):
++        value = answer.get(source)
++        if isinstance(value, str):
++            metadata[target] = _redact(value, config["api_key"])[:256]
++    return {"backend": backend, "raw_answer": raw,
++            "elapsed_seconds": time.perf_counter() - started,
++            "usage": _usage(answer.get("usage")), "api": ["POST /responses"],
++            "fresh_session": True, **metadata}
+--- a/review_evidence.py
 +++ b/review_evidence.py
 @@ -0,0 +1,201 @@
 +"""Thin offline evidence adapter around SiteWatch's detector and drawing code."""
@@ -1298,6 +1650,6 @@
 +        bottom = max(y1, th + baseline + 2) if label_scale > 1 else y1
 +        cv2.rectangle(out, (x1, bottom - th - baseline - 2), (x1 + tw + 2, bottom), color, -1)
 +        cv2.putText(out, label, (x1 + 1, bottom - 3), cv2.FONT_HERSHEY_SIMPLEX, font_size, (255, 255, 255), pen, cv2.LINE_AA)
-
+ 
      # Proximity-violation lines
      for pv in proximity_violations:

@@ -425,20 +425,27 @@ with tab_review:
                 detection = frame["detections"][detection_index]
                 available = backend_status(PROJECT_ROOT)
                 if not available["ready"]:
-                    st.info("区域复核模型未就绪，请先运行 vision/启动视频AI.cmd；已有检测结果仍可查看和导出。")
+                    st.info(available.get("error", "区域复核尚未配置；已有检测结果仍可查看和导出。"))
+                elif available.get("provider") == "openai":
+                    st.caption("GPT API 已配置，点击时联网复核所选裁图；连通性与效果以本次实际调用为准。")
                 if st.button("复核所选头部", disabled=not available["ready"],
                              key=f"review-head-{destination.name}-{selected}-{detection_index}"):
                     try:
-                        with st.spinner("本地 AI 正在观察所选头部…"):
+                        with st.spinner("AI 正在观察所选头部…"):
                             review_head_region(destination, selected, detection_index, PROJECT_ROOT)
                     except Exception:
-                        st.error("区域复核失败；原检测结果已保留。请确认本地模型就绪后重试。")
+                        st.error("区域复核失败；原检测结果与失败记录已保留，请检查复核配置或连接后重试。")
                 opinion = latest_region_review(destination, selected, detection_index)
                 if opinion and opinion["status"] == "complete":
                     st.image(str(destination / opinion["crop_file"]), caption="本次复核的未画框裁剪图", width=320)
                     st.write(f"检测器原结论：{detection['class_name']}；原检测分数 {detection['confidence']:.3f}")
-                    st.write("Qwen 区域意见：" + opinion["opinion"]["label"])
-                    st.caption("Qwen3-VL-4B 本地模型；文字意见无校准概率，不沿用检测器分数。")
+                    st.write("AI 区域意见：" + opinion["opinion"]["label"])
+                    actual_backend = opinion["opinion"].get("backend", {})
+                    actual_model = actual_backend.get("model", "Qwen3-VL-4B-Instruct local NF4")
+                    actual_effort = actual_backend.get("reasoning_effort")
+                    actual_location = "远程 API" if actual_backend.get("provider") == "openai" else "本地模型"
+                    st.caption(f"实际来源：{actual_model}" + (f" · {actual_effort}" if actual_effort else "")
+                               + f" · {actual_location}；文字意见无校准概率，不沿用检测器分数。")
                     if opinion["comparison"] == "disagree":
                         st.warning("两模型意见不同，请结合原图人工复核。")
                     elif opinion["comparison"] == "uncertain":
