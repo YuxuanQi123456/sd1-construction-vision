@@ -1,5 +1,7 @@
 """Bootstrap planning and lightweight venv lifecycle fixtures, without Torch installs."""
 import importlib.util
+import contextlib
+import io
 import json
 import os
 from pathlib import Path
@@ -14,6 +16,9 @@ REPO = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("bootstrap_runtime", REPO / "scripts/bootstrap_runtime.py")
 bootstrap = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(bootstrap)
+PREPARE_SPEC = importlib.util.spec_from_file_location("prepare_sitewatch", REPO / "sitewatch/prepare.py")
+prepare = importlib.util.module_from_spec(PREPARE_SPEC)
+PREPARE_SPEC.loader.exec_module(prepare)
 
 
 class BootstrapRuntimeTest(unittest.TestCase):
@@ -22,30 +27,65 @@ class BootstrapRuntimeTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name) / "new-project"
         (self.root / "config").mkdir(parents=True)
-        (self.root / "vision").mkdir()
-        for profile in ("ppe", "full"):
-            shutil.copyfile(REPO / f"config/bootstrap-{profile}.txt", self.root / f"config/bootstrap-{profile}.txt")
+        shutil.copyfile(REPO / "config/bootstrap-ppe.txt", self.root / "config/bootstrap-ppe.txt")
 
     def test_plan_has_only_repo_owned_environment_and_exact_manager_paths(self):
-        for profile in ("ppe", "full"):
-            plan = bootstrap.make_plan(self.root, profile)
-            self.assertIn(".runtime/sitewatch-env", plan["managed_links"])
-            self.assertEqual("vision/.venv" in plan["managed_links"], profile == "full")
-            encoded = json.dumps(plan)
-            self.assertNotIn("/home/meg", encoded)
-            self.assertNotIn("existing_runtime_readonly", encoded)
-            self.assertIn(f"https://download.pytorch.org/whl/{bootstrap.TORCH[profile]}", encoded)
-            self.assertEqual(plan["packages"]["transformers"], "4.57.6") if profile == "full" else None
+        plan = bootstrap.make_plan(self.root, "ppe")
+        self.assertEqual(plan["managed_links"], {".runtime/sitewatch-env": "portable-env"})
+        encoded = json.dumps(plan)
+        self.assertNotIn("/home/meg", encoded)
+        self.assertNotIn("existing_runtime_readonly", encoded)
+        self.assertIn("https://download.pytorch.org/whl/cpu", encoded)
+        self.assertNotIn("transformers", plan["packages"])
+        self.assertIsNone(plan["gpu_requirement"])
         self.assertFalse((self.root / ".runtime").exists())
 
+    def test_cli_defaults_to_cpu_ppe_without_creating_paths_for_plan(self):
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            code = bootstrap.main(["--project-root", str(self.root), "--plan"])
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(output.getvalue())["profile"], "ppe")
+        self.assertFalse((self.root / ".runtime").exists())
+
+    def test_legacy_prepare_forwards_only_repo_owned_cpu_and_ppe_restore(self):
+        offline = Path(self.temporary.name) / "offline"
+        offline.mkdir()
+        with mock.patch.object(prepare.subprocess, "run") as run:
+            code = prepare.main(["--project-root", str(self.root), "--assets-dir", str(offline),
+                                 "--plan", "--no-cache-dir"])
+        self.assertEqual(code, 0)
+        self.assertEqual(run.call_count, 2)
+        bootstrap_cmd, assets_cmd = [call.args[0] for call in run.call_args_list]
+        for call in run.call_args_list:
+            self.assertEqual(call.kwargs, {"cwd": self.root, "check": True})
+            command = call.args[0]
+            self.assertIn("--plan", command)
+            self.assertEqual(command[command.index("--profile") + 1], "ppe")
+            self.assertEqual(command[command.index("--project-root") + 1], str(self.root))
+        self.assertEqual(Path(bootstrap_cmd[1]), REPO / "scripts/bootstrap_runtime.py")
+        self.assertEqual(Path(assets_cmd[1]), REPO / "scripts/restore_runtime_assets.py")
+        self.assertIn("--no-cache-dir", bootstrap_cmd)
+        self.assertEqual(assets_cmd[assets_cmd.index("--assets-dir") + 1], str(offline))
+        self.assertFalse((self.root / ".runtime").exists())
+
+    def test_prepare_keeps_offline_symlink_visible_to_restore_validation(self):
+        offline = Path(self.temporary.name) / "offline"
+        offline.mkdir()
+        link = Path(self.temporary.name) / "offline-link"
+        link.symlink_to(offline, target_is_directory=True)
+        with mock.patch.object(prepare.subprocess, "run") as run:
+            prepare.main(["--project-root", str(self.root), "--assets-dir", str(link), "--plan"])
+        command = run.call_args.args[0]
+        self.assertEqual(command[command.index("--assets-dir") + 1], str(link))
+
     def test_unmanaged_existing_environment_is_never_overwritten(self):
-        for relative in (bootstrap.ENV_PATH, ".runtime/sitewatch-env", "vision/.venv"):
+        for relative in (bootstrap.ENV_PATH, ".runtime/sitewatch-env"):
             with self.subTest(path=relative):
                 path = self.root / relative
                 path.mkdir(parents=True)
                 (path / "precious").write_text("keep")
                 with self.assertRaisesRegex(bootstrap.BootstrapError, "unmanaged"):
-                    bootstrap.make_plan(self.root, "full")
+                    bootstrap.make_plan(self.root, "ppe")
                 self.assertEqual((path / "precious").read_text(), "keep")
                 shutil.rmtree(path)
 
@@ -57,9 +97,10 @@ class BootstrapRuntimeTest(unittest.TestCase):
             self.assertNotIn("--cache-dir", command)
 
     def test_external_link_is_refused(self):
-        (self.root / "vision/.venv").symlink_to("/some/other/venv")
+        (self.root / ".runtime").mkdir()
+        (self.root / ".runtime/sitewatch-env").symlink_to("/some/other/venv")
         with self.assertRaisesRegex(bootstrap.BootstrapError, "unmanaged"):
-            bootstrap.make_plan(self.root, "full")
+            bootstrap.make_plan(self.root, "ppe")
 
     def test_runtime_parent_symlink_is_refused(self):
         external = Path(self.temporary.name) / "external"
@@ -112,7 +153,7 @@ class BootstrapRuntimeTest(unittest.TestCase):
                 subprocess.run([command[0], "-I", "-c", code], check=True, env=bootstrap.clean_environment())
         return run
 
-    def test_lightweight_venv_links_idempotence_and_upgrade(self):
+    def test_lightweight_venv_links_and_idempotence(self):
         commands = []
         with mock.patch.object(bootstrap, "run", side_effect=self.fixture_runner(commands)), mock.patch.object(bootstrap, "check_platform"):
             bootstrap.bootstrap(self.root, "ppe")
@@ -122,13 +163,10 @@ class BootstrapRuntimeTest(unittest.TestCase):
             self.assertTrue((self.root / ".runtime/sitewatch-env/runtime").is_dir())
             bootstrap.bootstrap(self.root, "ppe")
             self.assertEqual(len(commands), 7)
-            bootstrap.bootstrap(self.root, "full")
-            self.assertEqual(len(commands), 12)
-            self.assertTrue((self.root / "vision/.venv/bin/python").is_file())
-            self.assertEqual(os.readlink(self.root / "vision/.venv"), "../.runtime/portable-env")
             plan = bootstrap.make_plan(self.root, "ppe")
-            self.assertEqual(plan["profile"], "full")
+            self.assertEqual(plan["profile"], "ppe")
             self.assertEqual(plan["install_commands"], [])
+            self.assertFalse((self.root / "vision").exists())
 
     def test_failed_install_can_retry_without_adopting_an_unmanaged_env(self):
         commands = []
@@ -146,11 +184,27 @@ class BootstrapRuntimeTest(unittest.TestCase):
             bootstrap.bootstrap(self.root, "ppe")
         self.assertEqual(bootstrap.read_state(self.root)["status"], "ready")
 
-    def test_missing_gpu_fails_before_creating_environment(self):
-        with mock.patch.object(bootstrap.subprocess, "run", side_effect=FileNotFoundError("fixture no NVIDIA")):
-            with self.assertRaisesRegex(bootstrap.BootstrapError, "nvidia-smi"):
+    def test_removed_full_profile_fails_before_creating_environment(self):
+        with mock.patch.object(bootstrap, "run") as run:
+            with self.assertRaisesRegex(bootstrap.BootstrapError, "Only the CPU ppe"):
                 bootstrap.bootstrap(self.root, "full")
+        run.assert_not_called()
         self.assertFalse((self.root / bootstrap.ENV_PATH).exists())
+
+    def test_old_full_environment_is_preserved_and_not_downgraded(self):
+        for status in ("ready", "failed", "installing"):
+            with self.subTest(status=status):
+                bootstrap.write_state(self.root, {"schema": bootstrap.SCHEMA, "profile": "full", "status": status})
+                marker = self.root / bootstrap.ENV_PATH / bootstrap.MARKER
+                before = marker.read_bytes()
+                valuable = marker.parent / "keep-package"
+                valuable.write_text("existing full runtime")
+                with mock.patch.object(bootstrap, "run") as run:
+                    with self.assertRaisesRegex(bootstrap.BootstrapError, "full runtime is no longer supported"):
+                        bootstrap.bootstrap(self.root, "ppe")
+                run.assert_not_called()
+                self.assertEqual(marker.read_bytes(), before)
+                self.assertEqual(valuable.read_text(), "existing full runtime")
 
     def test_system_python_alias_in_another_directory_remains_idempotent(self):
         alias = Path(self.temporary.name) / "alternate-bin/python3.12"

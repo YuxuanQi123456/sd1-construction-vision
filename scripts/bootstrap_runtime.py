@@ -15,8 +15,8 @@ import sys
 SCHEMA = "sd1-portable-env-v1"
 ENV_PATH = ".runtime/portable-env"
 MARKER = ".sd1-bootstrap.json"
-LINKS = {".runtime/sitewatch-env": "portable-env", "vision/.venv": "../.runtime/portable-env"}
-TORCH = {"ppe": "cpu", "full": "cu128"}
+LINKS = {".runtime/sitewatch-env": "portable-env"}
+TORCH = {"ppe": "cpu"}
 SETUPTOOLS_PTH = "import os; var = 'SETUPTOOLS_USE_DISTUTILS'; enabled = os.environ.get(var, 'local') == 'local'; enabled and __import__('_distutils_hack').add_shim();"
 
 
@@ -43,8 +43,7 @@ def clean_environment(root=None):
         runtime = root / ENV_PATH / "runtime"
         env.update(YOLO_CONFIG_DIR=str(runtime / "ultralytics"),
                    MPLCONFIGDIR=str(runtime / "matplotlib"), XDG_CACHE_HOME=str(runtime / "cache"),
-                   TORCH_HOME=str(runtime / "torch"), HF_HOME=str(runtime / "huggingface"),
-                   GRADIO_ANALYTICS_ENABLED="False", HF_HUB_DISABLE_TELEMETRY="1")
+                   TORCH_HOME=str(runtime / "torch"))
     return env
 
 
@@ -60,7 +59,11 @@ def read_state(root):
     if not env.is_dir() or not marker.is_file():
         raise BootstrapError(f"Existing environment is unmanaged; refusing modification: {env}")
     state = json.loads(marker.read_text())
-    if state.get("schema") != SCHEMA or state.get("profile") not in TORCH:
+    if state.get("schema") != SCHEMA:
+        raise BootstrapError("Existing environment marker is not recognized")
+    if state.get("profile") == "full":
+        raise BootstrapError("Existing full runtime is no longer supported; preserve it and explicitly move it before creating a CPU PPE environment")
+    if state.get("profile") not in TORCH:
         raise BootstrapError("Existing environment marker is not recognized")
     # An owned marker never authorizes external package trees or a different Python binary.
     cfg = env / "pyvenv.cfg"
@@ -103,8 +106,6 @@ def read_state(root):
 
 def check_links(root, profile):
     for name, target in LINKS.items():
-        if profile == "ppe" and name.startswith("vision/"):
-            continue
         path = root / name
         local_path(root, str(Path(name).parent))
         if path.is_symlink():
@@ -116,14 +117,13 @@ def check_links(root, profile):
 
 def pins(root, profile):
     result = {"torch": "2.8.0+" + TORCH[profile], "torchvision": "0.23.0+" + TORCH[profile]}
-    for name in (["ppe", "full"] if profile == "full" else ["ppe"]):
-        path = local_path(root, f"config/bootstrap-{name}.txt")
-        for line in path.read_text().splitlines():
-            line = line.split("#", 1)[0].strip()
-            if not line:
-                continue
-            package, version = line.split("==")
-            result[package] = version
+    path = local_path(root, "config/bootstrap-ppe.txt")
+    for line in path.read_text().splitlines():
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        package, version = line.split("==")
+        result[package] = version
     return result
 
 
@@ -157,28 +157,16 @@ boxes = torch.tensor([[0., 0., 10., 10.], [0., 0., 10., 10.]])
 assert torchvision.ops.nms(boxes, torch.tensor([0.9, 0.8]), 0.5).tolist() == [0]
 result = {{'profile': {profile!r}, 'cpu_tensor_and_nms': 'passed', 'versions': expected}}
 """
-    if profile == "full":
-        code += """
-import gradio, transformers, accelerate, av, imageio_ffmpeg
-import bitsandbytes as bnb
-for module in (gradio, transformers, accelerate, av, imageio_ffmpeg, bnb):
-    assert Path(module.__file__).resolve().is_relative_to(root), module.__file__
-assert torch.cuda.is_available(), 'CUDA unavailable; full profile requires a working NVIDIA driver'
-assert torch.version.cuda == '12.8', torch.version.cuda
-assert torch.cuda.get_device_capability(0) >= (7, 0), 'cu128 bitsandbytes requires sm70+'
-layer = bnb.nn.Linear4bit(32, 32, compute_dtype=torch.float16, quant_type='nf4').to('cuda')
-assert torch.isfinite(layer(torch.zeros(1, 32, device='cuda', dtype=torch.float16))).all()
-result.update(nf4_cuda_kernel='passed', gpu=torch.cuda.get_device_name(0))
-"""
     return code + "\nprint(json.dumps(result, sort_keys=True))\n"
 
 
 def make_plan(root, profile, no_cache_dir=False):
+    if profile != "ppe":
+        raise BootstrapError("Only the CPU ppe profile is supported; full runtime support has been removed")
     state = read_state(root)
     if not no_cache_dir:
         local_path(root, ".runtime/pip-cache")
-    # A completed/partially installed full runtime never gets silently downgraded to CPU.
-    effective = "full" if state and state["profile"] == "full" else profile
+    effective = profile
     check_links(root, effective)
     expected = pins(root, effective)
     fingerprint = hashlib.sha256(json.dumps(expected, sort_keys=True).encode()).hexdigest()
@@ -194,16 +182,13 @@ def make_plan(root, profile, no_cache_dir=False):
                 [str(python), "-I", "-m", "pip", "--isolated", "install", "--index-url", "https://pypi.org/simple",
                  "--report", str(env / "packages-install-report.json"),
                  "-r", str(root / "config/bootstrap-ppe.txt"), *pip_flags]]
-    if effective == "full":
-        commands[-1] += ["-r", str(root / "config/bootstrap-full.txt")]
     verify = [[str(python), "-I", "-m", "pip", "--isolated", "check"],
               [str(python), "-I", "-c", verification_code(env, effective, expected)]]
     ready = bool(state and state.get("status") == "ready" and state.get("fingerprint") == fingerprint)
     return {"schema": SCHEMA, "requested_profile": profile, "profile": effective,
-            "environment": str(env), "managed_links": {k: v for k, v in LINKS.items()
-              if effective == "full" or not k.startswith("vision/")},
+            "environment": str(env), "managed_links": dict(LINKS),
             "platform": "Linux x86_64, Python 3.12, glibc >= 2.28",
-            "gpu_requirement": "NVIDIA driver >= 570.26, CUDA 12.8 wheel, compute capability >= 7.0; actual NF4 operator check required" if effective == "full" else None,
+            "gpu_requirement": None,
             "packages": expected, "fingerprint": fingerprint,
             "install_commands": [] if ready else commands, "verification_commands": verify,
             "existing_state": state.get("status") if state else None,
@@ -217,15 +202,6 @@ def check_platform(profile, root):
     libc, version = platform.libc_ver()
     if libc != "glibc" or tuple(int(v) for v in version.split(".")[:2]) < (2, 28):
         raise BootstrapError("glibc >= 2.28 is required by the pinned Linux wheels")
-    if profile == "full":
-        try:
-            result = subprocess.run(["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"],
-                                    cwd=root, env=clean_environment(root), check=True, capture_output=True, text=True)
-            drivers = [tuple(int(p) for p in v.strip().split(".")[:2]) for v in result.stdout.splitlines() if v.strip()]
-        except (OSError, ValueError, subprocess.CalledProcessError) as exc:
-            raise BootstrapError("full requires working nvidia-smi and NVIDIA driver >= 570.26; use --profile ppe for CPU") from exc
-        if not drivers or any(v < (570, 26) for v in drivers):
-            raise BootstrapError("full requires NVIDIA driver >= 570.26 for this CUDA 12.8 baseline")
 
 
 def write_state(root, state):
@@ -244,7 +220,7 @@ def bootstrap(root, profile, no_cache_dir=False):
     try:
         if plan["install_commands"]:
             write_state(root, {**state, "status": "installing"})
-            for name in ("ultralytics", "matplotlib", "cache", "torch", "huggingface"):
+            for name in ("ultralytics", "matplotlib", "cache", "torch"):
                 local_path(root, ENV_PATH + "/runtime/" + name).mkdir(parents=True, exist_ok=True)
             for command in plan["install_commands"]:
                 read_state(root)
@@ -266,12 +242,12 @@ def bootstrap(root, profile, no_cache_dir=False):
         write_state(root, {**state, "status": "failed", "error": str(exc)[:500]})
         raise
     return {"profile": plan["profile"], "environment": plan["environment"], "status": "ready",
-            "validation": "Installed packages, isolation and CPU operators checked" + ("; CUDA NF4 operator checked" if plan["profile"] == "full" else "")}
+            "validation": "Installed packages, isolation and CPU operators checked"}
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile", choices=("ppe", "full"), default="full")
+    parser.add_argument("--profile", choices=("ppe",), default="ppe")
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--plan", action="store_true", help="Print commands/requirements without installing or creating paths")
     parser.add_argument("--no-cache-dir", action="store_true", help="Disable persistent pip wheel cache to reduce disk usage")

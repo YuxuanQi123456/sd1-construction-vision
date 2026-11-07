@@ -88,9 +88,9 @@ def validate_url(row):
 def validate_profiles(row):
     profiles = row.get("profiles")
     if not isinstance(profiles, list) or not profiles or any(
-        p not in ("ppe", "full", "training") for p in profiles
+        p not in ("ppe", "training") for p in profiles
     ):
-        raise AssetError("Profiles must be a nonempty list of ppe/full/training")
+        raise AssetError("Profiles must be a nonempty list of ppe/training; full is no longer supported")
 
 
 def load_manifest(path):
@@ -282,7 +282,9 @@ def restore_zip(root, bundle, archive):
             stage_output(root, row, produce)
 
 
-def restore(root, manifest, profile="full", training=False, assets_dir=None, verify_only=False, plan=False):
+def restore(root, manifest, profile="ppe", training=False, assets_dir=None, verify_only=False, plan=False):
+    if profile != "ppe":
+        raise AssetError("Only the ppe profile is supported; full runtime assets have been removed")
     bundles = [b for b in manifest["bundles"] if selected(b, profile, training)]
     external = [r for r in manifest["external_files"] if selected(r, profile, training)]
     rows = [r for b in bundles for r in b["files"]] + external
@@ -337,7 +339,7 @@ def restore(root, manifest, profile="full", training=False, assets_dir=None, ver
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile", choices=("ppe", "full"), default="full")
+    parser.add_argument("--profile", choices=("ppe",), default="ppe")
     parser.add_argument("--include-training", action="store_true")
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[1])

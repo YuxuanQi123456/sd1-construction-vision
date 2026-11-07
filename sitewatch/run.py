@@ -25,7 +25,6 @@ def main():
                SITEWATCH_RUNTIME_DIR=str(runtime), YOLO_CONFIG_DIR=str(runtime / "ultralytics"),
                MPLCONFIGDIR=str(runtime / "matplotlib"), XDG_CACHE_HOME=str(runtime / "cache"),
                TMPDIR=str(runtime / "tmp"), SITEWATCH_ENABLE_LIVE="0",
-               GRADIO_ANALYTICS_ENABLED="False", HF_HUB_DISABLE_TELEMETRY="1",
                STREAMLIT_BROWSER_GATHER_USAGE_STATS="false")
     command = [str(python), "-m", "streamlit", "run", str(Path(__file__).resolve().parent / "app/app.py"),
                "--server.address", "127.0.0.1", "--server.port", str(args.port),

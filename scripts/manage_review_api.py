@@ -1,11 +1,10 @@
-"""Initialize private review settings and start only the configured backend."""
+"""Initialize private GPT API settings and report their configuration status."""
 from __future__ import annotations
 
 import argparse
 import json
 import os
 from pathlib import Path
-import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,7 +37,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("init", "status", "start"))
     parser.add_argument("--project-root", type=Path, default=ROOT)
-    parser.add_argument("--wait", action="store_true")
+    parser.add_argument("--wait", action="store_true", help="Accepted for launcher compatibility; API configuration has no startup wait")
     args = parser.parse_args(argv)
     root = args.project_root.resolve()
     if args.action in ("init", "start"):
@@ -47,14 +46,7 @@ def main(argv=None):
         print(json.dumps({"config_path": str(root / LOCAL), "existing_values_preserved": True}, ensure_ascii=False))
         return 0
     sys.path.insert(0, str(ROOT / "sitewatch/app"))
-    from review_api import load_review_config
     from region_review import backend_status
-    config = load_review_config(root)
-    if args.action == "start" and config["provider"] == "qwen_local":
-        command = [sys.executable, str(root / "vision/scripts/manage.py"), "start"]
-        if args.wait:
-            command.append("--wait")
-        return subprocess.call(command, cwd=root)
     # Reading status never contacts the remote API or spends model credits.
     status = backend_status(root)
     print(json.dumps(status, ensure_ascii=False, indent=2))

@@ -122,16 +122,16 @@ async def run(args, report):
             async def assert_result_cleared():
                 await wait_script_idle(page, expect)
                 await expect(page.get_by_role('button', name='下载原始检测 JSON', exact=True)).to_have_count(0)
-                await expect(page.get_by_text('Qwen 区域意见：', exact=False)).to_have_count(0)
+                await expect(page.get_by_text('AI 区域意见：', exact=False)).to_have_count(0)
 
             async def region_opinion():
                 button = page.get_by_role('button', name='复核所选头部', exact=True)
                 await expect(button).to_be_enabled(timeout=180000)
                 before = await download_data(page, context, '下载原始检测 JSON')
                 await button.click()
-                await expect(page.get_by_text('Qwen 区域意见：', exact=False)).to_be_visible(timeout=240000)
+                await expect(page.get_by_text('AI 区域意见：', exact=False)).to_be_visible(timeout=240000)
                 assert await download_data(page, context, '下载原始检测 JSON') == before
-                return await page.get_by_text('Qwen 区域意见：', exact=False).inner_text()
+                return await page.get_by_text('AI 区域意见：', exact=False).inner_text()
 
             async def check_current(entry, label, *, expected_model=None):
                 print('Checking '+label, flush=True)
@@ -216,7 +216,7 @@ async def run(args, report):
                     await compared.scroll_into_view_if_needed()
                     await page.screenshot(path=str(args.output/'03-comparison-preserved.png'), full_page=True)
                     await page.get_by_text('大图看检测结果', exact=True).click()
-                    report['quality_switch_previous_qwen'] = await region_opinion()
+                    report['quality_switch_previous_api_opinion'] = await region_opinion()
                     await page.get_by_text('保留原片画质（较慢）', exact=True).click()
                     await expect(quality).not_to_be_checked()
                     await assert_result_cleared()
@@ -227,14 +227,14 @@ async def run(args, report):
                     report['comparison_changes_display_only'] = True
                     await page.get_by_role('button', name='开始识别与复核', exact=True).click()
                     await expect(page.get_by_text('识别完成：', exact=False)).to_be_visible(timeout=240000)
-                    report['asset_switch_previous_qwen'] = await region_opinion()
+                    report['asset_switch_previous_api_opinion'] = await region_opinion()
 
             # A user choice overrides the asset's recommended model.
-            report['model_switch_previous_qwen'] = await region_opinion()
+            report['model_switch_previous_api_opinion'] = await region_opinion()
             await model_picker.click()
             await page.get_by_role('option', name='SiteWatch 基线（默认）', exact=True).click()
             await assert_result_cleared()
-            report['model_switch_clears_result_and_qwen'] = True
+            report['model_switch_clears_result_and_api_opinion'] = True
             await check_current(entries[args.photo_id], '05-manual-model', expected_model='sitewatch')
             await model_picker.click()
             await page.get_by_role('option', name='自动（按素材推荐）', exact=True).click()

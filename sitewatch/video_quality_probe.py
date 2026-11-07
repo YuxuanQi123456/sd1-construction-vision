@@ -47,7 +47,6 @@ def main():
     for folder in ['ultralytics', 'matplotlib']:
         (runtime / folder).mkdir(parents=True, exist_ok=True)
     os.environ.update(CUDA_VISIBLE_DEVICES='', YOLO_AUTOINSTALL='false', HF_HUB_OFFLINE='1',
-                      HF_HUB_DISABLE_TELEMETRY='1', GRADIO_ANALYTICS_ENABLED='False',
                       YOLO_CONFIG_DIR=str(runtime / 'ultralytics'), MPLCONFIGDIR=str(runtime / 'matplotlib'))
     import cv2
     import torch

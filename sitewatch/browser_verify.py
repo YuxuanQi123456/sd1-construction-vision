@@ -35,7 +35,7 @@ async def upload_and_review(page, source, expect):
     await expect(page.get_by_text(source.name, exact=True)).to_be_visible()
     await expect(page.get_by_text("当前影像：" + source.name, exact=True)).to_be_visible(timeout=60000)
     await expect(page.get_by_role("button", name="下载原始检测 JSON", exact=True)).to_have_count(0, timeout=60000)
-    await expect(page.get_by_text("Qwen 区域意见：", exact=False)).to_have_count(0)
+    await expect(page.get_by_text("AI 区域意见：", exact=False)).to_have_count(0)
     await wait_script_idle(page, expect)
     await page.get_by_role("button", name="开始识别与复核", exact=True).click()
     await expect(page.get_by_text("识别完成：", exact=False)).to_be_visible(timeout=120000)
@@ -55,7 +55,7 @@ async def check_regions(page, context, args, record, expect):
         button = page.get_by_role("button", name="复核所选头部", exact=True)
         await expect(button).to_be_enabled(timeout=120000)
         await button.click()
-        await expect(page.get_by_text("Qwen 区域意见：" + expected_label, exact=True)).to_be_visible(timeout=180000)
+        await expect(page.get_by_text("AI 区域意见：" + expected_label, exact=True)).to_be_visible(timeout=180000)
         after = await native_download(page, context, "下载原始检测 JSON", args.output / f"region-{source.stem}-after.json")
         assert after == before, "Second opinion must not rewrite raw detector output"
         zip_path = args.output / f"region-{source.stem}-evidence.zip"
@@ -75,7 +75,12 @@ async def check_regions(page, context, args, record, expect):
             crop = archive.read(region["crop_file"])
             assert hashlib.sha256(crop).hexdigest() == region["crop_sha256"]
             assert hashlib.sha256(archive.read(region["input_file"])).hexdigest() == region["input_sha256"]
-            assert len(region["opinion"]["api_history"]) == 2
+            assert region["opinion"]["api"] == ["POST /responses"]
+            assert region["opinion"]["backend"]["provider"] == "openai"
+            assert region["opinion"]["backend"]["execution"] == "remote_api"
+            assert region["opinion"]["backend"]["connectivity_verified"] is True
+            assert region["opinion"]["backend"]["model"] == region["request_backend"]["model"]
+            assert region["opinion"]["backend"]["reasoning_effort"] == region["request_backend"]["reasoning_effort"]
             if filename == "bricklayer.jpg":
                 assert region["detector_detection"]["class_name"] == "Hardhat"
                 assert region["comparison"] == "disagree"
@@ -92,7 +97,7 @@ async def check_regions(page, context, args, record, expect):
     await page.get_by_role("option", name="Constructelligence 对照（仍有误检）", exact=True).click()
     await expect(page.get_by_role("checkbox", name="显示全部14类（含人员、设备及可能误检）", exact=True)).to_have_count(1)
     await expect(page.get_by_role("button", name="下载原始检测 JSON", exact=True)).to_have_count(0)
-    await expect(page.get_by_text("Qwen 区域意见：", exact=False)).to_have_count(0)
+    await expect(page.get_by_text("AI 区域意见：", exact=False)).to_have_count(0)
     await wait_script_idle(page, expect)
     # Switching back before another inference must not resurrect the stale
     # baseline image or second opinion stored before the model change.
@@ -101,7 +106,7 @@ async def check_regions(page, context, args, record, expect):
     await expect(page.get_by_role("checkbox", name="显示全部25类（含人员、设备及可能误检）", exact=True)).to_have_count(1)
     await wait_script_idle(page, expect)
     await expect(page.get_by_role("button", name="下载原始检测 JSON", exact=True)).to_have_count(0)
-    await expect(page.get_by_text("Qwen 区域意见：", exact=False)).to_have_count(0)
+    await expect(page.get_by_text("AI 区域意见：", exact=False)).to_have_count(0)
     await picker.click()
     await page.get_by_role("option", name="Constructelligence 对照（仍有误检）", exact=True).click()
     await expect(page.get_by_role("checkbox", name="显示全部14类（含人员、设备及可能误检）", exact=True)).to_have_count(1)

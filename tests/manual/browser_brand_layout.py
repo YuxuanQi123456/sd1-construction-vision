@@ -1,4 +1,4 @@
-"""Real browser layout/upload smoke only; never click inference or start Qwen."""
+"""Real browser layout/upload smoke only; never click detector inference or API review."""
 import asyncio
 import base64
 from datetime import datetime, timezone
@@ -14,7 +14,7 @@ os.environ['NO_PROXY'] = os.environ['no_proxy'] = '127.0.0.1,localhost,::1'
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = Path(os.environ.get('BRAND_LAYOUT_OUTPUT', ROOT/'evidence/V11/brand-layout'))
 OUTPUT.mkdir(parents=True, exist_ok=True)
-REPORT = {'at': datetime.now(timezone.utc).isoformat(), 'scope': 'Brand layout, Chinese controls and upload preview. No inference or Qwen calls.',
+REPORT = {'at': datetime.now(timezone.utc).isoformat(), 'scope': 'Brand layout, Chinese controls and upload preview. No detector inference or API calls.',
           'passed': False, 'page_errors': [], 'external_requests': [], 'layouts': []}
 
 

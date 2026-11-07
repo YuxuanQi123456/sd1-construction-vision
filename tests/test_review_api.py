@@ -3,7 +3,6 @@ import base64
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from http.client import BadStatusLine, IncompleteRead, LineTooLong
-import importlib
 import hashlib
 import json
 import os
@@ -96,8 +95,8 @@ class ReviewAPITest(unittest.TestCase):
             self.assertEqual(cfg["model"], "gpt-6.1-sol")
             self.assertEqual(cfg["reasoning_effort"], "max")
 
-    def test_missing_key_status_and_classification_never_touch_network_or_gradio(self):
-        with patch.object(api, "build_opener", side_effect=AssertionError("network")), patch.dict(sys.modules, {"gradio_client": None}):
+    def test_missing_key_status_and_classification_never_touch_network(self):
+        with patch.object(api, "build_opener", side_effect=AssertionError("network")):
             status = region.backend_status(self.root)
             self.assertFalse(status["ready"])
             self.assertFalse(status["connectivity_verified"])
@@ -355,15 +354,17 @@ class ReviewAPITest(unittest.TestCase):
         with self.assertRaises(api.ReviewAPIError):
             api.load_review_config(self.root)
 
-    def test_explicit_qwen_dispatch_preserves_local_path_without_api_call(self):
+    def test_removed_local_provider_is_rejected_without_request_or_config_rewrite(self):
         self.config(provider="qwen_local")
-        with patch.object(region, "_qwen_backend_status", return_value={"ready": False, "error": "offline"}), patch.object(api, "build_opener", side_effect=AssertionError("API")):
+        before = (self.root / api.LOCAL_CONFIG).read_bytes()
+        with patch.object(api, "build_opener", side_effect=AssertionError("API")):
             status = region.backend_status(self.root)
             self.assertFalse(status["ready"])
-            self.assertEqual(status["provider"], "qwen_local")
-        with patch.object(region, "_classify_crop_qwen", return_value={"local": True}) as local:
-            self.assertEqual(region.classify_crop(self.crop, self.root), {"local": True})
-            local.assert_called_once_with(self.crop, self.root)
+            self.assertEqual(status["provider"], "openai")
+            self.assertIn("仅支持 openai", status["error"])
+            with self.assertRaisesRegex(api.ReviewAPIError, "仅支持 openai"):
+                region.classify_crop(self.crop, self.root)
+        self.assertEqual((self.root / api.LOCAL_CONFIG).read_bytes(), before)
 
 
 if __name__ == "__main__":

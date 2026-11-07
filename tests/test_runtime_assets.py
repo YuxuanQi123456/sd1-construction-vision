@@ -43,7 +43,7 @@ class RuntimeAssetsTest(unittest.TestCase):
         self.zip_row = blob(self.zip_bytes, name="ppe.zip", url="https://example.invalid/ppe.zip")
         self.output_row = blob(self.payload, path="downloads/ppe/model.pt")
         self.manifest = {"schema": restore.SCHEMA, "repository": "fixture/repo", "release_tag": "fixture-v1",
-                         "bundles": [{"id": "ppe", "profiles": ["ppe", "full"], "format": "zip",
+                         "bundles": [{"id": "ppe", "profiles": ["ppe"], "format": "zip",
                                       "assets": [self.zip_row], "files": [self.output_row]}], "external_files": []}
         (self.offline / "ppe.zip").write_bytes(self.zip_bytes)
 
@@ -71,39 +71,47 @@ class RuntimeAssetsTest(unittest.TestCase):
             name = f"weight.part{number}"
             (self.offline / name).write_bytes(content)
             assets.append(blob(content, name=name, url=f"https://example.invalid/{name}"))
-        self.manifest["bundles"].append({"id": "full", "profiles": ["full"], "format": "raw-parts",
-                                          "assets": assets, "files": [blob(data, path="downloads/qwen/model.safetensors")]})
+        self.manifest["bundles"].append({"id": "training", "profiles": ["training"], "format": "raw-parts",
+                                          "assets": assets, "files": [blob(data, path="downloads/training/slice.bin")]})
         return data
 
-    def test_raw_parts_order_and_full_hash(self):
+    def test_training_raw_parts_order_and_complete_hash(self):
         expected = self.add_parts()
-        self.execute()
-        self.assertEqual((self.root / "downloads/qwen/model.safetensors").read_bytes(), expected)
+        self.execute(training=True)
+        self.assertEqual((self.root / "downloads/training/slice.bin").read_bytes(), expected)
 
     def test_raw_parts_wrong_total_sha_never_publishes_output(self):
         self.add_parts()
         self.manifest["bundles"][-1]["files"][0]["sha256"] = "0" * 64
         with self.assertRaisesRegex(restore.AssetError, "Assembled"):
-            self.execute()
-        self.assertFalse((self.root / "downloads/qwen/model.safetensors").exists())
+            self.execute(training=True)
+        self.assertFalse((self.root / "downloads/training/slice.bin").exists())
         self.assertFalse(list(self.root.rglob(".restore-*")))
 
     def test_wrong_part_sha_refused(self):
         self.add_parts()
         (self.offline / "weight.part1").write_bytes(b"BROKEN")
         with self.assertRaisesRegex(restore.AssetError, "Offline asset"):
-            self.execute()
-        self.assertFalse((self.root / "downloads/qwen/model.safetensors").exists())
+            self.execute(training=True)
+        self.assertFalse((self.root / "downloads/training/slice.bin").exists())
 
     def test_profiles_training_and_read_only_plan(self):
         self.add_parts()
-        training = self.manifest["bundles"][1].copy()
-        training.update(id="training", profiles=["training"], files=[blob(b"part onesecond part", path="downloads/training/slice.bin")])
-        self.manifest["bundles"].append(training)
         plan = self.execute(profile="ppe", plan=True)
         self.assertEqual(plan["files"], 1)
         self.assertEqual(self.execute(profile="ppe", training=True, plan=True)["files"], 2)
-        self.assertEqual(self.execute(plan=True)["files"], 2)
+        self.assertEqual(self.execute(plan=True)["files"], 1)
+        self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_removed_full_profile_is_rejected_without_writing(self):
+        with self.assertRaisesRegex(restore.AssetError, "Only the ppe profile"):
+            self.execute(profile="full")
+        self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_old_full_manifest_is_rejected_before_restoring(self):
+        self.manifest["bundles"][0]["profiles"] = ["ppe", "full"]
+        with self.assertRaisesRegex(restore.AssetError, "full is no longer supported"):
+            self.execute()
         self.assertEqual(list(self.root.iterdir()), [])
 
     def test_missing_verify_only_never_downloads(self):
@@ -194,15 +202,15 @@ class RuntimeAssetsTest(unittest.TestCase):
         for bundle in self.manifest["bundles"]:
             for row in bundle["assets"]:
                 row["url"] = base + "/" + row["name"]
-        self.manifest["external_files"] = [blob(external_content, path="downloads/media/original.mp4", profiles=["full"],
+        self.manifest["external_files"] = [blob(external_content, path="downloads/media/original.mp4", profiles=["ppe"],
                                                      url=base + "/original.mp4", headers={"User-Agent": "Mozilla fixture", "Referer": "https://www.pexels.com/"})]
-        result = restore.restore(self.root, self.load())
+        result = restore.restore(self.root, self.load(), training=True)
         self.assertEqual(result["restored"], 3)
         self.assertEqual(len(requests), 4)
         headers = next(headers for path, headers in requests if path == "/original.mp4")
         self.assertEqual(headers["User-Agent"], "Mozilla fixture")
         self.assertEqual(headers["Referer"], "https://www.pexels.com/")
-        restore.restore(self.root, self.load())
+        restore.restore(self.root, self.load(), training=True)
         self.assertEqual(len(requests), 4)
 
     def test_cli_offline(self):

@@ -96,28 +96,27 @@ def load_review_config(project_root):
         if not isinstance(saved, dict) or set(saved) - set(DEFAULT_CONFIG):
             raise ReviewAPIError("本机复核配置字段无效，请参考 review-api.example.json")
         config.update(saved)
-    if not isinstance(config["provider"], str) or config["provider"] not in {"openai", "qwen_local"}:
-        raise ReviewAPIError("未知复核后端，provider 仅支持 openai 或 qwen_local")
+    if config["provider"] != "openai":
+        raise ReviewAPIError("复核后端仅支持 openai；本地模型复核已移除，请更新本机配置")
     if not isinstance(config["api_key"], str):
         raise ReviewAPIError("复核配置中的 api_key 必须是字符串")
     config["api_key"] = config["api_key"].strip()
     if any(ord(c) < 33 or ord(c) > 126 for c in config["api_key"]):
         raise ReviewAPIError("复核配置中的 api_key 含有无效字符")
-    if config["provider"] == "openai":
-        config["base_url"] = _base_url(config["base_url"])
-        if (not isinstance(config["model"], str) or not config["model"].strip()
-                or len(config["model"]) > 256 or any(ord(c) < 32 for c in config["model"])):
-            raise ReviewAPIError("复核配置中的 model 无效")
-        config["model"] = config["model"].strip()
-        if not isinstance(config["reasoning_effort"], str) or config["reasoning_effort"] not in EFFORTS:
-            raise ReviewAPIError("复核配置中的 reasoning_effort 无效")
-        timeout = config["timeout_seconds"]
-        if (isinstance(timeout, bool) or not isinstance(timeout, (int, float))
-                or not 1 <= timeout <= 600 or not math.isfinite(timeout)):
-            raise ReviewAPIError("timeout_seconds 须为 1 到 600 秒")
-        maximum = config["max_output_tokens"]
-        if isinstance(maximum, bool) or not isinstance(maximum, int) or not 1 <= maximum <= 16000:
-            raise ReviewAPIError("max_output_tokens 须为 1 到 16000 的整数")
+    config["base_url"] = _base_url(config["base_url"])
+    if (not isinstance(config["model"], str) or not config["model"].strip()
+            or len(config["model"]) > 256 or any(ord(c) < 32 for c in config["model"])):
+        raise ReviewAPIError("复核配置中的 model 无效")
+    config["model"] = config["model"].strip()
+    if not isinstance(config["reasoning_effort"], str) or config["reasoning_effort"] not in EFFORTS:
+        raise ReviewAPIError("复核配置中的 reasoning_effort 无效")
+    timeout = config["timeout_seconds"]
+    if (isinstance(timeout, bool) or not isinstance(timeout, (int, float))
+            or not 1 <= timeout <= 600 or not math.isfinite(timeout)):
+        raise ReviewAPIError("timeout_seconds 须为 1 到 600 秒")
+    maximum = config["max_output_tokens"]
+    if isinstance(maximum, bool) or not isinstance(maximum, int) or not 1 <= maximum <= 16000:
+        raise ReviewAPIError("max_output_tokens 须为 1 到 16000 的整数")
     return config
 
 
@@ -140,21 +139,13 @@ def _safe_backend(config, project_root, *, connected=False):
 
 def review_backend_snapshot(config, project_root):
     """Safe request provenance from the same internal snapshot used to send it."""
-    if config["provider"] == "openai":
-        return _safe_backend(config, project_root)
-    return {"provider": "qwen_local", "model": "Qwen3-VL-4B-Instruct local NF4",
-            "url": "http://127.0.0.1:8766", "execution": "local",
-            "config_path": str(Path(project_root).resolve() / LOCAL_CONFIG)}
+    return _safe_backend(config, project_root)
 
 
 def api_backend_status(project_root):
     """Report configuration only; this function performs no network request."""
     try:
         config = load_review_config(project_root)
-        if config["provider"] != "openai":
-            return {"ready": False, "configured": False, "connectivity_verified": False,
-                    "provider": "qwen_local", "config_path": str(Path(project_root).resolve() / LOCAL_CONFIG),
-                    "error": "当前选择本地千问，请使用本地模型状态检查"}
         status = _safe_backend(config, project_root)
         if not status["ready"]:
             status["error"] = "复核 API 尚未填写 Key，请编辑 config/review-api.local.json 的 api_key"

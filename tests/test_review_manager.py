@@ -1,4 +1,4 @@
-"""Private configuration initialization and backend startup routing."""
+"""Private API configuration initialization and status-only startup."""
 import importlib.util
 import json
 from pathlib import Path
@@ -56,26 +56,35 @@ class ReviewManagerTests(unittest.TestCase):
                 manager.initialize(self.root)
             self.assertEqual(list(Path(outside).iterdir()), [])
 
-    def route(self, provider, ready=False):
+    def route(self, ready=False, error=None):
         modules = {
-            "review_api": types.SimpleNamespace(load_review_config=lambda root: {"provider": provider}),
             "region_review": types.SimpleNamespace(backend_status=lambda root: {
-                "provider": provider, "ready": ready, "model": "gpt-6.1-sol", "reasoning_effort": "max"})}
-        with patch.dict(sys.modules, modules), patch.object(manager.subprocess, "call", return_value=0) as child:
-            with patch("builtins.print"):
+                "provider": "openai", "ready": ready, "model": "gpt-6.1-sol", "reasoning_effort": "max",
+                **({"error": error} if error else {})})}
+        with patch.dict(sys.modules, modules), patch("subprocess.Popen", side_effect=AssertionError("No model process may start")):
+            with patch("builtins.print") as printed:
                 result = manager.main(["start", "--project-root", str(self.root), "--wait"])
-        return result, child
+        return result, json.loads(printed.call_args.args[0])
 
-    def test_api_without_key_still_allows_ppe_start_without_local_qwen(self):
-        result, child = self.route("openai", ready=False)
+    def test_api_without_key_still_allows_ppe_start(self):
+        result, status = self.route(ready=False)
         self.assertEqual(result, 0)
-        child.assert_not_called()
+        self.assertFalse(status["ready"])
 
-    def test_only_explicit_qwen_option_starts_original_local_manager(self):
-        result, child = self.route("qwen_local")
+    def test_configured_api_only_reports_status_without_starting_process(self):
+        result, status = self.route(ready=True)
         self.assertEqual(result, 0)
-        self.assertEqual(child.call_args.args[0], [sys.executable,
-                         str(self.root / "vision/scripts/manage.py"), "start", "--wait"])
+        self.assertTrue(status["ready"])
+
+    def test_invalid_settings_are_reported_without_rewriting_them(self):
+        local = self.root / manager.LOCAL
+        local.write_text('{"provider":"qwen_local","api_key":"fake-test-key"}')
+        before = local.read_bytes()
+        result, status = self.route(error="Only openai is supported")
+        self.assertEqual(result, 0)
+        self.assertFalse(status["ready"])
+        self.assertIn("openai", status["error"])
+        self.assertEqual(local.read_bytes(), before)
 
 
 if __name__ == "__main__":

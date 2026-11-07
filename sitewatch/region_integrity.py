@@ -1,4 +1,4 @@
-"""Check real detector→region→native model→evidence ZIP without mocked answers."""
+"""Check real detector→region→GPT API→evidence ZIP without mocked answers."""
 import hashlib
 import json
 from pathlib import Path
@@ -12,6 +12,7 @@ def check_real_region(image_path, project_root, destination):
     from cv_pipeline.detection import Detector
     from review_evidence import review_file, evidence_zip
     from region_review import head_indices, review_head_region
+    from review_api import ReviewAPIError
     root, destination = Path(project_root), Path(destination)
     if destination.exists():
         raise ValueError('Choose a new artifact directory')
@@ -36,18 +37,18 @@ def check_real_region(image_path, project_root, destination):
         controls.append({'case': 'not_a_head_class', 'passed': True, 'error': str(exc)})
     else:
         raise AssertionError('A non-head box was treated as a head')
-    # Isolated unavailable-identity control; does not alter the real service.
+    # An isolated project without a Key must fail before any paid request.
     with tempfile.TemporaryDirectory(dir=root / '.runtime', prefix='head-identity-control-') as temporary:
         try:
             review_head_region(destination, 0, index, temporary)
-        except RuntimeError as exc:
+        except ReviewAPIError as exc:
             failed = sorted(destination.rglob('review.json'))
             assert len(failed) == 1
             assert json.loads(failed[0].read_text())['status'] == 'failed'
             failed_bytes = failed[0].read_bytes()
-            controls.append({'case': 'unavailable_project_identity', 'passed': True, 'error': str(exc)})
+            controls.append({'case': 'missing_project_api_key', 'passed': True, 'error': str(exc)})
         else:
-            raise AssertionError('Unowned backend identity produced a result')
+            raise AssertionError('A project without an API key produced a result')
     record = review_head_region(destination, 0, index, root)
     assert record['status'] == 'complete'
     assert failed[0].read_bytes() == failed_bytes, 'Retry overwrote the failed attempt'
