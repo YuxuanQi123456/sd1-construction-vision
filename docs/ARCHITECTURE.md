@@ -1,18 +1,26 @@
 # 架构说明
 
+## 资源与可移植环境
+
+公开 Git 仓库保存源码、契约、来源许可与小份验证摘要；运行资源通过 `config/runtime-assets.json` 固定目标路径、字节数和 SHA256。允许再分发的模型、视频与可选数据放在 `runtime-20261107-v1` Release，资源可用性以正式发布为准；4 份受独立分发限制的 Pexels 原片从原站按清单下载并校验。大附件不进入 Git 历史。
+
+`restore_runtime_assets.py` 支持 PPE、full 和可选训练相关资源，校验 ZIP 白名单成员、分片及拼接后权重；已有异内容目标拒绝覆盖。RF100 交接仅包含已保存的 90 图测试子集与标签，没有完整 train/valid 数据。`bootstrap_runtime.py` 在 `.runtime/portable-env/` 建立项目隔离环境，`.runtime/sitewatch-env/bin/python` 和 full 的 `vision/.venv/bin/python` 为项目内相对链接；新安装不引用原机的外部包目录。Linux x86_64 / Python 3.12 为迁移基线，Torch 2.8.0 / torchvision 0.23.0 分 CPU、cu128 安装。步骤与验证边界见[新目录运行说明](RUNTIME_SETUP.md)，尚无完整新机 GPU 业务验收结论。
+
 ## 当前：施工影像 PPE 检测复核
+
+Qwen 是千问，当前使用的 Qwen3-VL 是视觉语言模型。YOLO 给出检测框、类别和分数；本地 Qwen3-VL-4B NF4 读取选中头部画面并给文字第二意见。PPE CPU 检测可独立运行，full 模式才需要恢复并启用千问；它沿用已批准的视觉复核流程。
 
 V11仅为现有页面加品牌与中文展示：官网组合PNG按原字节本地保存，`sitewatch/branding/SOURCE.json`记录来源与SHA；CSS与logo本地嵌入，不依赖外部字体/图像请求。流程引导是操作说明，统计卡仅从本次真实result取帧数、待复核框次数与耗时。文件与模型输出字段保持V10契约。模型资源缓存最多两组参数变体，断开会话过期门槛60秒且按惰性缓存机制淘汰；不保证关页60秒即释放内存，也不清理全局模型缓存。此项限制缓存项数，不代表对Torch/大图下载总内存设置硬上限。
 
 V10增加本地demo-media清单：id/路径/字节/SHA/署名许可/实测推荐模型与profile。UI分开保留自己上传和素材库入口，选择时校验root路径及原字节；auto解析到真实model/profile，手动覆盖优先，源信息只用于署名。显示模式不参与推理签名；素材、画质、模型/尺度变化清旧检测和Qwen结果。
 
-`review_file(preserve_resolution=True)`保留解码原尺寸，不增强，PNG输入与解码像素相同，所有标注也按原尺寸保存；默认False维持旧路径兼容。相同像素文件允许别名。原生大文件位于runtime，Git只保留检测JSON/哈希、原生尺寸断言及必要截图。下载分别返回未处理原件、原尺寸输入PNG、当前框图。字号scale只影响绘图，不改源图/置信分数。契约见hd-demo-media-v1.md。
+`review_file(preserve_resolution=True)`保留解码原尺寸，不增强，PNG输入与解码像素相同，所有标注也按原尺寸保存；默认False维持旧路径兼容。相同像素文件允许别名。原生大文件位于 runtime，Git 仅保留必要的小份验证摘要；运行截图和大证据输出不随源码提交。下载分别返回未处理原件、原尺寸输入PNG、当前框图。字号scale只影响绘图，不改源图/置信分数。契约见hd-demo-media-v1.md。
 
 2026-11-07按用户允许固定素材调参/过拟合的演示目标新增预设。`Detector(profile='standard')`固定原PPE640；`distant`复用原生PPE1280＋官方COCO640只输出person，按上游IoU仅对整人框去重，帽框不压掉整人。每次结果保存去重前`model_branches`、各自SHA/来源与最终显示框；COCO不生成帽类。缺/坏专用或辅助权重明确失败，不能静默回退。
 
 自己上传的默认auto为照片标准、视频远景；素材库auto按条目推荐模型与预设。模式参与资源缓存和结果签名，切换清显示引用。默认review-overlay含人员与PPE，原PPE-only/all-overlay继续保存。缓存模型由锁保护，`detect_frame()`在锁内返回本次框/分支快照/耗时，证据保存不读跨会话可变last状态。此轮只做固定样例配置，无权重训练；镜头/场景泛化不作为演示验收门槛。
 
-Qwen 通用问答技术复现完成但隐患业务不通过，因此在同一已批准影像复核范围内复现完整开源应用 [SiteWatch](https://github.com/AitchEm-bot/sitewatch)。保留其 Streamlit 上传界面、YOLO 专用检测器及画框流程，薄适配负责 CPU 配置、严格校验权重、采样记录和证据导出。独立worktree的实现已合入主分支；主智能体另行完成真实网页、源码/补丁及生命周期验证，证据在 `evidence/V06/`。
+Qwen 通用问答技术复现完成但隐患业务不通过，因此在同一已批准影像复核范围内复现完整开源应用 [SiteWatch](https://github.com/AitchEm-bot/sitewatch)。保留其 Streamlit 上传界面、YOLO 专用检测器及画框流程，薄适配负责 CPU 配置、严格校验权重、采样记录和证据导出。独立worktree的实现已合入主分支；主智能体另行完成真实网页、源码/补丁及生命周期验证，历史大证据已按用户要求清理，保留结论见[进度记录](PROGRESS.md)和[资源保留说明](ASSET_RETENTION.md)。
 
 ```mermaid
 flowchart LR
@@ -28,11 +36,11 @@ flowchart LR
   Review --> Export[原件 / 原检测 / 裁剪 / 第二意见 ZIP]
 ```
 
-专用权重不可用时明确失败，禁止回退普通 COCO 后仍宣称 PPE 检测成功。离线复核不运行距离、运动和形状规则，不由未检出正类推断缺少装备。所有 NO-* 来自模型自身训练类别，仍需现场人员确认；视频只对列明的采样帧负责，时间由帧序号/容器 FPS 估算。源码、权重及素材分别保留许可，CPU 环境与 Qwen 分开。页面默认只显示PPE，完整25类框及误检仍保留；模型初筛有成功实例，但零检出和误判确实存在，自动违规判定未通过验证。
+专用权重不可用时明确失败，禁止回退普通 COCO 后仍宣称 PPE 检测成功。离线复核不运行距离、运动和形状规则，不由未检出正类推断缺少装备。所有 NO-* 来自模型自身训练类别，仍需现场人员确认；视频只对列明的采样帧负责，时间由帧序号/容器 FPS 估算。源码、权重及素材分别保留许可，PPE 固定使用 CPU，Qwen 使用 GPU，二者由独立管理器启动。页面默认显示人员与 PPE，完整类别框及误检仍保留；模型初筛有成功实例，但零检出和误判确实存在，自动违规判定未通过验证。
 
 入口 `http://127.0.0.1:8767`；根目录启动/停止 `.cmd` 调用 `scripts/manage_ppe.py`。管理器以绝对启动参数、进程启动时刻、文件锁及独立进程组核验归属；重复启动等待健康，不接管未知端口；停止须等待端口释放。原件、采样、框图和来源许可在 `.runtime/sitewatch-env/runtime/reviews/`，成功时下载完整ZIP；失败时保留已完成证据并明确报错。结果文件契约见 [ppe-review-v1.md](../contracts/ppe-review-v1.md)。
 
-V07比较固定四模型及完整90图公开标注集。无模型通过已声明的全部实拍门槛，默认未替换；侧栏可显式选择Constructelligence v0.3对照。Detector的cache和本次输入签名均含model_id，严格核对模型SHA/实际names，界面类别数和来源随选择更新；输入、模型或配置改变清除session显示引用，历史证据文件保留。
+V07比较固定四模型及已下载的 RF100 90 图测试子集。无模型通过已声明的全部实拍门槛，默认未替换；侧栏可显式选择Constructelligence v0.3对照。Detector的cache和本次输入签名均含model_id，严格核对模型SHA/实际names，界面类别数和来源随选择更新；输入、模型或配置改变清除session显示引用，历史证据文件保留。
 
 `region_review.py`仅使用直接Hardhat/NO-Hardhat等头部框，四边20%padding并夹紧，不从person猜头位置。crop读取保存的未画框JPEG，记录真实输入SHA而不声称与检测未压缩数组相同。`backend_status`核对Qwen启动参数、PID持有的精确loopback监听socket及固定4B NF4权重SHA；只调用已归属的8766本地官方`/add_file`和`/submit_and_predict`。每次新会话，禁用telemetry，不传检测类别/预期答案。上传/生成等待30/120秒，取消后台best effort。接口见 [head-review-v1.md](../contracts/head-review-v1.md)。
 
@@ -50,11 +58,11 @@ flowchart LR
   Processor --> Model[Qwen3-VL-4B-Instruct 本地 NF4 候选]
   Model --> Output[流式真实回答与实际抽样时间]
   Output --> UI
-  Test[真实浏览器验证 / 人工画面对照] --> Evidence[evidence/V01 至 V04]
+  Test[真实浏览器验证 / 人工画面对照] --> Evidence[进度与小份验证摘要]
 ```
 
-- 运行环境：`vision/.venv`；PyTorch/CUDA 通过 `.pth` 只读复用 `/home/meg/venvs/qyx_patent/lib/python3.12/site-packages`。该外部路径是本机依赖，迁移需重建并重新验证，尚无新机器安装通过结论。模型和公开素材在 E 盘项目 `downloads/`，日志、视频规范化缓存和 Gradio 临时文件在 `.runtime/`，不进 Git。
-- 模型来源：4B 官方逐文件锁在 [qwen4b-files.json](../vision/config/qwen4b-files.json)，13 文件哈希曾全部通过；当前本机NF4在 `downloads/qwen3-vl-4b-nf4`。量化视觉与语言线性层，FP16计算，权重2,874,045,174字节，见 [量化记录（记录已清理）](ASSET_RETENTION.md)。按用户清理磁盘要求，已移除可重新下载的2B/4B原始大权重，保留小配置、全部来源证据及2B/4B NF4；重新量化须先恢复原始权重。启动器要求配置、tokenizer和权重齐全才选择模型，优先4B NF4，再回退2B NF4/原始，避免只剩配置被误认为可用。清理记录见 [C01（记录已清理）](ASSET_RETENTION.md)。
+- 运行环境：新 clone 使用项目内 `.runtime/portable-env/`，full 安装后 `vision/.venv/bin/python` 指向它；无需旧机器的 `.pth` 外部 Torch 引用。原机环境记录仅描述历史运行。模型和公开素材在项目 `downloads/`，日志、视频规范化缓存和 Gradio 临时文件在 `.runtime/`，不进 Git。
+- 模型来源：4B 官方逐文件锁在 [qwen4b-files.json](../vision/config/qwen4b-files.json)，13 文件哈希曾全部通过，该锁记录原始模型而非量化结果；当前 NF4 以 `config/runtime-assets.json` 的实际文件哈希校验，位于 `downloads/qwen3-vl-4b-nf4`。量化视觉与语言线性层，FP16计算，权重2,874,045,174字节，见 [量化记录（记录已清理）](ASSET_RETENTION.md)。按用户清理磁盘要求，已移除可重新下载的2B/4B原始大权重，保留小配置、全部来源证据及2B/4B NF4；重新量化须先恢复原始权重。启动器要求配置、tokenizer和权重齐全才选择模型，优先4B NF4，再回退2B NF4/原始，避免只剩配置被误认为可用。清理记录见 [C01（记录已清理）](ASSET_RETENTION.md)。
 - 当前网页配置：单次仅一个图像/视频；视频≤60秒且≤200MB，16 帧，总像素预算 `16×448²`；图片预算 `1024²`；最大生成 384 tokens，提示为 [review-prompt-neutral.txt](../vision/config/review-prompt-neutral.txt)。预算经 processor 按比例缩放和取整，不是固定长边。最终网页 14 项技术检查、两照片及照片追问均完成，隐患业务不通过。命令行 4B probe 为 16 帧/512/v2 提示，两组结果分别取证。
 - 并发与状态：首问和追加问题为原子队列事件，上传、载入新片、清空、重试共享`vision-model`并发组；底层GPU锁覆盖预处理、生成线程及结束清理，取消后等待生成结束再释放。
 - 素材入口：[samples.json](../vision/config/samples.json) 含三视频、两近景照片。页面独立显示作者、来源和许可；`load_example` 只将媒体路径及通用问题加入对话，作者说明、标题和人工观察不作为模型答案输入。图片补充近景细节，不能据此替代视频动作验证。

@@ -1,10 +1,12 @@
 # 水电一局 · 施工影像 AI 演示
 
-这是GitHub精简协作库，原历史证据与视频不随源码上传；目录分工和资源恢复见[开发交接](docs/DEVELOPER_HANDOFF.md)。
+这是面向水电一局演示的公开协作仓库。源码通过 Git 管理，模型、视频和可选数据通过 Release 资源清单恢复；原仓库的大历史与已清理的截图/验收输出不上传。新开发者先看[开发交接](docs/DEVELOPER_HANDOFF.md)和[新目录运行说明](docs/RUNTIME_SETUP.md)。
 
-交给新开发者请先看[开发交接说明](docs/DEVELOPER_HANDOFF.md)。代码通过私有Git仓库或离线bundle交接；模型、素材和运行环境另行恢复，clone不等于新机器可直接启动。
+[运行资源 Release](https://github.com/YuxuanQi123456/sd1-construction-vision/releases/tag/runtime-20261107-v1) 的可用性以正式发布为准；恢复命令下载后逐项核对 SHA256，clone 本身不包含运行资源或 Python 环境。
 
 当前主流程为 **施工照片/短视频的防护装备AI初筛→头部区域AI第二意见→人工复核→证据导出**。页面以水电一局官方组合标识、蓝白配色和中文操作展示，默认打开高清素材库。复现 [SiteWatch开源应用](https://github.com/AitchEm-bot/sitewatch) 原生页面和YOLO模型，复用已部署的Qwen官方接口做局部判断。两模型意见并列保留，原检测分数和类别不改写；CPU检测、GPU复核均在本机执行。
+
+**Qwen 就是千问，这里使用的是 Qwen3-VL 视觉语言模型。** YOLO 负责框出人员/防护装备并给出检测分数；Qwen3-VL-4B 的本地 NF4 量化版查看选中的头部画面，给出文字第二意见。它属于现有视觉流程；`ppe` CPU 模式可以只运行检测，`full` 模式再启用千问复核。
 
 新增清晰演示素材：侧栏选择“清晰演示素材”，可直接载入两段4K近景视频、两张高清照片，以及原轨道视频的1080p版本；旧540p视频和自己上传入口保留。默认开启“保留原片画质”，原件按字节保留、画面按原尺寸无损PNG保存；默认大图展示，可切左右对照，并下载原尺寸输入、框图和原视频。页面按屏幕缩放，模型内部推理尺度单独记录。
 
@@ -12,7 +14,9 @@
 
 **入口：http://127.0.0.1:8767**
 
-Windows双击 [启动施工视觉.cmd](启动施工视觉.cmd) 启动检测与本地区域模型，冷启动需等待几分钟；结束时运行 [停止施工视觉.cmd](停止施工视觉.cmd)。命令行分别使用 `python3 scripts/manage_ppe.py start --wait` 和 `python3 vision/scripts/manage.py start --wait`，各自支持status/stop。操作顺序见 [演示说明](docs/PPE_DEMO.md)，环境复现见 [运行说明](sitewatch/OPERATIONS.md)。
+新机器先按[运行说明](docs/RUNTIME_SETUP.md)恢复资源、安装仓库内环境；支持 Ubuntu / WSL2、Linux x86_64、Python 3.12。仅检测可执行 `python3.12 scripts/restore_runtime_assets.py --profile ppe` 和 `python3.12 scripts/bootstrap_runtime.py --profile ppe`；带千问使用 `full`，需可用 NVIDIA GPU。完整新机安装与 GPU 业务推理仍须在目标机验收。
+
+环境就绪后，Windows双击 [启动施工视觉.cmd](启动施工视觉.cmd) 启动检测与本地区域模型，冷启动需等待几分钟；结束时运行 [停止施工视觉.cmd](停止施工视觉.cmd)。命令行分别使用 `python3 scripts/manage_ppe.py start --wait` 和 `python3 vision/scripts/manage.py start --wait`，各自支持status/stop。操作顺序见 [演示说明](docs/PPE_DEMO.md)，新目录安装与迁移以[运行说明](docs/RUNTIME_SETUP.md)为准，原机操作参考 [SiteWatch 运行记录](sitewatch/OPERATIONS.md)。
 
 **关机或重启电脑后，需要重新运行启动脚本。** 当前项目采用手动启动；浏览器收藏的127.0.0.1地址不会启动后台服务。启动时保留命令窗口，等待检测页面和区域模型就绪后自动打开网页；若报错，窗口会保留日志位置。
 
