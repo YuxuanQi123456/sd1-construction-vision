@@ -1,0 +1,32 @@
+{
+  "package": "水电一局_基础视觉协作包_无千问_20261108.zip",
+  "bytes": 160324689,
+  "code_commit": "6a08cb2fef46ec0cdbdca62bcf8e13d0df0cfb38",
+  "package_entries": 212,
+  "resource_files_sha_size_verified": 209,
+  "zip_crc": "passed",
+  "offline_code_clone": "passed",
+  "restore_plan": {
+    "profile": "ppe",
+    "include_training": true,
+    "verified_existing": 209,
+    "missing": [
+      "downloads/demo-hd/pexels-8963856.mp4",
+      "downloads/demo-hd/pexels-8964378.mp4",
+      "downloads/demo-hd/pexels-10202856.jpg",
+      "downloads/demo-hd/pexels-4981775.jpg"
+    ],
+    "remaining_download_bytes": 41313989
+  },
+  "github_assets_needed": false,
+  "qwen_needed_for_base": false,
+  "qwen_model_included": false,
+  "fresh_torch_install_this_check": false,
+  "task": "G04_QWEN_FREE_HANDOFF",
+  "at": "2026-11-07T17:21:03.700263+00:00",
+  "archive_sha256": "9b2e6f476d07cede8b7b0b7aa88f9fd3fdca01264c97c2cec48527ee996f7229",
+  "delivery": "Local ZIP for colleague; not uploaded to public Git history",
+  "independent_archive_review": "212-member allowlist, 209 resource hashes, Git bundle and licenses checked",
+  "feature_scope": "PPE frontend, real photo/video YOLO inference, original scores, export; Qwen head-region second opinion unavailable",
+  "runtime_evidence": "Fresh CPU install/inference already recorded in G03_CPU_INTEGRATION.json; this task did not reinstall Torch or rerun GPU inference"
+}

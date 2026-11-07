@@ -19,6 +19,10 @@ git switch -c feat/你的功能名
 
 离线代码包可用 `git clone -b main sd1-construction-vision-main-20261107.bundle sd1-construction-vision`，但必须核对 bundle 的提交版本，不能假定已有离线包包含后续更新。bundle 不含模型/视频/环境；离线克隆后 origin 指向 bundle，转在线前先核对 `git remote -v` 再设置 GitHub 地址。
 
+## 没有千问也能共同开发
+
+基础照片/视频检测、前端与导出使用PPE CPU模式，千问区域第二意见在后端未就绪时不可用。若收到“基础视觉协作包_无千问”ZIP，按包内说明从bundle克隆代码、复制resources到新仓库，再运行`restore_runtime_assets.py --profile ppe --include-training`。已附209份资源；只从原站补齐4份Pexels素材约41MB，无需等完整Release。依赖安装仍需联网，不包含可复制使用的venv；使用下面的PPE管理命令单独启动。后续需要千问再恢复full环境。
+
 ## 恢复资源和环境
 
 完整步骤、系统依赖、空间估算、离线模式和验证要求见[新目录运行说明](RUNTIME_SETUP.md)。基线为 **Linux x86_64、Python 3.12、Ubuntu 24.04 / WSL2**。可先只开发 CPU 检测：
