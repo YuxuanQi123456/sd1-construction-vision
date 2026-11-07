@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-07T13:41:31.172985+00:00",
+  "passed": true,
+  "repository": {
+    "default_branch": "main",
+    "full_name": "YuxuanQi123456/sd1-construction-vision",
+    "private": true,
+    "size": 0,
+    "visibility": "private"
+  },
+  "verified_first_published_commit": {
+    "html_url": "https://github.com/YuxuanQi123456/sd1-construction-vision/commit/bd906640fb661d4797cccc78396d6d29f0ac8151",
+    "sha": "bd906640fb661d4797cccc78396d6d29f0ac8151",
+    "tree": "ea8a366277880b79e446e966139a3b3918a10edc"
+  },
+  "private_repo_and_commit_tree_equal": true,
+  "protected_video_files_rehashed": 30,
+  "all_protected_videos_unchanged": true,
+  "source_history_not_uploaded": true,
+  "next_final_state": "Final summary commit will be pushed; offline bundle receipt records its final SHA."
+}
