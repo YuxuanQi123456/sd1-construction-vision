@@ -1,0 +1,17 @@
+--- a/app/cli_static.py
++++ b/app/cli_static.py
+@@ -427,6 +427,14 @@
+         if path.startswith("/api"):
+             return await http_exception_handler(request, exc)
+ 
++        # SD1 adaptation: one explicit local demo entry; keep other HTML
++        # and API routing behavior unchanged.
++        if path == "/sd1-demo/index.html":
++            demo_entry = frontend_dir / "sd1-demo" / "index.html"
++            if demo_entry.is_file() and demo_entry.resolve().is_relative_to(frontend_dir.resolve()):
++                return FileResponse(str(demo_entry), media_type="text/html", headers={"Cache-Control": "no-store"})
++            return await http_exception_handler(request, exc)
++
+         # Check if the requested file physically exists in the frontend
+         # dist (e.g. /robots.txt, /manifest.json).  Serve it directly
+         # if it does, to avoid breaking non-HTML static assets.

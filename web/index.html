@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>水电一局 · 材料管理演示</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-symbol" aria-hidden="true">川</span><div><strong>水电一局</strong><span>施工材料管理 · 演示导览</span></div></div>
+    <div class="environment"><span class="dot"></span> 本机运行 <span class="divider">/</span> 自制合成数据</div>
+  </header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">从材料进场到工点消耗</p><h1>材料流向，一账看清</h1><p class="lead">走完一笔水泥的入库、领用、损耗与调拨，查看库存、领用金额和原始台账。</p></div>
+      <div class="project-control"><label for="project-select">当前演示场景</label><select id="project-select" disabled><option>正在连接本机应用…</option></select><span id="project-caption">读取开源应用中的实际项目</span></div>
+    </section>
+
+    <div id="message" class="message" role="status" aria-live="polite">正在连接本机演示账户…</div>
+
+    <section class="overview" aria-label="实际库存与领用金额">
+      <article class="metric primary"><p>当前库存总量</p><div><strong id="stock-total">—</strong><span>吨</span></div><small>来源：原生库存汇总</small></article>
+      <article class="metric"><p>A 库位余额</p><div><strong id="stock-a">—</strong><span>吨</span></div><small id="location-a">主库 · 入库与出库</small></article>
+      <article class="metric"><p>B 库位余额</p><div><strong id="stock-b">—</strong><span>吨</span></div><small id="location-b">接收库 · 调拨入库</small></article>
+      <article class="metric"><p>工点领用金额</p><div><span class="currency">¥</span><strong id="consume-cost">—</strong></div><small>领用数量 × 流水单价 · CNY</small></article>
+    </section>
+
+    <section class="panel flow-panel">
+      <div class="section-title"><div><p class="eyebrow">01 / 操作演示</p><h2>四个动作，形成一条材料记录链</h2></div><span id="progress" class="pill">等待台账</span></div>
+      <div class="steps">
+        <article class="step" data-step="inbound"><div class="step-top"><span class="step-number">01</span><span class="step-status">等待读取</span></div><h3>材料入库</h3><p>水泥 <b>100 吨</b> 入 A 库</p><small>记录进场数量与演示单价</small><button id="step-inbound" data-action="inbound" disabled>入库 100 吨</button></article>
+        <article class="step" data-step="consume"><div class="step-top"><span class="step-number">02</span><span class="step-status">等待读取</span></div><h3>工点领用</h3><p>从 A 库领用 <b>30 吨</b></p><small>归集到当前施工工点</small><button id="step-consume" data-action="consume" disabled>领用 30 吨</button></article>
+        <article class="step" data-step="waste"><div class="step-top"><span class="step-number">03</span><span class="step-status">等待读取</span></div><h3>损耗登记</h3><p>A 库登记损耗 <b>2 吨</b></p><small>单独留痕，便于核对</small><button id="step-waste" data-action="waste" disabled>登记损耗 2 吨</button></article>
+        <article class="step" data-step="transfer"><div class="step-top"><span class="step-number">04</span><span class="step-status">等待读取</span></div><h3>库位调拨</h3><p>A 库 → B 库 <b>10 吨</b></p><small>库位变化，总库存不变</small><button id="step-transfer" data-action="transfer" disabled>调拨 10 吨</button></article>
+      </div>
+      <div class="flow-foot"><span id="workpoint">工点：等待读取</span><span>演示终点：总库存 68 吨 · A 库 58 吨 · B 库 10 吨 · 领用 ¥12,000</span></div>
+    </section>
+
+    <section class="panel ledger-panel">
+      <div class="section-title"><div><p class="eyebrow">02 / 台账追溯</p><h2>每次操作，都有原始记录</h2></div><div class="actions"><button id="refresh" class="secondary" disabled>重新读取台账</button><a id="native-link" class="link-button" href="/projects" target="_blank" rel="noopener">打开原生业务页 ↗</a></div></div>
+      <div class="ledger-meta"><span id="completeness">尚未获取实际流水</span><span id="updated-at">—</span></div>
+      <div class="table-scroll"><table><thead><tr><th>动作 / 原始单号</th><th>数量</th><th>库位流向</th><th>单价（元/吨）</th><th>金额（元）</th><th>工点与原始备注</th></tr></thead><tbody id="ledger"><tr><td colspan="6" class="empty">连接后显示原生应用中的实际流水</td></tr></tbody></table></div>
+    </section>
+
+    <footer><div><strong>数据与口径</strong><p>库存直接读取 OpenConstructionERP 19 的库存汇总；台账来自同一应用。金额按流水数量 × 单价展示；400 CNY/吨为合成假设，领用金额不代表财务入账，调拨金额不计入消耗。</p></div><div><strong>演示使用说明</strong><p>仅供单人本机演示；步骤完成状态以实际流水为准。按钮点击前会重新核对，刷新页面不会再次入账；多台客户端同时操作不保证幂等。</p><details><summary>账户与开源来源</summary><p id="account-notice">使用 config/demo.json 中的公开本机测试账户。</p><p>原生页面如需登录，请使用同一测试账户。上游：OpenConstructionERP / DataDrivenConstruction；本页为静态中文导览，业务由已安装的上游应用处理。</p><a href="/login" target="_blank" rel="noopener">打开原生登录页 ↗</a></details></div></footer>
+  </main>
+</body>
+</html>

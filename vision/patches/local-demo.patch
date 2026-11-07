@@ -1,0 +1,300 @@
+--- upstream/web_demo_mm.py
++++ web_demo_mm.py
+@@ -2,15 +2,23 @@
+ #
+ # This source code is licensed under the license found in the
+ # LICENSE file in the root directory of this source tree.
++# Modified for the approved SD1 video review demo: bounded NF4/HF inference,
++# documented PyAV video I/O and Chinese task guidance. See patches/ and README.
+ import os
+ import copy
+ import re
+ from argparse import ArgumentParser
+-from threading import Thread
+-
++from threading import Thread, Event
++from queue import Empty
++import json
++
++from local_support import (ROOT, MAX_NEW_TOKENS, configure_environment,
++                           configure_processor, prepare_inputs, evidence_note, INFERENCE_LOCK, GENERATION_OPTIONS)
++configure_environment()
+ import gradio as gr
+ import torch
+-from transformers import AutoProcessor, AutoModelForImageTextToText, TextIteratorStreamer
++from transformers import (AutoProcessor, AutoModelForImageTextToText, TextIteratorStreamer,
++                          BitsAndBytesConfig, StoppingCriteria, StoppingCriteriaList)
+ 
+ try:
+     from vllm import SamplingParams, LLM
+@@ -30,6 +38,8 @@
+                         default='Qwen/Qwen3-VL-235B-A22B-Instruct',
+                         help='Checkpoint name or path, default to %(default)r')
+     parser.add_argument('--cpu-only', action='store_true', help='Run demo with CPU only')
++    parser.add_argument('--load-in-4bit', action='store_true', help='NF4 for the local 4GB GPU')
++    parser.add_argument('--keep-vision-fp16', action='store_true', help='Quantize language layers while preserving the visual encoder')
+ 
+     parser.add_argument('--flash-attn2',
+                         action='store_true',
+@@ -93,7 +103,20 @@
+             device_map = 'auto'
+ 
+         # Check if flash-attn2 flag is enabled and load model accordingly
+-        if args.flash_attn2:
++        if args.load_in_4bit:
++            if args.cpu_only or not torch.cuda.is_available():
++                raise RuntimeError('本机NF4演示需要可用的CUDA显卡，请检查运行权限和驱动。')
++            model = AutoModelForImageTextToText.from_pretrained(
++                args.checkpoint_path, local_files_only=True,
++                quantization_config=BitsAndBytesConfig(
++                    load_in_4bit=True, bnb_4bit_quant_type='nf4',
++                    bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=torch.float16,
++                    llm_int8_skip_modules=(['embed_tokens','embedding','lm_head','multi_modal_projector',
++                                           'merger','modality_projection','router','visual','vision_tower']
++                                          if getattr(args,'keep_vision_fp16',False) else None)),
++                dtype=torch.float16, attn_implementation='sdpa', device_map={'': 0},
++                low_cpu_mem_usage=True)
++        elif args.flash_attn2:
+             model = AutoModelForImageTextToText.from_pretrained(args.checkpoint_path,
+                                                                     torch_dtype='auto',
+                                                                     attn_implementation='flash_attention_2',
+@@ -101,7 +124,7 @@
+         else:
+             model = AutoModelForImageTextToText.from_pretrained(args.checkpoint_path, device_map=device_map)
+ 
+-        processor = AutoProcessor.from_pretrained(args.checkpoint_path)
++        processor = configure_processor(AutoProcessor.from_pretrained(args.checkpoint_path, local_files_only=True))
+         return model, processor, 'hf'
+ 
+ 
+@@ -217,26 +240,46 @@
+                         yield accumulated_text
+         else:
+             # HuggingFace inference
+-            inputs = processor.apply_chat_template(
+-                messages,
+-                tokenize=True,
+-                add_generation_prompt=True,
+-                return_dict=True,
+-                return_tensors="pt"
+-            )
+-
+-            tokenizer = processor.tokenizer
+-            streamer = TextIteratorStreamer(tokenizer, timeout=20.0, skip_prompt=True, skip_special_tokens=True)
+-
+-            inputs = {k: v.to(model.device) for k, v in inputs.items()}
+-            gen_kwargs = {'max_new_tokens': 1024, 'streamer': streamer, **inputs}
+-            thread = Thread(target=model.generate, kwargs=gen_kwargs)
+-            thread.start()
+-
+-            generated_text = ''
+-            for new_text in streamer:
+-                generated_text += new_text
+-                yield generated_text
++            with INFERENCE_LOCK:
++                stop = Event()
++                thread = None
++                class StopRequested(StoppingCriteria):
++                    def __call__(self, input_ids, scores, **kwargs):
++                        return stop.is_set()
++                try:
++                    inputs = prepare_inputs(processor, messages)
++                    tokenizer = processor.tokenizer
++                    streamer = TextIteratorStreamer(tokenizer, timeout=180.0, skip_prompt=True, skip_special_tokens=True)
++                    inputs = {k: v.to(model.device) for k, v in inputs.items()}
++                    gen_kwargs = {'max_new_tokens': MAX_NEW_TOKENS, 'streamer': streamer,
++                                  **GENERATION_OPTIONS, 'stopping_criteria': StoppingCriteriaList([StopRequested()]), **inputs}
++                    errors = []
++                    def generate_checked():
++                        try:
++                            with torch.inference_mode():
++                                model.generate(**gen_kwargs)
++                        except Exception as error:
++                            errors.append(error)
++                            streamer.on_finalized_text('', stream_end=True)
++                    thread = Thread(target=generate_checked, daemon=True)
++                    thread.start()
++                    generated_text = ''
++                    for new_text in streamer:
++                        generated_text += new_text
++                        yield generated_text
++                    thread.join()
++                    if errors:
++                        raise gr.Error(f'模型运行失败：{type(errors[0]).__name__}。请清空历史、缩短片段后重试。')
++                    yield generated_text + evidence_note(processor)
++                except Empty:
++                    raise gr.Error('模型生成超时，正在停止本次计算；请缩短片段后重试。')
++                except ValueError as error:
++                    raise gr.Error(str(error))
++                finally:
++                    stop.set()
++                    if thread is not None:
++                        thread.join()  # Keep the GPU lock until the old generation really ends.
++                    _gc()
+ 
+     def create_predict_fn():
+ 
+@@ -244,7 +287,7 @@
+             nonlocal model, processor, backend
+             chat_query = _chatbot[-1][0]
+             query = task_history[-1][0]
+-            if len(chat_query) == 0:
++            if not isinstance(query, str) or len(query.strip()) == 0:
+                 _chatbot.pop()
+                 task_history.pop()
+                 return _chatbot
+@@ -270,7 +313,7 @@
+                 _chatbot[-1] = (_parse_text(chat_query), _remove_image_special(_parse_text(response)))
+ 
+                 yield _chatbot
+-                full_response = _parse_text(response)
++                full_response = response
+ 
+             task_history[-1] = (query, full_response)
+             print('Qwen-VL-Chat: ' + _parse_text(full_response))
+@@ -288,15 +331,22 @@
+             item = task_history[-1]
+             if item[1] is None:
+                 return _chatbot
+-            task_history[-1] = (item[0], None)
++            previous_history = list(_chatbot)
++            previous_task = list(task_history)
+             chatbot_item = _chatbot.pop(-1)
+             if chatbot_item[0] is None:
+                 _chatbot[-1] = (_chatbot[-1][0], None)
+             else:
+                 _chatbot.append((chatbot_item[0], None))
+             _chatbot_gen = predict(_chatbot, task_history)
+-            for _chatbot in _chatbot_gen:
++            try:
++                for _chatbot in _chatbot_gen:
++                    yield _chatbot
++            except Exception:
++                task_history[:] = previous_task
++                _chatbot[:] = previous_history
+                 yield _chatbot
++                raise
+ 
+         return regenerate
+ 
+@@ -309,7 +359,7 @@
+         task_history = task_history if task_history is not None else []
+         history = history + [(_parse_text(text), None)]
+         task_history = task_history + [(task_text, None)]
+-        return history, task_history, ''
++        return history, task_history
+ 
+     def add_file(history, task_history, file):
+         history = history if history is not None else []
+@@ -321,23 +371,57 @@
+     def reset_user_input():
+         return gr.update(value='')
+ 
++    def submit_and_predict(history, task_history, text):
++        if not text or not text.strip():
++            raise gr.Error('请先输入要核查的问题。')
++        # Validate media/history before committing a new unanswered turn.
++        media = [q for q, _ in (task_history or []) if isinstance(q, (tuple, list))]
++        if len(media) != 1:
++            raise gr.Error('每段会话请先上传一张图片或一个视频；切换素材前请清空历史。')
++        previous_history = list(history or [])
++        previous_task = list(task_history or [])
++        history, task_history = add_text(history, task_history, text)
++        yield history, task_history, ''
++        try:
++            for updated in predict(history, task_history):
++                yield updated, task_history, gr.skip()
++        except Exception:
++            # Undo the failed turn, so upload/correct/retry remains possible.
++            task_history[:] = previous_task
++            history[:] = previous_history
++            yield history, task_history, text
++            raise
++
+     def reset_state(_chatbot, task_history):
+         task_history.clear()
+         _chatbot.clear()
+         _gc()
+         return []
+ 
+-    with gr.Blocks() as demo:
+-        gr.Markdown("""\
+-<p align="center"><img src="https://qianwen-res.oss-accelerate.aliyuncs.com/Qwen3-VL/qwen3vllogo.png" style="height: 80px"/><p>"""
+-                   )
+-        gr.Markdown("""<center><font size=8>Qwen3-VL</center>""")
+-        gr.Markdown(f"""\
+-<center><font size=3>This WebUI is based on Qwen3-VL, developed by Alibaba Cloud. Backend: {backend.upper()}</center>""")
+-        gr.Markdown(f"""<center><font size=3>本 WebUI 基于 Qwen3-VL。</center>""")
+-
+-        chatbot = gr.Chatbot(label='Qwen3-VL', elem_classes='control-height', height=500)
+-        query = gr.Textbox(lines=2, label='Input')
++    sample_manifest = json.loads((ROOT / 'vision/config/samples.json').read_text())
++    suggested_question = '请描述画面中实际可见的人员、机械和作业；指出有画面依据的疑似风险及大致时间，无法确认的情况请明确说明。'
++    def load_example(sample_id):
++        sample = next(s for s in sample_manifest if s['id'] == sample_id)
++        path = str(ROOT / 'downloads/vision-samples' / sample['file'])
++        source = f"公开实拍样例：[{sample['author']} / Wikimedia Commons]({sample['source']}) · [{sample['license']}]({sample['license_url']})。非本项目现场；没有权威违规标签。"
++        question=suggested_question if _is_video_file(path) else '请描述实际可见的人员、工具或机械、正在处理的物体及防护用品。哪些情况有画面依据值得复核？看不清的细节请明确说明。'
++        return [((path,), None)], [((path,), None)], question, source
++
++    video_css = '.control-height video {display:block; width:auto!important; max-width:100%; max-height:320px!important; object-fit:contain; margin-inline:auto;} .control-height [data-testid="user"] img {display:block; width:auto!important; max-width:100%; max-height:400px!important; object-fit:contain; margin-inline:auto;}'
++    with gr.Blocks(css=video_css, theme=gr.themes.Default(
++            font=['Microsoft YaHei', 'Arial', 'sans-serif'],
++            font_mono=['Consolas', 'monospace'])) as demo:
++        gr.Markdown('# 施工视频 AI 隐患审查')
++        gr.Markdown('基于 Qwen3-VL 开源模型，在本机分析施工图片或60秒以内视频：先确认可见作业，再复核疑似风险。')
++        gr.Markdown('示例提问：**画面中有哪些人员、机械和作业？有哪些有画面依据的疑似风险？哪些情况无法确认？**')
++
++        with gr.Row():
++            sample_picker = gr.Dropdown([(s['title'], s['id']) for s in sample_manifest], value='florenc', label='选择公开实拍样例')
++            sample_btn = gr.Button('载入样例（开启新会话）')
++        sample_source = gr.Markdown('也可上传自己的图片或短视频。每段会话只分析一个素材，可连续追问。')
++
++        chatbot = gr.Chatbot(label='视频与 AI 复核记录', elem_classes='control-height', height=620)
++        query = gr.Textbox(lines=3, label='向 AI 提问', value='请描述画面中实际可见的人员、机械和作业；指出有画面依据的疑似风险及大致时间，无法确认的情况请明确说明。')
+         task_history = gr.State([])
+ 
+         with gr.Row():
+@@ -346,25 +430,27 @@
+             regen_btn = gr.Button('🤔️ Regenerate (重试)')
+             empty_bin = gr.Button('🧹 Clear History (清除历史)')
+ 
+-        submit_btn.click(add_text, [chatbot, task_history, query],
+-                         [chatbot, task_history]).then(predict, [chatbot, task_history], [chatbot], show_progress=True)
+-        submit_btn.click(reset_user_input, [], [query])
+-        empty_bin.click(reset_state, [chatbot, task_history], [chatbot], show_progress=True)
+-        regen_btn.click(regenerate, [chatbot, task_history], [chatbot], show_progress=True)
+-        addfile_btn.upload(add_file, [chatbot, task_history, addfile_btn], [chatbot, task_history], show_progress=True)
+-
+-        gr.Markdown("""\
+-<font size=2>Note: This demo is governed by the original license of Qwen3-VL. \
+-We strongly advise users not to knowingly generate or allow others to knowingly generate harmful content, \
+-including hate speech, violence, pornography, deception, etc. \
+-(注：本演示受 Qwen3-VL 的许可协议限制。我们强烈建议，用户不应传播及不应允许他人传播以下内容，\
+-包括但不限于仇恨言论、暴力、色情、欺诈相关的有害信息。)""")
+-
+-    demo.queue().launch(
++        submit_btn.click(submit_and_predict, [chatbot, task_history, query],
++                         [chatbot, task_history, query], show_progress=True,
++                         concurrency_id='vision-model', concurrency_limit=1)
++        empty_bin.click(reset_state, [chatbot, task_history], [chatbot], show_progress=True,
++                        concurrency_id='vision-model', concurrency_limit=1)
++        regen_btn.click(regenerate, [chatbot, task_history], [chatbot], show_progress=True,
++                        concurrency_id='vision-model', concurrency_limit=1)
++        addfile_btn.upload(add_file, [chatbot, task_history, addfile_btn], [chatbot, task_history], show_progress=True,
++                           concurrency_id='vision-model', concurrency_limit=1)
++        sample_btn.click(load_example, [sample_picker], [chatbot, task_history, query, sample_source],
++                         concurrency_id='vision-model', concurrency_limit=1)
++
++        gr.Markdown('开源来源：[阿里云 Qwen3-VL](https://github.com/QwenLM/Qwen3-VL)（Apache-2.0）。模型按抽样画面回答，疑似风险需结合原片人工复核。')
++
++    demo.queue(default_concurrency_limit=1).launch(
+         share=args.share,
+         inbrowser=args.inbrowser,
+         server_port=args.server_port,
+         server_name=args.server_name,
++        allowed_paths=[str(ROOT / 'downloads/vision-samples')],
++        max_file_size='200mb',
+     )
+ 
+ 

@@ -1,0 +1,148 @@
+{
+  "schema": "ppe-model-comparison-v1",
+  "weights_relative_to": "project_root",
+  "models": [
+    {
+      "id": "sitewatch",
+      "weights": "downloads/sitewatch/repository/models/sitewatch_best.pt",
+      "sha256": "c2db52b9be8ccd5bcc09d6e0f9498a6e442e47eb6f6b62850db11530b77651ab",
+      "bytes": 52043602,
+      "expected_names": [
+        "Excavator",
+        "Gloves",
+        "Hardhat",
+        "Ladder",
+        "Mask",
+        "NO-Hardhat",
+        "NO-Mask",
+        "NO-Safety Vest",
+        "Person",
+        "SUV",
+        "Safety Cone",
+        "Safety Vest",
+        "bus",
+        "dump truck",
+        "fire hydrant",
+        "machinery",
+        "mini-van",
+        "sedan",
+        "semi",
+        "trailer",
+        "truck and trailer",
+        "truck",
+        "van",
+        "vehicle",
+        "wheel loader"
+      ],
+      "classes": {
+        "helmet": 2,
+        "no_helmet": 5,
+        "person": 8,
+        "vest": 11,
+        "no_vest": 7
+      },
+      "source": "https://github.com/AitchEm-bot/sitewatch",
+      "revision": "72c4d18135fd07afd188fecaac37c5b90ec674b4",
+      "license": "AGPL-3.0"
+    },
+    {
+      "id": "yolo11n",
+      "weights": "downloads/sitewatch/ppe-yolo11n-best.pt",
+      "sha256": "a00b6fce124e63c5d23f44792593983b70e646008b58bc54cf5b0a1c87ba2119",
+      "expected_names": [
+        "helmet",
+        "human",
+        "no-helmet",
+        "vest"
+      ],
+      "classes": {
+        "helmet": 0,
+        "no_helmet": 2,
+        "person": 1,
+        "vest": 3
+      },
+      "source": "https://huggingface.co/melihuzunoglu/ppe-detection",
+      "revision": "4a4d54e425f82896f1717637603ec28553d7f91c",
+      "license": "AGPL-3.0"
+    },
+    {
+      "id": "safetyvision-v2",
+      "weights": "downloads/ppe-v07/safetyvision-v2.pt",
+      "sha256": "7863be4700dcf831579d610bb3fe3668fb29fb22ab17ca027b55e94b88bfff7a",
+      "bytes": 22547434,
+      "expected_names": [
+        "Fall-Detected",
+        "Gloves",
+        "Goggles",
+        "Hardhat",
+        "Mask",
+        "NO-Gloves",
+        "NO-Goggles",
+        "NO-Hardhat",
+        "NO-Mask",
+        "NO-Safety Vest",
+        "No_Harness",
+        "Person",
+        "Safety Vest"
+      ],
+      "classes": {
+        "helmet": 3,
+        "no_helmet": 7,
+        "person": 11,
+        "vest": 12,
+        "no_vest": 9
+      },
+      "source": "https://huggingface.co/ayushgupta7777/safetyvision-yolov8",
+      "revision": "56a71758b55f0e9f2b4b2d6b51a779a1f882da10",
+      "url": "https://huggingface.co/ayushgupta7777/safetyvision-yolov8/resolve/56a71758b55f0e9f2b4b2d6b51a779a1f882da10/v2/best.pt",
+      "license": "AGPL-3.0"
+    },
+    {
+      "id": "constructelligence-v03",
+      "weights": "downloads/ppe-v07/constructelligence-v03.pt",
+      "sha256": "ab31a6b2ddcd21a081d6393a11e8062a058c218c333be11481fc0678a9c67e2e",
+      "bytes": 22556206,
+      "expected_names": [
+        "person",
+        "hardhat",
+        "no-hardhat",
+        "safety vest",
+        "no-safety vest",
+        "no-mask",
+        "gloves",
+        "safety shoes",
+        "excavator",
+        "wheel loader",
+        "dump truck",
+        "goggles",
+        "no-goggles",
+        "no-gloves"
+      ],
+      "classes": {
+        "helmet": 1,
+        "no_helmet": 2,
+        "person": 0,
+        "vest": 3,
+        "no_vest": 4
+      },
+      "source": "https://huggingface.co/constructelligence/construction-site-safety-hazards",
+      "revision": "79673cff5a8bb249fc8ec9cca3daa19e2ef95191",
+      "url": "https://huggingface.co/constructelligence/construction-site-safety-hazards/resolve/79673cff5a8bb249fc8ec9cca3daa19e2ef95191/buildvision-hazards-v0.3.pt",
+      "license": "AGPL-3.0"
+    }
+  ],
+  "primary_task": [
+    "helmet",
+    "no_helmet",
+    "person",
+    "vest"
+  ],
+  "secondary_task": [
+    "helmet",
+    "no_helmet",
+    "person",
+    "vest",
+    "no_vest"
+  ],
+  "purpose": "Candidates only; no production default change without actual evaluation. Source-reported metrics are not our evaluation."
+}

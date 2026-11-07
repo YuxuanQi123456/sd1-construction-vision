@@ -1,0 +1,28 @@
+{
+  "upstream": {
+    "repo": "https://github.com/QwenLM/Qwen3-VL",
+    "commit": "96588727e44c78b25ba03ea03b8e12f7e64fd0da",
+    "license": "Apache-2.0",
+    "files": {
+      "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "web_demo_mm.py": "d23a1b394e6dcdc6c472c4c28a74c7afc4f76196833833743f141668fe4a31af"
+    }
+  },
+  "model": {
+    "repo": "Qwen/Qwen3-VL-2B-Instruct",
+    "revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+    "license": "Apache-2.0",
+    "source": "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct",
+    "status": "downloaded_and_sha256_verified",
+    "sha256": "7de1838c87a5349b016c26a1c3f7d2bc400a3d485f95ef39a7059ffd734977a0",
+    "bytes": 4255140312
+  },
+  "runtime": {
+    "python": "3.12",
+    "torch_reused_readonly": "/home/meg/venvs/qyx_patent/lib/python3.12/site-packages",
+    "venv": "vision/.venv",
+    "planned_quantization": "bitsandbytes NF4 double quant FP16 compute",
+    "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU 4096MiB",
+    "gpu_probe": "nvidia-smi returned 3495 MiB free, driver 592.82"
+  }
+}

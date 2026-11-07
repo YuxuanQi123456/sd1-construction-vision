@@ -1,0 +1,180 @@
+"""Fuse detection / motion / shape signals into prioritised announcements
+and append every announcement to logs/violations.csv."""
+from __future__ import annotations
+
+import csv
+import datetime as dt
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable
+
+from cv_pipeline.detection import Detection
+from cv_pipeline.motion import MotionRegion, ProximityViolation
+
+
+LOG_PATH = Path("logs/violations.csv")
+_DEDUP_WINDOW_SEC = 4.0
+
+# dedup_key -> monotonic timestamp of the last time that key was logged. Lets us
+# write the same violation, at the same spot, at most once per _DEDUP_WINDOW_SEC
+# instead of once per frame.
+_last_logged: dict[str, float] = {}
+
+
+def _should_log(dedup_key: str, now: float) -> bool:
+    """Return True if ``dedup_key`` has not been logged within the dedup window."""
+    last = _last_logged.get(dedup_key)
+    if last is not None and now - last < _DEDUP_WINDOW_SEC:
+        return False
+    _last_logged[dedup_key] = now
+    # Prune aged-out keys so the map doesn't grow without bound in a long session.
+    if len(_last_logged) > 512:
+        cutoff = now - _DEDUP_WINDOW_SEC
+        for stale in [k for k, t in _last_logged.items() if t < cutoff]:
+            del _last_logged[stale]
+    return True
+
+
+@dataclass
+class Announcement:
+    priority: int  # 1 = critical, 2 = warning, 3 = info
+    text: str
+    dedup_key: str
+    bbox: tuple[int, int, int, int] | None = None
+
+
+def _ensure_log_header() -> None:
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not LOG_PATH.exists():
+        with LOG_PATH.open("w", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(["timestamp", "priority", "text", "dedup_key", "bbox"])
+
+
+def _append_log(announcement: Announcement) -> None:
+    _ensure_log_header()
+    with LOG_PATH.open("a", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow(
+            [
+                dt.datetime.now().isoformat(timespec="seconds"),
+                announcement.priority,
+                announcement.text,
+                announcement.dedup_key,
+                ";".join(str(v) for v in announcement.bbox) if announcement.bbox else "",
+            ]
+        )
+
+
+def _bbox_key(bbox: tuple[int, int, int, int] | None, bin_size: int = 50) -> str:
+    """Coarse spatial bucketing so the same worker doesn't generate a fresh
+    dedup_key on every pixel of motion."""
+    if bbox is None:
+        return "global"
+    cx = (bbox[0] + bbox[2]) // 2 // bin_size
+    cy = (bbox[1] + bbox[3]) // 2 // bin_size
+    return f"{cx}_{cy}"
+
+
+def fuse(
+    detections: Iterable[Detection],
+    motion_regions: Iterable[MotionRegion],
+    proximity_violations: Iterable[ProximityViolation],
+    hat_confirmations: dict[tuple[int, int, int, int], bool] | None = None,
+    *,
+    log: bool = True,
+    dedup: bool = True,
+) -> list[Announcement]:
+    """Apply rule-ordered fusion and return ranked announcements (highest
+    priority first). The full ranked list is always returned so the on-screen
+    overlay keeps showing an active violation.
+
+    When ``dedup`` is True (the default, for continuous video/live streams) each
+    distinct announcement (by dedup_key) is logged at most once per
+    ``_DEDUP_WINDOW_SEC``. Pass ``dedup=False`` for a one-shot analysis such as a
+    single uploaded image, where every announcement should always be logged."""
+    detections = list(detections)
+    motion_regions = list(motion_regions)
+    proximity_violations = list(proximity_violations)
+    hat_confirmations = hat_confirmations or {}
+
+    out: list[Announcement] = []
+
+    # 1. Critical: severity-1 proximity
+    for pv in proximity_violations:
+        if pv.severity == 1:
+            out.append(
+                Announcement(
+                    priority=1,
+                    text="Worker close to moving machinery",
+                    dedup_key=f"prox1_{_bbox_key(pv.person_bbox)}",
+                    bbox=pv.person_bbox,
+                )
+            )
+
+    # 2. Critical: NO-Hardhat
+    for d in detections:
+        if d.category == "ppe_violation" and d.class_name == "NO-Hardhat":
+            out.append(
+                Announcement(
+                    priority=1,
+                    text="Worker without hard hat detected",
+                    dedup_key=f"noHat_{_bbox_key(d.bbox)}",
+                    bbox=d.bbox,
+                )
+            )
+
+    # 3. Critical: NO-Safety Vest
+    for d in detections:
+        if d.category == "ppe_violation" and d.class_name == "NO-Safety Vest":
+            out.append(
+                Announcement(
+                    priority=1,
+                    text="Worker without safety vest detected",
+                    dedup_key=f"noVest_{_bbox_key(d.bbox)}",
+                    bbox=d.bbox,
+                )
+            )
+
+    # 4. Warning: severity-2 proximity
+    for pv in proximity_violations:
+        if pv.severity == 2:
+            out.append(
+                Announcement(
+                    priority=2,
+                    text="Worker entering machinery zone",
+                    dedup_key=f"prox2_{_bbox_key(pv.person_bbox)}",
+                    bbox=pv.person_bbox,
+                )
+            )
+
+    # 5. Info: multiple workers in the same active zone
+    workers = [d for d in detections if d.category == "worker"]
+    for region in motion_regions:
+        if not region.is_active_machinery_zone:
+            continue
+        x1, y1, x2, y2 = region.bbox
+        inside = 0
+        for w in workers:
+            wx = (w.bbox[0] + w.bbox[2]) // 2
+            wy = (w.bbox[1] + w.bbox[3]) // 2
+            if x1 <= wx <= x2 and y1 <= wy <= y2:
+                inside += 1
+        if inside >= 2:
+            out.append(
+                Announcement(
+                    priority=3,
+                    text="Multiple workers in active zone",
+                    dedup_key=f"multi_{_bbox_key(region.bbox)}",
+                    bbox=region.bbox,
+                )
+            )
+
+    # ppe_compliant detections are intentionally not announced.
+
+    out.sort(key=lambda a: a.priority)
+    if log:
+        now = time.monotonic()
+        for a in out:
+            if not dedup or _should_log(a.dedup_key, now):
+                _append_log(a)
+    return out

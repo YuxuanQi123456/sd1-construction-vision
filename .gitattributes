@@ -1,0 +1,11 @@
+# Preserve byte-for-byte upstream snapshots and evidence hashes on every OS.
+* -text
+
+# Store the edited Windows launchers as text; keep CRLF in Windows checkouts.
+启动施工视觉.cmd text eol=crlf
+停止施工视觉.cmd text eol=crlf
+evidence/V08/launcher-probes/*.cmd text eol=crlf
+
+# Windows command files stay CRLF; unified patches contain literal context spaces.
+*.cmd text eol=crlf
+*.patch whitespace=-blank-at-eol,-blank-at-eof

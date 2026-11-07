@@ -1,0 +1,1303 @@
+--- a/app.py
++++ b/app.py
+@@ -2,7 +2,11 @@
+ from __future__ import annotations
+
+ import csv
++import base64
+ import logging
++import hashlib
++import json
++import os
+ import time
+ from pathlib import Path
+
+@@ -14,18 +18,68 @@
+ from cv_pipeline.enhancement import enhance
+ from cv_pipeline.fusion import LOG_PATH, fuse
+ from cv_pipeline.motion import MotionDetector
+-from cv_pipeline.shapes import detect_safety_cones
++from review_evidence import NOTICE, REVIEW_LABELS, evidence_zip, new_review_dir, review_file
++from region_review import backend_status, head_indices, latest_region_review, review_head_region
+ from utils.drawing import draw_overlay
+
+ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+
+-st.set_page_config(page_title="SiteWatch", layout="wide")
++st.set_page_config(page_title="水电一局 · 施工视觉AI", page_icon="🏗️", layout="wide")
++RUNTIME = Path(os.environ["SITEWATCH_RUNTIME_DIR"])
++RUNTIME.mkdir(parents=True, exist_ok=True)
++PROJECT_ROOT = Path(os.environ.get("SITEWATCH_PROJECT_ROOT", Path(__file__).resolve().parents[2]))
++BRAND_DIR = PROJECT_ROOT / "sitewatch/branding"
++brand_logo = "data:image/png;base64," + base64.b64encode((BRAND_DIR / "logo.png").read_bytes()).decode("ascii")
++st.markdown("<style>" + (BRAND_DIR / "theme.css").read_text() + "</style>", unsafe_allow_html=True)
++st.markdown(f'''<div class="sd1-masthead">
++  <div class="sd1-identity">
++    <img class="sd1-logo" src="{brand_logo}" alt="中国电建 · 中国水利水电第一工程局有限公司">
++    <div class="sd1-title"><h1>施工视觉AI</h1><p>水电一局 · 工程现场影像复核</p></div>
++  </div><span class="sd1-demo">演示环境</span>
++</div>
++<div class="sd1-hero"><div class="sd1-eyebrow">安全生产 / 视觉智能</div>
++  <h2>施工影像智能复核</h2><p>识别人员与防护装备，结合 AI 区域复核，让现场影像形成可追溯的复核依据。</p>
++</div>
++<div class="sd1-steps">
++  <div class="sd1-step"><b>01</b><div><strong>导入现场影像</strong><span>选择高清样例或上传照片、视频</span></div></div>
++  <div class="sd1-step"><b>02</b><div><strong>AI 识别与定位</strong><span>查看人员、安全帽与防护装备</span></div></div>
++  <div class="sd1-step"><b>03</b><div><strong>人工复核与留证</strong><span>核对区域意见，导出影像与记录</span></div></div>
++</div>''', unsafe_allow_html=True)
++MODEL_LABELS = {"sitewatch": "SiteWatch 基线（默认）",
++                "constructelligence-v03": "Constructelligence 对照（仍有误检）"}
++
++
++def demo_media_entries() -> list[dict]:
++    """Read local attribution separately from the detector's image input."""
++    manifest = json.loads((PROJECT_ROOT / 'sitewatch/demo-media.json').read_text())
++    if manifest.get('schema') != 'demo-media-v1':
++        raise ValueError('Unsupported demo media manifest')
++    entries = manifest['entries']
++    if len({item['id'] for item in entries}) != len(entries):
++        raise ValueError('Duplicate demo media identifiers')
++    return entries
++
++
++def checked_demo_media(entry: dict) -> tuple[Path, bytes]:
++    path = (PROJECT_ROOT / entry['relative_path']).resolve()
++    if not path.is_relative_to(PROJECT_ROOT.resolve()) or not path.is_file():
++        raise ValueError('演示素材文件不可用')
++    data = path.read_bytes()
++    if len(data) != entry['bytes'] or hashlib.sha256(data).hexdigest() != entry['sha256']:
++        raise ValueError('演示素材与登记原件不一致')
++    return path, data
++
++
++def media_mime(path: Path) -> str:
++    return {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
++            '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
++            '.avi': 'video/x-msvideo'}.get(path.suffix.lower(), 'application/octet-stream')
+
+
+ # ----- cached singletons ----------------------------------------------------
+-@st.cache_resource(show_spinner="Loading YOLO models…")
+-def get_detector(conf_threshold: float) -> Detector:
+-    return Detector(conf_threshold=conf_threshold)
++@st.cache_resource(show_spinner="正在加载视觉识别模型…", max_entries=2)
++def get_detector(conf_threshold: float, model_id: str, profile: str) -> Detector:
++    return Detector(conf_threshold=conf_threshold, model_id=model_id, profile=profile)
+
+
+ # ----- pipeline -------------------------------------------------------------
+@@ -62,11 +116,55 @@
+
+
+ # ----- sidebar --------------------------------------------------------------
+-st.sidebar.title("SiteWatch")
+-do_enhance = st.sidebar.toggle("Enable image enhancement", value=True)
+-do_motion = st.sidebar.toggle("Enable motion detection", value=True)
+-conf_threshold = st.sidebar.slider("Detection confidence", 0.2, 0.8, 0.4, 0.05)
+-proximity_px = st.sidebar.slider("Proximity alert distance (px)", 50, 200, 80, 5)
++st.sidebar.markdown(f'''<div class="sd1-sidebar"><img src="{brand_logo}" alt="水电一局标识">
++<strong>施工视觉AI</strong><span>影像识别 · 区域复核 · 证据留存</span></div>''', unsafe_allow_html=True)
++st.sidebar.markdown("### 素材与识别配置")
++source_choice = st.sidebar.radio('素材来源', ['清晰演示素材', '自己上传'], key='review-source')
++demo_entry = None
++demo_error = None
++if source_choice == '清晰演示素材':
++    try:
++        entries = demo_media_entries()
++        titles = {item['id']: item['title'] for item in entries}
++        demo_id = st.sidebar.selectbox('选择演示素材', list(titles), format_func=titles.get, key='review-demo-id')
++        demo_entry = next(item for item in entries if item['id'] == demo_id)
++    except (OSError, ValueError, KeyError, TypeError, StopIteration):
++        demo_error = '演示素材暂不可用，可以切换到“自己上传”。'
++        st.sidebar.warning(demo_error)
++model_choice = st.sidebar.selectbox(
++    "检测模型", ['auto', *MODEL_LABELS],
++    format_func=lambda value: '自动（按素材推荐）' if value == 'auto' else MODEL_LABELS[value],
++    key='review-model')
++automatic_model = demo_entry.get('recommended_model_id', 'sitewatch') if demo_entry else 'sitewatch'
++if automatic_model not in MODEL_LABELS:
++    automatic_model = 'sitewatch'
++model_id = automatic_model if model_choice == 'auto' else model_choice
++profile_choice = st.sidebar.selectbox("演示预设", ['auto', 'standard', 'distant'],
++    format_func=lambda value: {'auto': '自动（按素材与场景）',
++                              'standard': '照片/近景（标准）', 'distant': '远景视频（补充人员与小目标）'}[value])
++pending_upload = st.session_state.get('review-media') if source_choice == '自己上传' else None
++is_uploaded_video = pending_upload is not None and Path(pending_upload.name).suffix.lower() not in {'.jpg', '.jpeg', '.png'}
++automatic_profile = (demo_entry.get('recommended_profile', 'standard') if demo_entry else
++                     'distant' if is_uploaded_video else 'standard')
++profile = automatic_profile if profile_choice == 'auto' else profile_choice
++st.sidebar.caption(f'本次检测模型：{MODEL_LABELS[model_id]}。' +
++                   ('已按所选素材推荐解析。' if model_choice == 'auto' and demo_entry else
++                    '上传素材自动使用 SiteWatch。' if model_choice == 'auto' else '已手动指定。'))
++preserve_resolution = st.sidebar.checkbox('保留原片画质（较慢）', value=True, key='preserve-resolution')
++with st.sidebar.expander("高级识别设置", expanded=False):
++    enhancement_requested = st.toggle("图像增强", value=False, disabled=preserve_resolution)
++    conf_threshold = st.slider("检测置信度阈值", 0.2, 0.8, 0.4, 0.05)
++    st.caption('分数表示模型对当前检测框的判断强度，不代表准确率；调高阈值会减少显示框，也可能漏掉目标。')
++    st.caption('固定样例采用实测配置；清晰素材按推荐场景运行，上传视频默认远景。')
++    if profile == 'distant':
++        st.caption('远景配置：防护装备1280输入，通用人员640输入；速度较慢。')
++    if model_id != "sitewatch":
++        st.caption('对照模型可能改善部分检出，仍有误报；当前是演示配置。')
++do_enhance = enhancement_requested and not preserve_resolution
++if preserve_resolution:
++    st.sidebar.caption('原尺寸无损保存，可下载原图与检测框图。')
++do_motion = False
++proximity_px = 80
+
+ def render_violation_log() -> None:
+     """Render the recent-violations table in the sidebar.
+@@ -74,7 +172,7 @@
+     Called at the *end* of the script so it reflects anything logged during this
+     run (e.g. a freshly uploaded image), rather than the pre-processing state.
+     """
+-    with st.sidebar.expander("Recent violation log", expanded=False):
++    with st.sidebar.expander("上游规则记录（当前未启用）", expanded=False):
+         rows: list[list[str]] = []
+         header: list[str] | None = None
+         if LOG_PATH.exists():
+@@ -91,164 +189,291 @@
+                 height=300,
+             )
+         else:
+-            st.caption("No violations logged yet.")
++            st.caption("离线复核不运行距离、运动或形状安全规则。")
+
+
+ # ----- shared resources ----------------------------------------------------
+-detector = get_detector(conf_threshold)
+-detector.conf_threshold = conf_threshold
++try:
++    detector = get_detector(conf_threshold, model_id, profile)
++except Exception as exc:
++    st.error(f"视觉识别模型加载失败：{exc}")
++    st.stop()
++
++with st.sidebar.expander("模型来源与许可", expanded=False):
++    st.markdown("[SiteWatch / Hani Moustafa](https://github.com/AitchEm-bot/sitewatch) · 源代码 MIT · YOLO 与权重 AGPL-3.0")
++    st.markdown(f"当前检测模型：[ {MODEL_LABELS[model_id]} ]({detector.provenance['repository']}) · {detector.provenance['weight_license']}")
++    st.caption(f"固定版本 {detector.provenance['commit']}；{len(detector.names)} 类；CPU 推理")
++    st.code(detector.model_sha256, language=None)
++    st.json(detector.names)
++    if detector.person_spec:
++        st.caption('补充人员：Ultralytics官方YOLOv8n，640输入，只输出person；独立来源，不输出安全帽类别。')
++        st.json(detector.provenance['person_companion'])
++
++st.sidebar.markdown("### 视频分析范围")
++sample_seconds = st.sidebar.select_slider("视频采样间隔（秒）", options=[0.5, 1.0, 2.0], value=1.0)
++max_seconds = st.sidebar.slider("视频复核起始时长（秒）", 1, 30, 8)
++st.sidebar.caption("仅分析指定范围内的采样画面。")
++
+
+
+ # ----- tabs ----------------------------------------------------------------
+-tab_live, tab_review = st.tabs(["Live monitoring", "Review footage"])
++tab_review, tab_live = st.tabs(["影像识别与复核", "摄像头接入说明"])
+
+
+ with tab_live:
+-    st.markdown("### Live monitoring")
+-    st.caption("Webcam feed. Grant camera access when prompted.")
+-
+-    try:
+-        from streamlit_webrtc import VideoProcessorBase, webrtc_streamer
+-        import av  # noqa: F401  (ensures the runtime is available)
+-    except Exception as exc:  # noqa: BLE001
+-        st.error(
+-            "streamlit-webrtc is not available — install requirements.txt to enable live mode."
+-            f"\n\n({exc})"
+-        )
++    if os.environ.get("SITEWATCH_ENABLE_LIVE") != "1":
++        st.info("当前演示支持照片与视频文件复核，尚未接入现场摄像头。请在“影像识别与复核”中选择素材。")
+     else:
+-
+-        class SiteWatchProcessor(VideoProcessorBase):
+-            def __init__(self) -> None:
+-                self.motion = MotionDetector(proximity_threshold=proximity_px)
+-                self.last_anns: list = []
+-                self._times: list[float] = []
+-                self._frame_idx = 0
+-                self._skip_alt = False
+-
+-            def recv(self, frame):
+-                import av
+-
+-                self._frame_idx += 1
+-                # Adaptive frame skipping when FPS is poor.
+-                if self._skip_alt and self._frame_idx % 2 == 0:
+-                    return frame
+-
+-                t0 = time.perf_counter()
+-                img = frame.to_ndarray(format="bgr24")
+-                # Standardise live size for performance.
+-                if img.shape[1] > 640:
+-                    img = cv2.resize(img, (640, 480))
+-
+-                overlay, _dets, anns, _prox = process_frame(
+-                    img,
+-                    detector,
+-                    self.motion,
+-                    do_enhance=do_enhance,
+-                    do_motion=do_motion,
+-                )
+-                self.last_anns = anns
+-
+-                dt_s = time.perf_counter() - t0
+-                self._times.append(dt_s)
+-                if len(self._times) > 30:
+-                    self._times.pop(0)
+-                avg = sum(self._times) / len(self._times)
+-                fps = 1.0 / avg if avg > 0 else 0.0
+-                self._skip_alt = fps < 10.0
+-                cv2.putText(
+-                    overlay,
+-                    f"FPS {fps:.1f}",
+-                    (8, 22),
+-                    cv2.FONT_HERSHEY_SIMPLEX,
+-                    0.7,
+-                    (255, 255, 255),
+-                    2,
+-                    cv2.LINE_AA,
+-                )
+-                return av.VideoFrame.from_ndarray(overlay, format="bgr24")
+-
+-        ctx = webrtc_streamer(
+-            key="sitewatch-live",
+-            video_processor_factory=SiteWatchProcessor,
+-            media_stream_constraints={"video": True, "audio": False},
+-            async_processing=True,
+-        )
+-
+-        if ctx and ctx.video_processor and ctx.state.playing:
+-            st.markdown("**Recent alerts**")
+-            anns = ctx.video_processor.last_anns or []
+-            if anns:
+-                st.write(
+-                    [{"priority": a.priority, "text": a.text} for a in anns[:5]]
+-                )
+-            else:
+-                st.caption("All clear — no active alerts.")
+-
+-
+-with tab_review:
+-    st.markdown("### Review footage")
+-    upload = st.file_uploader(
+-        "Upload an image or video",
+-        type=["jpg", "jpeg", "png", "mp4", "avi", "mov"],
+-    )
+-    if upload is not None:
+-        suffix = Path(upload.name).suffix.lower()
+-        tmp_path = Path("logs") / f"_review_upload{suffix}"
+-        tmp_path.parent.mkdir(parents=True, exist_ok=True)
+-        tmp_path.write_bytes(upload.getvalue())
+-
+-        if suffix in {".jpg", ".jpeg", ".png"}:
+-            img = cv2.imread(str(tmp_path))
+-            if img is None:
+-                st.error("Could not decode image.")
+-            else:
+-                img = _resize_long_edge(img)
+-                motion = MotionDetector(proximity_threshold=proximity_px)
+-                overlay, dets, anns, _prox = process_frame(
+-                    img, detector, motion, do_enhance=do_enhance, do_motion=False,
+-                    do_dedup=False,
+-                )
+-                st.image(cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB), use_container_width=True)
+-                st.write(f"{len(dets)} detections, {len(anns)} alerts")
++        st.markdown("### 摄像头实时画面")
++        st.caption("连接摄像头前，请在浏览器中允许相机访问。")
++
++        try:
++            from streamlit_webrtc import VideoProcessorBase, webrtc_streamer
++            import av  # noqa: F401  (ensures the runtime is available)
++        except Exception as exc:  # noqa: BLE001
++            st.error(
++                "摄像头组件未安装，当前无法启用实时画面。"
++                f"\n\n({exc})"
++            )
+         else:
+-            cap = cv2.VideoCapture(str(tmp_path))
+-            if not cap.isOpened():
+-                st.error("Could not open video.")
+-            else:
+-                total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+-                placeholder = st.empty()
+-                progress = st.progress(0.0)
+-                motion = MotionDetector(proximity_threshold=proximity_px)
+-                violation_count = 0
+-                idx = 0
+-                while True:
+-                    ok, frame = cap.read()
+-                    if not ok:
+-                        break
+-                    idx += 1
+-                    frame = _resize_long_edge(frame)
++
++            class SiteWatchProcessor(VideoProcessorBase):
++                def __init__(self) -> None:
++                    self.motion = MotionDetector(proximity_threshold=proximity_px)
++                    self.last_anns: list = []
++                    self._times: list[float] = []
++                    self._frame_idx = 0
++                    self._skip_alt = False
++
++                def recv(self, frame):
++                    import av
++
++                    self._frame_idx += 1
++                    # Adaptive frame skipping when FPS is poor.
++                    if self._skip_alt and self._frame_idx % 2 == 0:
++                        return frame
++
++                    t0 = time.perf_counter()
++                    img = frame.to_ndarray(format="bgr24")
++                    # Standardise live size for performance.
++                    if img.shape[1] > 640:
++                        img = cv2.resize(img, (640, 480))
++
+                     overlay, _dets, anns, _prox = process_frame(
+-                        frame,
++                        img,
+                         detector,
+-                        motion,
++                        self.motion,
+                         do_enhance=do_enhance,
+                         do_motion=do_motion,
+                     )
+-                    violation_count += sum(1 for a in anns if a.priority <= 2)
+-                    if idx % 3 == 0:
+-                        placeholder.image(
+-                            cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB),
+-                            use_container_width=True,
+-                        )
+-                    if total > 0:
+-                        progress.progress(min(1.0, idx / total))
+-                cap.release()
+-                progress.progress(1.0)
+-                st.success(
+-                    f"Processed {idx} frames. {violation_count} critical/warning alerts."
+-                )
++                    self.last_anns = anns
++
++                    dt_s = time.perf_counter() - t0
++                    self._times.append(dt_s)
++                    if len(self._times) > 30:
++                        self._times.pop(0)
++                    avg = sum(self._times) / len(self._times)
++                    fps = 1.0 / avg if avg > 0 else 0.0
++                    self._skip_alt = fps < 10.0
++                    cv2.putText(
++                        overlay,
++                        f"FPS {fps:.1f}",
++                        (8, 22),
++                        cv2.FONT_HERSHEY_SIMPLEX,
++                        0.7,
++                        (255, 255, 255),
++                        2,
++                        cv2.LINE_AA,
++                    )
++                    return av.VideoFrame.from_ndarray(overlay, format="bgr24")
++
++            ctx = webrtc_streamer(
++                key="sitewatch-live",
++                video_processor_factory=SiteWatchProcessor,
++                media_stream_constraints={"video": True, "audio": False},
++                async_processing=True,
++            )
++
++            if ctx and ctx.video_processor and ctx.state.playing:
++                st.markdown("**最近提示**")
++                anns = ctx.video_processor.last_anns or []
++                if anns:
++                    st.write(
++                        [{"priority": a.priority, "text": a.text} for a in anns[:5]]
++                    )
++                else:
++                    st.caption("当前没有生成提示。")
++
++
++with tab_review:
++    st.markdown("### 影像识别与复核")
++    st.caption("先选素材并开始识别，再查看检测框、复核局部区域，最后导出证据。")
++    show_all = st.checkbox(f"显示全部{len(detector.names)}类（含人员、设备及可能误检）", value=False,
++                           key=f"show-all-{model_id}")
++    st.caption('当前识别场景：' + ('远景视频 · 人员与防护装备' if profile == 'distant' else '照片 / 近景 · 人员与防护装备'))
++    display_mode = st.radio('画面显示', ['大图看检测结果', '左右对照'], horizontal=True, key='review-display')
++    upload = None
++    if source_choice == '自己上传':
++        upload = st.file_uploader(
++            "上传施工照片或视频",
++            type=["jpg", "jpeg", "png", "mp4", "avi", "mov", "webm"],
++            key='review-media',
++        )
++    contents = None
++    media_name = None
++    tmp_path = None
++    if demo_entry is not None and demo_error is None:
++        try:
++            tmp_path, contents = checked_demo_media(demo_entry)
++            media_name = tmp_path.name
++            st.caption(f"演示素材：{demo_entry['title']}")
++            st.caption('公开演示素材，非水电一局现场。')
++            with st.expander('素材来源与使用说明', expanded=False):
++                st.markdown(f"作者：{demo_entry['author']} · [来源]({demo_entry['source']}) · "
++                            f"[{demo_entry['license']}]({demo_entry['license_url']})")
++                st.caption(demo_entry.get('description', '公开演示素材，非水电一局现场。'))
++        except (OSError, ValueError, KeyError, TypeError):
++            st.session_state.pop('review', None)
++            st.error('演示素材校验失败，请选择其它素材或切换到自己上传。')
++    elif source_choice == '自己上传' and upload is not None:
++        contents = upload.getvalue()
++        media_name = Path(upload.name).name
++    if contents is not None and media_name is not None:
++        digest = hashlib.sha256(contents).hexdigest()
++        if tmp_path is None:
++            upload_dir = RUNTIME / "uploads" / digest
++            upload_dir.mkdir(parents=True, exist_ok=True)
++            tmp_path = upload_dir / media_name
++            tmp_path.write_bytes(contents)
++        source_id = demo_entry['id'] if demo_entry is not None else 'upload'
++        signature = (digest, source_choice, source_id, model_choice, model_id, profile_choice, profile, preserve_resolution,
++                     conf_threshold, do_enhance, sample_seconds, max_seconds)
++        saved = st.session_state.get("review")
++        if saved and saved[0] != signature:
++            st.session_state.pop("review", None)
++        st.caption(f"当前影像：{media_name}")
++        if st.button("开始识别与复核", type="primary", key=f"run-review-{digest}-{model_id}"):
++            destination = new_review_dir(RUNTIME)
++            placeholder = st.empty()
++            status = st.empty()
++            def update(overlay, frame):
++                placeholder.image(str(destination / frame["overlay_file" if show_all else "review_overlay_file"]), use_container_width=True)
++                status.caption(f"已识别 {frame['timestamp_seconds']:.2f} 秒画面；{len(frame['detections'])} 个检测框")
++            try:
++                with st.spinner("正在识别人员与防护装备，请稍候…"):
++                    result = review_file(tmp_path, detector, destination,
++                                         do_enhance=do_enhance, sample_seconds=sample_seconds,
++                                         max_seconds=max_seconds, callback=update,
++                                         preserve_resolution=preserve_resolution)
++                st.session_state["review"] = (signature, str(destination), result)
++            except Exception as exc:
++                st.session_state.pop("review", None)
++                st.error(f"复核失败：{exc}。已完成的原始证据保存在本机复核目录。")
++            placeholder.empty()
++            status.empty()
++        saved = st.session_state.get("review")
++        if saved and saved[0] == signature:
++            _, destination, result = saved
++            destination = Path(destination)
++            st.success(f"识别完成：{len(result['frames'])} 个画面；待人工复核框 {result['manual_review_detection_count']} 次。")
++            summary = st.columns(3)
++            summary[0].metric("已分析画面", f"{len(result['frames'])} 帧")
++            summary[1].metric("待人工复核框", f"{result['manual_review_detection_count']} 次")
++            summary[2].metric("处理耗时", f"{result['elapsed_seconds']:.1f} 秒")
++            st.caption('统计来自本次实际结果；待复核框按NO-*类别计次，非人员去重统计。')
++            if result["media_type"] == "video":
++                st.caption("仅复核下列采样时间：" + ", ".join(f"{f['timestamp_seconds']:.2f}s" for f in result["frames"]))
++            selected = st.selectbox("查看采样画面", range(len(result["frames"])),
++                                    format_func=lambda i: f"{result['frames'][i]['timestamp_seconds']:.2f}s / frame {result['frames'][i]['frame_index']}",
++                                    key=f"frame-{destination.name}")
++            frame = result["frames"][selected]
++            input_path = destination / frame['input_file']
++            shown_path = destination / frame["overlay_file" if show_all else "review_overlay_file"]
++            source_width, source_height = frame['source_dimensions_wh']
++            image_width, image_height = frame['detection_dimensions_wh']
++            st.caption(f'原片画面 {source_width}×{source_height}；本次保存画面 {image_width}×{image_height}。页面按屏幕缩放显示。')
++            if display_mode == '左右对照':
++                left, right = st.columns(2)
++                left.image(str(input_path), caption='本次输入画面', use_container_width=True)
++                right.image(str(shown_path), caption=f'{MODEL_LABELS[model_id]} · 检测结果', use_container_width=True)
++            else:
++                st.image(str(shown_path), caption=f'{MODEL_LABELS[model_id]} · 大图检测结果', use_container_width=True)
++                with st.expander('查看本次输入原图', expanded=False):
++                    st.image(str(input_path), caption='本次输入画面', use_container_width=True)
++            downloads = st.columns(3)
++            downloads[0].download_button('下载当前输入原图', input_path.read_bytes(), file_name=input_path.name,
++                                        mime=media_mime(input_path), on_click='ignore', use_container_width=True)
++            downloads[1].download_button('下载当前检测框图', shown_path.read_bytes(), file_name=shown_path.name,
++                                        mime=media_mime(shown_path), on_click='ignore', use_container_width=True)
++            source_path = destination / result['source_file']
++            downloads[2].download_button('下载原始影像', source_path.read_bytes(), file_name=Path(result['source_name']).name,
++                                        mime=media_mime(source_path), on_click='ignore', use_container_width=True)
++            with st.expander("查看检测明细与原始分数", expanded=False):
++                st.dataframe([{"类别": d["class_name"], "检测分数": d["confidence"],
++                               "检测框坐标": d["bbox_xyxy"], "模型来源": d["source"]}
++                              for d in frame["detections"] if show_all or d["class_name"] in REVIEW_LABELS], use_container_width=True)
++                st.caption(NOTICE)
++            st.markdown("#### AI 区域复核")
++            st.caption("只分析所选头部，提供第二模型意见；原检测类别和分数保留，不自动认定违规。")
++            heads = head_indices(frame)
++            if not heads:
++                st.info("当前帧未检出可复核的头部框，不能据此判断是否戴帽。")
++            else:
++                detection_index = st.selectbox("选择头部检测框", heads,
++                    format_func=lambda i: f"框 {i + 1} · {frame['detections'][i]['class_name']} · {frame['detections'][i]['confidence']:.3f}",
++                    key=f"head-{destination.name}-{selected}")
++                detection = frame["detections"][detection_index]
++                available = backend_status(PROJECT_ROOT)
++                if not available["ready"]:
++                    st.info("区域复核模型未就绪，请先运行 vision/启动视频AI.cmd；已有检测结果仍可查看和导出。")
++                if st.button("复核所选头部", disabled=not available["ready"],
++                             key=f"review-head-{destination.name}-{selected}-{detection_index}"):
++                    try:
++                        with st.spinner("本地 AI 正在观察所选头部…"):
++                            review_head_region(destination, selected, detection_index, PROJECT_ROOT)
++                    except Exception:
++                        st.error("区域复核失败；原检测结果已保留。请确认本地模型就绪后重试。")
++                opinion = latest_region_review(destination, selected, detection_index)
++                if opinion and opinion["status"] == "complete":
++                    st.image(str(destination / opinion["crop_file"]), caption="本次复核的未画框裁剪图", width=320)
++                    st.write(f"检测器原结论：{detection['class_name']}；原检测分数 {detection['confidence']:.3f}")
++                    st.write("Qwen 区域意见：" + opinion["opinion"]["label"])
++                    st.caption("Qwen3-VL-4B 本地模型；文字意见无校准概率，不沿用检测器分数。")
++                    if opinion["comparison"] == "disagree":
++                        st.warning("两模型意见不同，请结合原图人工复核。")
++                    elif opinion["comparison"] == "uncertain":
++                        st.info("区域意见尚不能确认，请查看原图和原始回答。")
++                    else:
++                        st.caption("两模型在所选区域的意见一致，仍需人工核对。")
++                    with st.expander("查看复核原文与来源", expanded=False):
++                        st.text(opinion["opinion"]["raw_answer"])
++                        st.caption(f"复核时间 {opinion['at']}；源帧 {opinion['frame_index']} / {opinion['timestamp_seconds']:.2f}s")
++                        st.code(opinion["crop_sha256"], language=None)
++                elif opinion and opinion["status"] == "failed":
++                    st.error("该区域上次复核未完成，没有生成替代结论；失败证据已保留，可重试。")
++            st.download_button("下载原始检测 JSON", (destination / "detections.json").read_bytes(),
++                               file_name="sitewatch-detections.json", mime="application/json", on_click="ignore")
++            st.download_button("下载完整证据（原文件 / 检测框 / JSON）", evidence_zip(destination).read_bytes(),
++                               file_name="sitewatch-evidence.zip", mime="application/zip", on_click="ignore")
++        elif tmp_path.suffix.lower() in {".jpg", ".jpeg", ".png"}:
++            preview = cv2.imread(str(tmp_path))
++            if preview is None:
++                st.error("无法解码上传图片，请更换文件。")
++            else:
++                st.image(str(tmp_path), caption="原片预览 · 点击“开始识别与复核”查看AI检测结果", use_container_width=True)
++        else:
++            st.video(str(tmp_path))
++    else:
++        st.session_state.pop("review", None)
++        st.markdown('''<div class="sd1-empty"><strong>从一张现场照片开始</strong>
++<p>在上方上传施工照片或视频，即可识别人员与防护装备。<br>也可在左侧选择“清晰演示素材”，直接体验完整复核流程。</p></div>''', unsafe_allow_html=True)
++
++st.markdown('''<div class="sd1-footer">水电一局 · 施工视觉AI演示<br>
++AI 检测用于辅助人工复核，识别框不等于违规结论；仅分析已列出的采样画面。<br>
++基于 SiteWatch 开源应用适配 · 模型与源码许可见侧栏“模型来源与许可”。</div>''', unsafe_allow_html=True)
+
+
+ # Render the sidebar violation log last, so it includes anything logged during
+ # this run (e.g. a just-uploaded image) instead of only the pre-processing state.
+-render_violation_log()
++if os.environ.get("SITEWATCH_ENABLE_LIVE") == "1":
++    render_violation_log()
+--- a/cv_pipeline/detection.py
++++ b/cv_pipeline/detection.py
+@@ -1,8 +1,13 @@
+-"""YOLO detection wrapper. Merges COCO baseline with the custom SiteWatch model."""
++"""Pinned native PPE inference and the upstream optional person companion on CPU."""
+ from __future__ import annotations
+
+ import logging
++import hashlib
++import json
++import os
+ import sys
++import time
++import threading
+ from dataclasses import dataclass
+ from pathlib import Path
+
+@@ -10,6 +15,9 @@
+ import numpy as np
+
+ log = logging.getLogger(__name__)
++
++MODEL_SHA256 = "c2db52b9be8ccd5bcc09d6e0f9498a6e442e47eb6f6b62850db11530b77651ab"
++MODEL_NAMES = ["Excavator", "Gloves", "Hardhat", "Ladder", "Mask", "NO-Hardhat", "NO-Mask", "NO-Safety Vest", "Person", "SUV", "Safety Cone", "Safety Vest", "bus", "dump truck", "fire hydrant", "machinery", "mini-van", "sedan", "semi", "trailer", "truck and trailer", "truck", "van", "vehicle", "wheel loader"]
+
+ # Categories used downstream by fusion / drawing.
+ CATEGORIES = {
+@@ -22,6 +30,12 @@
+
+
+ def _category_for(name: str) -> str:
++    if name in {'no-hardhat', 'no-safety vest', 'no-mask', 'no-goggles', 'no-gloves'}:
++        return 'ppe_violation'
++    if name in {'hardhat', 'safety vest', 'gloves', 'goggles', 'safety shoes'}:
++        return 'ppe_compliant'
++    if name == 'person':
++        return 'worker'
+     for cat, members in CATEGORIES.items():
+         if name in members:
+             return cat
+@@ -33,8 +47,11 @@
+     class_name: str
+     confidence: float
+     bbox: tuple[int, int, int, int]  # x1, y1, x2, y2
+-    source: str  # "coco" or "sitewatch"
++    source: str  # Pinned branch identifier, retained in exported evidence.
+     category: str  # ppe_violation | ppe_compliant | worker | hazard | marker | other
++    class_id: int = -1
++    bbox_xyxy: tuple[float, float, float, float] | None = None
++    canonical_class: str | None = None
+
+
+ def _iou(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> float:
+@@ -52,36 +69,76 @@
+
+
+ class Detector:
+-    """Runs the COCO YOLO and (when available) the custom SiteWatch YOLO,
+-    merges the predictions, and deduplicates overlapping boxes."""
++    """Runs the original custom model; missing/invalid weights are fatal.
++
++    Category names are retained for the upstream drawing API. They are model
++    labels, not a determination of regulatory compliance.
++    """
+
+     def __init__(
+         self,
+-        coco_path: str = "models/yolov8n.pt",
+-        custom_path: str = "models/sitewatch_best.pt",
++        custom_path: str | None = None,
+         conf_threshold: float = 0.4,
++        model_id: str = 'sitewatch',
++        profile: str = 'standard',
+     ) -> None:
+         # Import lazily so the module imports cleanly even before the
+         # ultralytics package is installed (useful for unit-test discovery).
+         from ultralytics import YOLO
+-
++        import torch
++
++        torch.set_num_threads(max(1, int(os.environ.get("SITEWATCH_CPU_THREADS", "2"))))
+         self.conf_threshold = float(conf_threshold)
+-        self.coco = YOLO(coco_path)
+-        self.custom = None
+-        if Path(custom_path).exists():
+-            try:
+-                self.custom = YOLO(custom_path)
+-            except Exception as exc:  # noqa: BLE001
+-                log.warning("Could not load custom weights %s: %s", custom_path, exc)
+-        else:
+-            log.warning(
+-                "Custom weights %s not found — running with COCO-only detection. "
+-                "Train via training/train_yolo.ipynb to enable PPE-violation classes.",
+-                custom_path,
+-            )
+-
+-    def _run(self, model, frame: np.ndarray, source: str) -> list[Detection]:
+-        results = model.predict(frame, conf=self.conf_threshold, verbose=False)
++        if profile not in {'standard', 'distant'}:
++            raise ValueError('Unknown detection profile')
++        self.profile = profile
++        self.inference_imgsz = 1280 if profile == 'distant' else 640
++        if model_id not in {'sitewatch', 'constructelligence-v03'}:
++            raise ValueError('Only the baseline and explicitly registered comparison model are available')
++        specs = json.loads((Path(__file__).resolve().parents[2] / 'model-candidates.json').read_text())['models']
++        spec = next(item for item in specs if item['id'] == model_id)
++        project = Path(os.environ.get('SITEWATCH_PROJECT_ROOT', Path(__file__).resolve().parents[3]))
++        default_path = os.environ.get('SITEWATCH_MODEL_PATH') if model_id == 'sitewatch' else None
++        self.model_id = model_id
++        self.model_path = Path(custom_path or default_path or project / spec['weights']).resolve()
++        if not self.model_path.is_file():
++            raise FileNotFoundError(f"Required SiteWatch PPE model missing: {self.model_path}. COCO fallback is disabled.")
++        self.model_sha256 = hashlib.sha256(self.model_path.read_bytes()).hexdigest()
++        if self.model_sha256 != spec['sha256']:
++            raise ValueError(f"SiteWatch model SHA256 mismatch: {self.model_sha256}")
++        self.custom = YOLO(str(self.model_path))
++        self.names = dict(self.custom.names)
++        if [self.names[i] for i in range(len(self.names))] != spec['expected_names']:
++            raise ValueError(f"Unexpected SiteWatch class names: {self.names}")
++        self.canonical_classes = {value: key for key, value in spec['classes'].items()}
++        self.provenance = {'id': model_id, 'repository': spec['source'], 'commit': spec['revision'],
++                           'sha256': self.model_sha256, 'names': self.names,
++                           'weight_license': spec['license'], 'device': 'cpu',
++                           'profile': profile, 'inference_imgsz': self.inference_imgsz}
++        self.person = None
++        self.person_spec = None
++        if profile == 'distant':
++            companion = json.loads((Path(__file__).resolve().parents[2] / 'person-model.json').read_text())
++            person_path = project / companion['weights']
++            if (not person_path.is_file() or person_path.stat().st_size != companion['bytes']
++                    or hashlib.sha256(person_path.read_bytes()).hexdigest() != companion['sha256']):
++                raise ValueError('Pinned companion person weight missing or invalid; standard mode remains available')
++            self.person = YOLO(str(person_path))
++            if len(self.person.names) != 80 or self.person.names.get(0) != 'person':
++                raise ValueError('Unexpected COCO companion vocabulary')
++            self.person_spec = companion
++            self.provenance['person_companion'] = {**companion, 'actual_names': dict(self.person.names),
++                                                   'device': 'cpu', 'purpose': 'person only; no PPE labels'}
++        self.last_inference_ms = 0.0
++        self.last_branch_detections = {}
++        self._frame_lock = threading.RLock()
++
++    def _run(self, model, frame: np.ndarray, source: str, *, person_only=False) -> list[Detection]:
++        start = time.perf_counter()
++        kwargs = {'classes': [0]} if person_only else {}
++        results = model.predict(frame, conf=self.conf_threshold, verbose=False, device="cpu",
++                                imgsz=640 if person_only else self.inference_imgsz, **kwargs)
++        self.last_inference_ms = (time.perf_counter() - start) * 1000
+         out: list[Detection] = []
+         if not results:
+             return out
+@@ -102,23 +159,41 @@
+                     bbox=(x1, y1, x2, y2),
+                     source=source,
+                     category=_category_for(class_name),
++                    class_id=cls,
++                    bbox_xyxy=tuple(float(v) for v in xyxy),
++                    canonical_class='person' if person_only else self.canonical_classes.get(cls),
+                 )
+             )
+         return out
+
++    def _detect(self, frame: np.ndarray) -> list[Detection]:
++        if frame is None or frame.size == 0:
++            self.last_branch_detections = {}
++            self.last_inference_ms = 0.0
++            return []
++        custom = self._run(self.custom, frame, self.model_id)
++        custom_ms = self.last_inference_ms
++        self.last_branch_detections = {self.model_id: custom}
++        if self.person is None:
++            return custom
++        people = self._run(self.person, frame, self.person_spec['id'], person_only=True)
++        self.last_inference_ms += custom_ms
++        self.last_branch_detections[self.person_spec['id']] = people
++        # Reuse upstream overlap deduplication, restricted to whole-person boxes.
++        # A small helmet box must never suppress a whole worker detection.
++        return custom + [p for p in people if not any(
++            cd.category == 'worker' and _iou(p.bbox, cd.bbox) > .5 for cd in custom)]
++
+     def detect(self, frame: np.ndarray) -> list[Detection]:
+-        if frame is None or frame.size == 0:
+-            return []
+-        merged: list[Detection] = self._run(self.coco, frame, "coco")
+-        if self.custom is not None:
+-            custom_dets = self._run(self.custom, frame, "sitewatch")
+-            # Custom model is trusted over COCO when bboxes overlap heavily;
+-            # this lets PPE classes (NO-Hardhat etc.) take precedence over a
+-            # generic COCO "person" box covering the same worker.
+-            for cd in custom_dets:
+-                merged = [m for m in merged if _iou(m.bbox, cd.bbox) <= 0.5]
+-                merged.append(cd)
+-        return merged
++        with self._frame_lock:
++            return self._detect(frame)
++
++    def detect_frame(self, frame: np.ndarray):
++        """Return this call's evidence snapshot before another session can infer."""
++        with self._frame_lock:
++            detections = self._detect(frame)
++            branches = {source: list(values) for source, values in self.last_branch_detections.items()}
++            return detections, branches, self.last_inference_ms
+
+
+ def _cli(path: str) -> None:
+--- /dev/null
++++ b/region_review.py
+@@ -0,0 +1,272 @@
++"""Second opinion via the existing local, official Qwen Gradio application."""
++from datetime import datetime, timezone
++from functools import lru_cache
++import hashlib
++import html
++import json
++import math
++import os
++from pathlib import Path
++import re
++import time
++import threading
++import urllib.request
++import uuid
++
++# gradio_client 1.13 treats an explicit False as the environment default.
++# Set these before its import as well as in the launcher.
++os.environ['GRADIO_ANALYTICS_ENABLED'] = 'False'
++os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
++
++URL = 'http://127.0.0.1:8766'
++PROMPT = '请只观察图片中可见的头部。仅回答一个选项：A＝明确佩戴工业安全帽；B＝头发或头皮清楚可见，未见工业安全帽；C＝普通软帽，并非工业安全帽；D＝看不清或无法判断。不要判断法规违规，不要猜测。'
++LABELS = {'A': '可见工业安全帽', 'B': '头发或头皮可见，未见工业安全帽',
++          'C': '普通软帽，并非工业安全帽', 'D': '看不清或无法判断'}
++REPLY_TEXT = {'A': '明确佩戴工业安全帽', 'B': '头发或头皮清楚可见，未见工业安全帽',
++              'C': LABELS['C'], 'D': LABELS['D']}
++HEAD_LABELS = {'Hardhat': 'helmet', 'NO-Hardhat': 'no_helmet',
++               'helmet': 'helmet', 'no-helmet': 'no_helmet',
++               'hardhat': 'helmet', 'no-hardhat': 'no_helmet'}
++QWEN_SHA = '69d2f15d01e20744dcdb78ed044d06c11592264ae20337aacd0073b3590768d2'
++
++
++def sha(path):
++    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
++
++
++def atomic_json(path, value):
++    temporary = path.with_name(path.name + '.' + uuid.uuid4().hex + '.tmp')
++    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
++    temporary.replace(path)
++
++
++def parse_option(raw):
++    clean = html.unescape(re.sub(r'<br\s*/?>', '\n', raw, flags=re.I))
++    # Strip only the exact note appended by our existing image backend.
++    first = re.sub(r'\s*---\s*本次为图片或文本分析；结论待人工复核。\s*$', '', clean).strip()
++    if first in LABELS:
++        return first
++    # The model sometimes repeats the literal option definition. Accept only
++    # an exact frozen option, never an initial letter from ambiguous prose.
++    for option, wording in REPLY_TEXT.items():
++        if first in (option + '＝' + wording, option + '=' + wording):
++            return option
++    return None
++
++
++@lru_cache(maxsize=4)
++def checkpoint_digest(path, size, mtime_ns):
++    # Stream the large checkpoint; never allocate its entire byte array in RAM.
++    file = Path(path)
++    with file.open('rb') as source:
++        digest = hashlib.file_digest(source, 'sha256').hexdigest()
++    info = file.stat()
++    if info.st_size != size or info.st_mtime_ns != mtime_ns:
++        raise ValueError('复核模型权重在校验期间发生变化')
++    return digest
++
++
++def backend_status(project_root):
++    """Do not send imagery to an unknown process listening on the review port."""
++    root = Path(project_root).resolve()
++    try:
++        state = json.loads((root / '.runtime/vision-process.json').read_text())
++        argv = Path(f'/proc/{state["pid"]}/cmdline').read_bytes().split(b'\0')
++        checkpoint = (root / 'downloads/qwen3-vl-4b-nf4').resolve()
++        if (str(root / 'vision/web_demo_mm.py').encode() not in argv
++                or str(checkpoint).encode() not in argv
++                or Path(state.get('model', '')).resolve() != checkpoint
++                or not owns_review_listener(state['pid'], argv)):
++            raise ValueError('本地复核端口未匹配已验证的 Qwen4B 服务')
++        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
++        with opener.open(URL + '/config', timeout=2) as response:
++            if response.status != 200:
++                raise ValueError('本地复核页面尚未就绪')
++        weight = checkpoint / 'model.safetensors'
++        info = weight.stat()
++        digest = checkpoint_digest(str(weight), info.st_size, info.st_mtime_ns)
++        if digest != QWEN_SHA:
++            raise ValueError('复核模型权重与已验证版本不符')
++        return {'ready': True, 'url': URL, 'model': 'Qwen3-VL-4B-Instruct local NF4',
++                'checkpoint': str(checkpoint), 'pid': state['pid'],
++                'weight_sha256': digest, 'weight_size': info.st_size,
++                'weight_mtime_ns': info.st_mtime_ns}
++    except (OSError, ValueError, KeyError, TypeError) as exc:
++        return {'ready': False, 'url': URL, 'error': str(exc)}
++
++
++def owns_review_listener(pid, argv, proc_root=Path('/proc')):
++    """Bind the declared process to the exact loopback listening socket."""
++    def argument(name):
++        try:
++            return argv[argv.index(name.encode()) + 1]
++        except (ValueError, IndexError):
++            return None
++
++    if argument('--server-port') != b'8766' or argument('--server-name') != b'127.0.0.1':
++        return False
++    process = Path(proc_root) / str(pid)
++    sockets = set()
++    for fd in (process / 'fd').iterdir():
++        try:
++            target = fd.readlink().as_posix()
++        except OSError:
++            continue  # A request socket can close while enumerating.
++        if target.startswith('socket:[') and target.endswith(']'):
++            sockets.add(target[8:-1])
++    for line in (process / 'net/tcp').read_text().splitlines()[1:]:
++        fields = line.split()
++        if (len(fields) > 9 and fields[1] == '0100007F:223E'
++                and fields[3] == '0A' and fields[9] in sockets):
++            return True
++    return False
++
++
++def cancel_job(client, job):
++    """A stalled cancellation request must not postpone the failed UI result."""
++    client.httpx_kwargs['timeout'] = 2.0
++
++    def cancel():
++        try:
++            job.cancel()
++        except Exception:
++            pass  # Best effort; the failed attempt remains the authoritative result.
++
++    threading.Thread(target=cancel, daemon=True, name='head-review-cancel').start()
++
++
++def classify_crop(crop_path, project_root):
++    """Reuse native upload and submit APIs, each call with a fresh chat session."""
++    from gradio_client import Client, handle_file
++    backend = backend_status(project_root)
++    if not backend['ready']:
++        raise RuntimeError('本地复核模型未就绪，请先运行视觉AI启动脚本。' + backend.get('error', ''))
++    started = time.perf_counter()
++    # Keep the SDK's native executor default: a request, SSE reader, response
++    # waiter and cancellation watcher share it. Artificially limiting it to
++    # one or two workers deadlocks before inference.
++    client = Client(URL, hf_token=False, verbose=False,
++                    download_files=False, analytics_enabled=False,
++                    httpx_kwargs={'trust_env': False, 'timeout': 90.0})
++    try:
++        upload_job = client.submit(history=[], file=handle_file(str(Path(crop_path).resolve())), api_name='/add_file')
++        try:
++            uploaded = upload_job.result(timeout=30)
++        except TimeoutError:
++            cancel_job(client, upload_job)
++            raise RuntimeError('区域上传超时，未生成复核结论')
++        job = client.submit(history=uploaded, text=PROMPT, api_name='/submit_and_predict')
++        try:
++            response = job.result(timeout=120)
++        except TimeoutError:
++            cancel_job(client, job)
++            raise RuntimeError('区域复核超时，原检测结果保留，请稍后重试')
++        history = response[0]
++        raw = history[-1][1]
++        if not isinstance(raw, str):
++            raise ValueError('复核服务未返回文本，不能解析为已确认结果')
++        option = parse_option(raw)
++        return {'backend': backend, 'raw_answer': raw, 'option': option,
++                'label': LABELS.get(option, '回答格式未确认，请查看原文'),
++                'classification_confidence': None,
++                'elapsed_seconds': time.perf_counter() - started,
++                'prompt': PROMPT, 'prompt_sha256': hashlib.sha256(PROMPT.encode()).hexdigest(),
++                'api': ['/add_file', '/submit_and_predict'],
++                'api_history': history, 'fresh_session': True}
++    finally:
++        client.close()
++
++
++def head_indices(frame):
++    return [i for i, item in enumerate(frame['detections']) if item['class_name'] in HEAD_LABELS]
++
++
++def region_location(review_dir, frame_position, detection_index):
++    return Path(review_dir) / 'head-reviews' / f'frame-{frame_position:06d}-detection-{detection_index:04d}'
++
++
++def latest_region_review(review_dir, frame_position, detection_index):
++    path = region_location(review_dir, frame_position, detection_index) / 'latest.json'
++    if not path.is_file():
++        return None
++    try:
++        return json.loads(path.read_text())
++    except (OSError, ValueError):
++        return None
++
++
++def crop_box(bbox, width, height):
++    if len(bbox) != 4 or not all(math.isfinite(float(v)) for v in bbox):
++        raise ValueError('检测框坐标无效')
++    x1, y1, x2, y2 = map(float, bbox)
++    if x2 <= x1 or y2 <= y1:
++        raise ValueError('检测框为空')
++    if x2 <= 0 or y2 <= 0 or x1 >= width or y1 >= height:
++        raise ValueError('检测框超出画面')
++    dx, dy = (x2 - x1) * .2, (y2 - y1) * .2
++    clipped = [min(width, max(0, int(x1-dx))), min(height, max(0, int(y1-dy))),
++               min(width, max(0, int(x2+dx+1))), min(height, max(0, int(y2+dy+1)))]
++    if clipped[2] <= clipped[0] or clipped[3] <= clipped[1]:
++        raise ValueError('裁剪区域超出画面')
++    return clipped
++
++
++def review_head_region(review_dir, frame_position, detection_index, project_root):
++    """Retain the source detector result; save crop and independent VLM opinion."""
++    import cv2
++    directory = Path(review_dir).resolve()
++    original = json.loads((directory / 'detections.json').read_text())
++    if original['status'] != 'complete':
++        raise ValueError('仅允许复核已完成检测的画面')
++    if not 0 <= frame_position < len(original['frames']):
++        raise ValueError('采样画面索引无效')
++    frame = original['frames'][frame_position]
++    if detection_index not in head_indices(frame):
++        raise ValueError('当前选框不是直接头部类别，不能判断是否戴帽')
++    detection = frame['detections'][detection_index]
++    image_path = (directory / frame['input_file']).resolve()
++    if not image_path.is_relative_to(directory):
++        raise ValueError('采样画面不属于本次复核目录')
++    image = cv2.imread(str(image_path))
++    if image is None:
++        raise ValueError('原始采样图无法读取')
++    bbox = detection.get('bbox_xyxy') or detection['bbox']
++    clipped = crop_box(bbox, image.shape[1], image.shape[0])
++    crop = image[clipped[1]:clipped[3], clipped[0]:clipped[2]]
++    if crop.size == 0:
++        raise ValueError('裁剪区域超出画面')
++    destination = region_location(directory, frame_position, detection_index)
++    destination.mkdir(parents=True, exist_ok=True)
++    attempts = destination / 'attempts'
++    attempts.mkdir(exist_ok=True)
++    attempt = attempts / (datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-') + uuid.uuid4().hex[:8])
++    attempt.mkdir()
++    crop_path = attempt / 'crop.png'
++    if not cv2.imwrite(str(crop_path), crop):
++        raise OSError('无法保存裁剪原图')
++    record = {'schema': 'ppe-head-second-opinion-v1', 'status': 'processing',
++              'at': datetime.now(timezone.utc).isoformat(),
++              'source_sha256': original['source_sha256'], 'frame_position': frame_position,
++              'frame_index': frame['frame_index'], 'timestamp_seconds': frame['timestamp_seconds'],
++              'input_file': frame['input_file'], 'input_sha256': sha(image_path),
++              'input_basis': 'Saved unannotated decoded frame shown in this review; its dimensions and SHA are recorded. No overlays or expected answers are sent.',
++              'detector_model': original['model'], 'detector_detection': detection,
++              'crop_file': str(crop_path.relative_to(directory)), 'crop_sha256': sha(crop_path),
++              'crop_box_in_input': clipped, 'padding_fraction': .2,
++              'notice': '第二意见不改写原检测类别或分数；模型分歧待人工复核，不是法规违规结论。'}
++    try:
++        opinion = classify_crop(crop_path, project_root)
++        record['opinion'] = opinion
++        model_label = HEAD_LABELS[detection['class_name']]
++        option = opinion['option']
++        record['comparison'] = ('uncertain' if option in (None, 'D') else
++                                'agree' if (option == 'A') == (model_label == 'helmet') else 'disagree')
++        record['status'] = 'complete'
++    except Exception as exc:
++        record['status'] = 'failed'
++        record['error'] = f'{type(exc).__name__}: {exc}'
++        raise
++    finally:
++        atomic_json(attempt / 'review.json', record)
++        atomic_json(destination / 'latest.json', record)
++    return record
+--- /dev/null
++++ b/review_evidence.py
+@@ -0,0 +1,201 @@
++"""Thin offline evidence adapter around SiteWatch's detector and drawing code."""
++from __future__ import annotations
++
++from dataclasses import asdict
++from datetime import datetime, timezone
++import hashlib
++import json
++import math
++from pathlib import Path
++import time
++import uuid
++import zipfile
++
++import cv2
++
++from cv_pipeline.enhancement import enhance
++from utils.drawing import draw_overlay
++
++NOTICE = "NO-* 为模型待人工复核类别，不等于法规违规；未检出不等于缺少或安全。仅分析已列出时间点，不推断视频全程。"
++PPE_LABELS = {"Gloves", "Hardhat", "Mask", "NO-Hardhat", "NO-Mask", "NO-Safety Vest", "Safety Vest",
++              "hardhat", "no-hardhat", "safety vest", "no-safety vest", "no-mask", "gloves",
++              "safety shoes", "goggles", "no-goggles", "no-gloves"}
++REVIEW_LABELS = PPE_LABELS | {'Person', 'person', 'human'}
++
++
++def source_provenance(digest):
++    """Match attribution by original bytes; never pass this metadata to YOLO."""
++    registry = Path(__file__).resolve().parents[1] / "media-sources.json"
++    for entry in json.loads(registry.read_text()):
++        if entry.get("sha256") == digest:
++            return {"registered": True, "matching_method": "exact source SHA256", **entry}
++    return {"registered": False, "sha256": digest,
++            "notice": "用户上传素材来源与许可未登记；不套用公开示例的作者或许可。"}
++
++
++def resize_long_edge(frame, max_long=1280):
++    h, w = frame.shape[:2]
++    scale = min(1.0, max_long / max(h, w))
++    return cv2.resize(frame, (round(w * scale), round(h * scale))) if scale < 1 else frame
++
++
++def review_file(input_path, detector, output_dir, *, do_enhance=False,
++                sample_seconds=1.0, max_seconds=8.0, callback=None,
++                preserve_resolution=False):
++    """Save original upload, all sampled frames, raw boxes, and true overlays.
++
++    The input filename or attribution is never used as an inference prompt.
++    All 25 original model labels remain available as observations. Only direct
++    NO-* model classes appear in the manual PPE review count; no missing-item,
++    proximity, motion or shape rule is evaluated.
++    """
++    input_path, output_dir = Path(input_path), Path(output_dir)
++    if preserve_resolution and do_enhance:
++        raise ValueError('保留原片画质时请关闭图像增强')
++    if sample_seconds < 0.2 or max_seconds <= 0 or max_seconds > 30:
++        raise ValueError("Sampling must be >= 0.2 s and review duration in (0, 30] s")
++    output_dir.mkdir(parents=True, exist_ok=False)
++    data = input_path.read_bytes()
++    suffix = input_path.suffix.lower()
++    source = output_dir / ("original" + suffix)
++    source.write_bytes(data)
++    attribution = source_provenance(hashlib.sha256(data).hexdigest())
++    (output_dir / "source-provenance.json").write_text(json.dumps(attribution, ensure_ascii=False, indent=2) + "\n")
++    record = {
++        "schema": "sitewatch-offline-review-v1", "status": "processing",
++        "created_at": datetime.now(timezone.utc).isoformat(),
++        "source_name": input_path.name, "source_sha256": hashlib.sha256(data).hexdigest(),
++        "source_bytes": len(data), "source_file": source.name,
++        "source_provenance": attribution,
++        "model": dict(detector.provenance),
++        "settings": {"confidence": detector.conf_threshold, "image_enhancement": do_enhance,
++                     "inference_imgsz": detector.inference_imgsz,
++                     "max_long_edge": None if preserve_resolution else 1280,
++                     "preserve_resolution": preserve_resolution,
++                     "saved_frame_format": 'png' if preserve_resolution else 'jpeg',
++                     "profile": detector.profile,
++                     "person_companion": detector.person is not None,
++                     "motion_rules": False, "proximity_rules": False, "shape_rules": False,
++                     "sample_seconds": sample_seconds, "max_seconds": max_seconds},
++        "notice": NOTICE, "frames": [],
++    }
++    start = time.perf_counter()
++
++    def process(frame, idx, timestamp):
++        image = frame if preserve_resolution else resize_long_edge(frame)
++        image = enhance(image) if do_enhance else image
++        dets, branches, inference_ms = detector.detect_frame(image)
++        label_scale = max(1., max(image.shape[:2]) / 1280) if preserve_resolution else 1.
++        # Reuse the upstream overlay, without rule-generated announcements.
++        overlay = draw_overlay(image, dets, [], [], [], label_scale=label_scale)
++        ppe_overlay = draw_overlay(image, [d for d in dets if d.class_name in PPE_LABELS], [], [], [], label_scale=label_scale)
++        review_dets = [d for d in dets if d.class_name in REVIEW_LABELS]
++        review_dets.sort(key=lambda d: (d.bbox[2]-d.bbox[0]) * (d.bbox[3]-d.bbox[1]), reverse=True)
++        review_overlay = draw_overlay(image, review_dets, [], [], [], label_scale=label_scale)
++        stem = f"frame-{idx:06d}"
++        extension = '.png' if preserve_resolution else '.jpg'
++        saved = []
++        def save(suffix, pixels):
++            # Lossless, identical variants share one file to avoid duplicating
++            # large native frames. Every JSON field still names its exact pixels.
++            if preserve_resolution:
++                for filename, previous in saved:
++                    if pixels.shape == previous.shape and cv2.norm(pixels, previous, cv2.NORM_INF) == 0:
++                        return filename
++            filename = stem + suffix + extension
++            options = [cv2.IMWRITE_PNG_COMPRESSION, 3] if preserve_resolution else []
++            if not cv2.imwrite(str(output_dir / filename), pixels, options):
++                raise OSError('Could not save evidence frame')
++            saved.append((filename, pixels))
++            return filename
++        raw_file = save('-input', image)
++        overlay_file = save('-overlay', overlay)
++        ppe_file = save('-ppe-overlay', ppe_overlay)
++        review_file = save('-review-overlay', review_overlay)
++        result = {"frame_index": idx, "timestamp_seconds": timestamp,
++                  "source_dimensions_wh": [frame.shape[1], frame.shape[0]],
++                  "detection_dimensions_wh": [image.shape[1], image.shape[0]],
++                  "preserved_native_pixels": preserve_resolution,
++                  "annotation_scale": label_scale,
++                  "input_file": raw_file, "overlay_file": overlay_file,
++                  "ppe_overlay_file": ppe_file,
++                  "review_overlay_file": review_file,
++                  "inference_ms": inference_ms,
++                  "detections": [asdict(d) for d in dets],
++                  "model_branches": {key: [asdict(d) for d in values] for key, values in branches.items()}}
++        record["frames"].append(result)
++        # Preserve completed frames even if a later frame fails.
++        (output_dir / "detections.json").write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n")
++        if callback:
++            callback(overlay, result)
++
++    cap = None
++    try:
++        if suffix in {".jpg", ".jpeg", ".png"}:
++            image = cv2.imread(str(source))
++            if image is None:
++                raise ValueError("Could not decode uploaded image")
++            record["media_type"] = "image"
++            process(image, 0, 0.0)
++        else:
++            record["media_type"] = "video"
++            cap = cv2.VideoCapture(str(source))
++            if not cap.isOpened():
++                raise ValueError("Could not open uploaded video")
++            fps = float(cap.get(cv2.CAP_PROP_FPS))
++            if fps <= 0:
++                raise ValueError("Video has no reliable FPS; cannot assign evidence timestamps")
++            count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
++            record["video"] = {"fps": fps, "frame_count": count,
++                               "duration_seconds": count / fps if count else None,
++                               "timestamp_basis": "decoded frame index / container FPS",
++                               "decoded_frames": 0, "stop_reason": None}
++            index, next_sample = 0, 0.0
++            while True:
++                if index / fps >= max_seconds:
++                    record["video"]["stop_reason"] = "requested_duration_limit"
++                    break
++                ok, frame = cap.read()
++                if not ok:
++                    expected = min(count, math.ceil(max_seconds * fps)) if count else None
++                    if expected and index < expected:
++                        record["video"]["stop_reason"] = "premature_decode_failure"
++                        raise ValueError(f"Video decode ended early at frame {index}; expected {expected} frames in requested range. Completed frame evidence is retained.")
++                    record["video"]["stop_reason"] = "end_of_video" if count else "decoder_eof_unverified_frame_count"
++                    break
++                record["video"]["decoded_frames"] = index + 1
++                timestamp = index / fps
++                if timestamp + 1e-9 >= next_sample:
++                    process(frame, index, timestamp)
++                    next_sample += sample_seconds
++                index += 1
++            if not record["frames"]:
++                raise ValueError("Video decoded no reviewable frames")
++        record["status"] = "complete"
++    except Exception as exc:
++        record["status"] = "failed"
++        record["error"] = f"{type(exc).__name__}: {exc}"
++        raise
++    finally:
++        if cap is not None:
++            cap.release()
++        record["elapsed_seconds"] = time.perf_counter() - start
++        record["manual_review_detection_count"] = sum(
++            d["category"] == "ppe_violation" for f in record["frames"] for d in f["detections"])
++        (output_dir / "detections.json").write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n")
++    return record
++
++
++def new_review_dir(runtime_root):
++    return Path(runtime_root) / "reviews" / (datetime.now().strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:8])
++
++
++def evidence_zip(review_dir):
++    """One local download contains original bytes, all boxes, and all frames."""
++    review_dir = Path(review_dir)
++    target = review_dir / "evidence.zip"
++    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
++        for path in sorted(review_dir.rglob('*')):
++            if path.is_file() and not path.is_symlink() and path != target:
++                archive.write(path, str(path.relative_to(review_dir)))
++    return target
+--- a/utils/drawing.py
++++ b/utils/drawing.py
+@@ -41,6 +41,7 @@
+     motion_regions: Iterable[MotionRegion],
+     announcements: Iterable[Announcement],
+     proximity_violations: Iterable[ProximityViolation] = (),
++    *, label_scale: float = 1.0,
+ ) -> np.ndarray:
+     out = frame.copy()
+     h, w = out.shape[:2]
+@@ -57,11 +58,13 @@
+     for d in detections:
+         color = _COLOR.get(d.category, _COLOR["other"])
+         x1, y1, x2, y2 = d.bbox
+-        cv2.rectangle(out, (x1, y1), (x2, y2), color, 2)
++        cv2.rectangle(out, (x1, y1), (x2, y2), color, max(2, round(2 * label_scale)))
+         label = f"{d.class_name} {d.confidence:.2f}"
+-        (tw, th), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+-        cv2.rectangle(out, (x1, y1 - th - baseline - 2), (x1 + tw + 2, y1), color, -1)
+-        cv2.putText(out, label, (x1 + 1, y1 - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
++        font_size, pen = 0.5 * label_scale, max(1, round(label_scale))
++        (tw, th), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_size, pen)
++        bottom = max(y1, th + baseline + 2) if label_scale > 1 else y1
++        cv2.rectangle(out, (x1, bottom - th - baseline - 2), (x1 + tw + 2, bottom), color, -1)
++        cv2.putText(out, label, (x1 + 1, bottom - 3), cv2.FONT_HERSHEY_SIMPLEX, font_size, (255, 255, 255), pen, cv2.LINE_AA)
+
+     # Proximity-violation lines
+     for pv in proximity_violations:

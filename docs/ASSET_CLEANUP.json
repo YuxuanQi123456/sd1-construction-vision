@@ -1,0 +1,95 @@
+{
+  "at": "2026-11-07T13:29:51.363894+00:00",
+  "user_request": "Delete historical screenshots/review records, retain training and acceptance videos.",
+  "dry_run": false,
+  "delete_files": 1388,
+  "delete_bytes": 595748692,
+  "delete_types": {
+    ".json": 460,
+    ".md": 30,
+    ".html": 5,
+    ".py": 1,
+    ".jpg": 431,
+    ".log": 1,
+    ".txt": 8,
+    ".png": 424,
+    ".xml": 3,
+    ".zip": 23,
+    "": 1,
+    ".gz": 1
+  },
+  "raw_evidence_videos_retained": 16,
+  "original_photo_copies_retained": 34,
+  "protected_videos": {
+    "downloads/demo-hd/hostivar-1080p-0-8.webm": "86ec231cc4cf45132c190307a1f6291c17e84d64db3c2cdcac5200ae1de0cf44",
+    "downloads/demo-hd/pexels-8963856.mp4": "f44a8a34012478cf92f14c45a7672280487b020e805aba3a5b4bf214975b77b7",
+    "downloads/demo-hd/pexels-8964378.mp4": "de726ec837019c91673e56bae99e7293597a6c79a3bd572551c5efd1316f9380",
+    "downloads/vision-samples/excavator-loading.webm": "40b48f4a0a29f58416023ecd32453060b361b707c62c782887845217c99c4d8f",
+    "downloads/vision-samples/florenc.webm": "77412d6c74bcb0f2679b5d6d22a3e617ba8397f5bff9ef4274ba684d92b3504b",
+    "downloads/vision-samples/hostivar.webm": "409d0bae14bd98fd767ae8fef2d20a4b21a5726eb0a7a23896824cf12172d301",
+    "downloads/sitewatch/repository/tests/fixtures/demo.mp4": "a26aabff700d2e12908fade46e52021fa105c06b45e6fb5e719e9ceeb2fa605a",
+    ".runtime/vision-media/409d0bae14bd98fd767ae8fef2d20a4b21a5726eb0a7a23896824cf12172d301.mp4": "46cc28ab78f7367b537e1567a8a790fa24bf215fed808f4de150a9cde5c8b2b4",
+    ".runtime/vision-media/40b48f4a0a29f58416023ecd32453060b361b707c62c782887845217c99c4d8f.mp4": "e41be25cbe727712b219d8d05cfe75eb9f25ac39bb02aacd84fef8b8d24705f9",
+    ".runtime/vision-media/77412d6c74bcb0f2679b5d6d22a3e617ba8397f5bff9ef4274ba684d92b3504b.mp4": "52b988e493e5e3416fbb2c20aca22e9fe2493d97bdd1173a18832ecd38358f0b",
+    ".runtime/vision-media/window-excavator-loading-0-8.0.mp4": "2e64d077c762d7faa3150177024a886ce3632d4fdddfeeca5126fba815c8826a",
+    ".runtime/vision-media/window-florenc-0-8.0.mp4": "5ba18caeb610a7142367d3d99b9693d9bc183bf0f80a90d78430c8976b6a6628",
+    ".runtime/vision-media/window-hostivar-0-8.0.mp4": "f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062",
+    ".runtime/sitewatch-env/runtime/uploads/44f508c2f0b72adfaefd0b01ca55bb8e55856195e85527b0ea7f22ef64ca37e7/broken-video.mp4": "44f508c2f0b72adfaefd0b01ca55bb8e55856195e85527b0ea7f22ef64ca37e7",
+    "evidence/V05/cpu-final/broken-video-control/original.mp4": "44f508c2f0b72adfaefd0b01ca55bb8e55856195e85527b0ea7f22ef64ca37e7",
+    "evidence/V05/cpu-final/florenc-video/original.mp4": "5ba18caeb610a7142367d3d99b9693d9bc183bf0f80a90d78430c8976b6a6628",
+    "evidence/V05/cpu-release/broken-video-control/original.mp4": "44f508c2f0b72adfaefd0b01ca55bb8e55856195e85527b0ea7f22ef64ca37e7",
+    "evidence/V05/cpu-release/florenc-video/original.mp4": "5ba18caeb610a7142367d3d99b9693d9bc183bf0f80a90d78430c8976b6a6628",
+    "evidence/V05/cpu-source/florenc-video/original.mp4": "5ba18caeb610a7142367d3d99b9693d9bc183bf0f80a90d78430c8976b6a6628",
+    "evidence/V06/cpu-independent/broken-video-control/original.mp4": "44f508c2f0b72adfaefd0b01ca55bb8e55856195e85527b0ea7f22ef64ca37e7",
+    "evidence/V06/cpu-independent/florenc-video/original.mp4": "5ba18caeb610a7142367d3d99b9693d9bc183bf0f80a90d78430c8976b6a6628",
+    "evidence/V08/baseline-adapter-regression/broken-video-control/original.mp4": "44f508c2f0b72adfaefd0b01ca55bb8e55856195e85527b0ea7f22ef64ca37e7",
+    "evidence/V08/baseline-adapter-regression/florenc-video/original.mp4": "5ba18caeb610a7142367d3d99b9693d9bc183bf0f80a90d78430c8976b6a6628",
+    "evidence/V08/candidate-adapter-regression/broken-video-control/original.mp4": "44f508c2f0b72adfaefd0b01ca55bb8e55856195e85527b0ea7f22ef64ca37e7",
+    "evidence/V08/candidate-adapter-regression/florenc-video/original.mp4": "5ba18caeb610a7142367d3d99b9693d9bc183bf0f80a90d78430c8976b6a6628",
+    "evidence/V09/integrated-profiles/standard/original.mp4": "f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062",
+    "evidence/V09/integrated-profiles-reviewed/distant/original.mp4": "f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062",
+    "evidence/V09/integrated-profiles-reviewed/standard/original.mp4": "f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062",
+    "evidence/V09/standard-regression/broken-video-control/original.mp4": "44f508c2f0b72adfaefd0b01ca55bb8e55856195e85527b0ea7f22ef64ca37e7",
+    "evidence/V09/standard-regression/florenc-video/original.mp4": "5ba18caeb610a7142367d3d99b9693d9bc183bf0f80a90d78430c8976b6a6628"
+  },
+  "archive_videos_checked": [
+    {
+      "archive": "evidence/V09/browser-demo-presets/distant-video.zip",
+      "member": "original.mp4",
+      "bytes": 1769425,
+      "sha256": "f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062",
+      "retained_files": [
+        ".runtime/vision-media/window-hostivar-0-8.0.mp4",
+        "evidence/V09/integrated-profiles/standard/original.mp4",
+        "evidence/V09/integrated-profiles-reviewed/distant/original.mp4",
+        "evidence/V09/integrated-profiles-reviewed/standard/original.mp4"
+      ]
+    },
+    {
+      "archive": "evidence/V09/integrated-profiles-reviewed/distant/evidence.zip",
+      "member": "original.mp4",
+      "bytes": 1769425,
+      "sha256": "f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062",
+      "retained_files": [
+        ".runtime/vision-media/window-hostivar-0-8.0.mp4",
+        "evidence/V09/integrated-profiles/standard/original.mp4",
+        "evidence/V09/integrated-profiles-reviewed/distant/original.mp4",
+        "evidence/V09/integrated-profiles-reviewed/standard/original.mp4"
+      ]
+    },
+    {
+      "archive": "evidence/V09/integrated-profiles-reviewed/standard/evidence.zip",
+      "member": "original.mp4",
+      "bytes": 1769425,
+      "sha256": "f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062",
+      "retained_files": [
+        ".runtime/vision-media/window-hostivar-0-8.0.mp4",
+        "evidence/V09/integrated-profiles/standard/original.mp4",
+        "evidence/V09/integrated-profiles-reviewed/distant/original.mp4",
+        "evidence/V09/integrated-profiles-reviewed/standard/original.mp4"
+      ]
+    }
+  ],
+  "all_protected_video_hashes_unchanged": true,
+  "passed": true
+}

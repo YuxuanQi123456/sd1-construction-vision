@@ -1,0 +1,34 @@
+.runtime/
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+downloads/
+*.log
+
+# Local handoff archives, databases and credentials.
+.handoff/
+*.bundle
+*.db
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.p12
+*.pfx
+.ssh/
+id_rsa
+id_ed25519
+
+# Model weights are delivered through the separate asset manifest.
+*.pt
+*.safetensors
+*.onnx
+*.gguf
+/sitewatch/upstream/models/
+
+# Generated acceptance media and reports remain local.
+/evidence/

@@ -1,0 +1,21 @@
+{
+  "synthetic_notice": "水电一局演示｜自制合成数据",
+  "fixture_version": 1,
+  "material": {"name": "示例水泥（合成）", "sku": "SD1-CEMENT", "unit": "t", "standard_unit_cost": "400", "currency": "CNY"},
+  "ground": {
+    "title": "地上厂区基础材料演示",
+    "workpoint": "地上厂区 1 号基础工点（合成）",
+    "locations": {"A": "A 库｜厂区材料库（合成）", "B": "B 库｜基础作业面周转库（合成）"}
+  },
+  "underground": {
+    "title": "地下洞室支护材料演示",
+    "workpoint": "地下洞室 K0+120 支护工点（合成）",
+    "locations": {"A": "A 库｜洞口材料库（合成）", "B": "B 库｜洞内支护周转库（合成）"}
+  },
+  "steps": [
+    {"key": "inbound", "movement_type": "INBOUND", "quantity": "100", "label": "水泥入库", "document": "RK-001"},
+    {"key": "consume", "movement_type": "CONSUMPTION", "quantity": "30", "label": "工点领用", "document": "LY-001"},
+    {"key": "waste", "movement_type": "WASTE", "quantity": "2", "label": "施工损耗", "document": "SH-001"},
+    {"key": "transfer", "movement_type": "TRANSFER", "quantity": "10", "label": "A 库向 B 库调拨", "document": "DB-001"}
+  ]
+}

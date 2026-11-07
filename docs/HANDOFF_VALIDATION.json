@@ -1,0 +1,42 @@
+{
+  "at": "2026-11-07T13:36:22.225199+00:00",
+  "passed": true,
+  "source_snapshot_commit": "bb20d0fad2b957696c961b44244a39bb4fc96f1f",
+  "source_provenance": {
+    "at": "2026-11-07T13:36:21.832121+00:00",
+    "source_commit": "72c4d18135fd07afd188fecaac37c5b90ec674b4",
+    "pristine_source_files_checked": 27,
+    "adapted_files_checked": [
+      "app.py",
+      "region_review.py",
+      "review_evidence.py",
+      "cv_pipeline/detection.py",
+      "cv_pipeline/enhancement.py",
+      "cv_pipeline/fusion.py",
+      "cv_pipeline/motion.py",
+      "cv_pipeline/shapes.py",
+      "cv_pipeline/__init__.py",
+      "utils/benchmark.py",
+      "utils/drawing.py",
+      "utils/__init__.py"
+    ],
+    "patch_output": "patching file app.py\npatching file cv_pipeline/detection.py\npatching file region_review.py\npatching file review_evidence.py\npatching file utils/drawing.py\n",
+    "exit_code": 0,
+    "passed": true
+  },
+  "relative_windows_launcher_probes": [
+    {
+      "location": ".",
+      "passed": true,
+      "resolved_directory": "/mnt/e/workspace/云枢/sd1-construction-vision"
+    },
+    {
+      "location": "vision",
+      "passed": true,
+      "resolved_directory": "/mnt/e/workspace/云枢/sd1-construction-vision"
+    }
+  ],
+  "inference_rerun": false,
+  "protected_training_and_acceptance_videos": "All protected source-project video hashes unchanged after authorized cleanup.",
+  "deployment": "New environment/model installation is not yet verified."
+}

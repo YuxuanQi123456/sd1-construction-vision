@@ -1,0 +1,9 @@
+{
+  "base_url": "http://127.0.0.1:8765",
+  "email": "demo@shuidian.example.com",
+  "password": "ShuidianDemo2026!",
+  "full_name": "水电一局演示管理员",
+  "locale": "zh",
+  "notice": "仅本机合成数据演示账户，公开测试口令，禁止用于生产或公网服务",
+  "namespace": "SD1-DEMO"
+}

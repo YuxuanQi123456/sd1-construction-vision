@@ -1,0 +1,1087 @@
+OpenConstructionERP
+Copyright (c) 2026 Artem Boiko / DataDrivenConstruction
+Contact: info@datadrivenconstruction.io
+
+This product is licensed under the GNU Affero General Public License v3.0
+or later (AGPL-3.0-or-later). See the LICENSE file for the full license text.
+
+A commercial licence is available that lifts the AGPL obligations on
+OpenConstructionERP itself. It cannot lift them on code we do not own, and
+no dependency is AGPL, so there is no third-party AGPL code it would leave
+uncovered: see "AGPL Cascade" below and section 4a of
+docs/legal/COMMERCIAL-LICENSE.md. Contact info@datadrivenconstruction.io.
+
+------------------------------------------------------------------------
+Third-Party Software
+------------------------------------------------------------------------
+
+This distribution contains or depends on third-party open-source software.
+A full license inventory is generated for each release and attached to that
+release on the GitHub releases page as three files:
+
+    docs/legal/THIRD_PARTY_LICENSES.md    aggregated, human-readable
+    sbom-backend.cdx.json      CycloneDX SBOM, Python dependencies
+    sbom-frontend.cdx.json     CycloneDX SBOM, bundled frontend packages
+
+Those three are the published inventory. To produce an equivalent listing
+locally, without waiting for a release:
+
+    cd frontend && npx license-checker --json > NOTICE.frontend.json
+    cd backend  && pip-licenses --format=json > NOTICE.backend.json
+
+Earlier revisions of this file named those two local output names, and only
+them, as the per-release inventory. The commands work, but nothing publishes
+files under those names, so a reader looking for the release inventory by
+name found nothing.
+
+Primary third-party components (non-exhaustive):
+
+Backend (base install via `pip install openconstructionerp`):
+  * FastAPI ............................. MIT
+  * SQLAlchemy .......................... MIT
+  * Pydantic ............................ MIT
+  * pydantic-settings ................... MIT
+  * email-validator ..................... Unlicense
+  * Alembic ............................. MIT
+  * Uvicorn ............................. BSD-3-Clause
+  * python-multipart .................... Apache-2.0
+  * pandas .............................. BSD-3-Clause
+  * pyarrow ............................. Apache-2.0
+  * duckdb .............................. MIT
+  * openpyxl ............................ MIT
+  * xlrd ................................ BSD-3-Clause
+  * reportlab ........................... BSD-3-Clause (open-source edition)
+  * pdfplumber .......................... MIT
+  * pypdf ............................... BSD-3-Clause
+  * httpx ............................... BSD-3-Clause
+  * certifi ............................. MPL-2.0
+  * orjson .............................. MPL-2.0 AND (Apache-2.0 OR MIT)
+  * structlog ........................... Apache-2.0 / MIT
+  * python-jose ......................... MIT
+  * bcrypt .............................. Apache-2.0
+  * ezdxf ............................... MIT
+  * trimesh ............................. MIT
+  * defusedxml .......................... PSF-2.0
+  * pyyaml .............................. MIT
+  * python-dateutil ..................... Apache-2.0 / BSD-3-Clause
+  * rapidfuzz ........................... MIT
+  * asyncpg ............................. Apache-2.0
+  * psycopg2-binary ..................... LGPL-3.0-or-later (with OpenSSL exception);
+                                          see "LGPL Components and How We
+                                          Convey Them" below. The wheel
+                                          also carries libpq and OpenSSL 3,
+                                          see "Native Binaries Inside
+                                          Python Wheels" below
+  * pixeltable-pgserver ................. Apache-2.0; the wheel also carries a
+                                          complete PostgreSQL 16 server, see
+                                          the same section
+  * uharfbuzz ........................... Apache-2.0; statically links HarfBuzz,
+                                          see the same section
+  * arabic-reshaper ..................... MIT
+  * python-bidi ......................... LGPL-3.0-or-later; see "LGPL
+                                          Components and How We Convey
+                                          Them" below. Its compiled core
+                                          links Rust crates under MIT or
+                                          Apache-2.0, listed in the
+                                          wheel's LICENSE-THIRD-PARTY.yml
+  * Pillow .............................. MIT-CMU
+  * pypdfium2 ........................... Apache-2.0 / BSD-3-Clause; the wheel
+                                          carries PDFium and the libraries it
+                                          links, with their notices
+  * opencv-python-headless .............. Apache-2.0 for OpenCV itself; the
+                                          wheel also carries FFmpeg, which
+                                          is LGPL-2.1-or-later, see the same
+                                          two sections
+
+Backend optional extras. The group names are the ones `pip install
+openconstructionerp[...]` takes today; two of them were split after this list
+was first written, so an older reading of it points at groups that no longer
+carry the package named.
+  * [server]  celery .................... BSD-3-Clause
+  * [server]  boto3 ..................... Apache-2.0
+  * [vector]  lancedb ................... Apache-2.0
+  * [vector]  fastembed ................. Apache-2.0
+  * [semantic-clients] qdrant-client .... Apache-2.0
+  * [semantic-clients] lancedb .......... Apache-2.0
+  * [semantic-encoder] sentence-transformers .. Apache-2.0
+  * [semantic-encoder] torch ............ BSD-3-Clause for torch itself; the
+                                          wheel declares a composite expression
+                                          covering the components it vendors
+  * [semantic] FlagEmbedding (BGE-M3) ... MIT
+  * [semantic] polars ................... MIT
+  * [cv]      paddleocr ................. Apache-2.0
+  * [cv]      opencv-python ............. Apache-2.0 declared. The wheel
+                                          bundles Qt 5 under LGPL-3.0 and
+                                          FFmpeg under LGPL-2.1
+  * [cv]      opencv-contrib-python ..... the same, and paddleocr declares
+                                          both of them
+  * [s3]      aioboto3 .................. Apache-2.0
+  * [pointcloud] pye57 .................. MIT
+  * [geo]     pyproj .................... MIT
+
+Two things about that list are worth stating rather than leaving to be
+inferred. Pillow is not confined to an extra; it arrives in every install
+through reportlab, which is why it is in the base list above as well.
+And two rows that once stood here, python-bidi and crc32c, named
+packages that were not in this project at all. Neither resolved in any
+closure, base or extra, on Linux, macOS or Windows, and paddleocr 2.10.0
+declares nineteen requirements with neither among them. python-bidi has
+since joined the base install in its own right, for right-to-left text in
+generated PDFs, and has its own row above; crc32c is still in no closure.
+The old rows were inherited rather than measured, and the sentence they supported, that
+[cv] is the one group adding copyleft the base install does not already
+carry, was wrong twice. It was wrong about the base, which carries LGPL
+through psycopg2-binary with no extra selected at all (and, until
+PyMuPDF was removed after 18.7.0, AGPL too). And it was wrong about
+the groups, because on declared licences the only copyleft any extra adds is tqdm, and six of the eleven add it.
+What [cv] really adds is larger than what those two rows named and no
+package metadata shows it. paddleocr declares opencv-python and
+opencv-contrib-python, the non-headless builds of the package the base
+install already has in headless form, and both of those wheels bundle
+Qt 5.15.19 under LGPL-3.0 together with two FFmpeg libraries the
+headless wheel does not carry. OpenCV's own cv2/LICENSE-3RD-PARTY.txt
+states it in those words and prints the licence text under it, while the
+wheel's metadata declares Apache-2.0.
+
+On Linux, [semantic] and [semantic-encoder] resolve torch, and a default
+resolution of torch pulls roughly fifteen NVIDIA CUDA runtime packages that
+are proprietary rather than open source. The desktop build does not carry
+them, because `backend/requirements-desktop.lock` resolves torch with the
+CPU backend, and the container image does not resolve either group. They are
+named here because a user who installs the extra themselves does receive
+them, and no inventory we publish covers that install.
+
+Frontend (compiled into the static bundle shipped inside the wheel):
+  * React ............................... MIT
+  * react-dom ........................... MIT
+  * react-router-dom .................... MIT
+  * Zustand ............................. MIT
+  * TanStack Query ...................... MIT
+  * i18next ............................. MIT
+  * react-i18next ....................... MIT
+  * Lucide icons ........................ ISC
+  * AG Grid Community ................... MIT
+  * PDF.js .............................. Apache-2.0
+  * three.js ............................ MIT
+  * Recharts ............................ MIT
+  * jsPDF ............................... MIT
+  * jspdf-autotable ..................... MIT
+  * exceljs ............................. MIT
+  * jszip ............................... MIT / GPL-3.0 (dual-licensed; we use MIT)
+  * MapLibre GL ......................... BSD-3-Clause
+  * DOMPurify ........................... MPL-2.0 / Apache-2.0 (dual-licensed)
+  * Yjs ................................. MIT
+  * y-websocket / y-webrtc .............. MIT
+  * dnd-kit ............................. MIT
+
+The bundle is produced by tooling that is not part of it. TypeScript
+(Apache-2.0), Vite (MIT), Tailwind CSS (MIT) and Playwright (Apache-2.0) build,
+style and test the frontend; none of the four is shipped, and Vite, Tailwind
+and Playwright are development dependencies. An earlier revision listed them
+under the heading above, which says the opposite of what is true of them.
+
+Two mapping packages, Leaflet and react-leaflet, were listed here as well.
+Neither is a dependency of this project. They appear in no package.json, in
+no lock file and in no import in the frontend source, so no build has ever
+carried either one, and the entries have been removed. Map rendering is
+MapLibre GL.
+
+The published inventory named at the top of this file is real, and it has a
+scope narrower than its name suggests. Its backend half is resolved from the
+base install plus the development extra, so it lists build and test tooling
+that no user receives and it covers none of the optional groups above. On
+v16.0.0 that is 136 rows, of which 56 are development tooling, and celery,
+boto3, qdrant-client, lancedb, torch and sentence-transformers appear in none
+of them. The container image resolves [server] and [semantic-clients] and the
+desktop sidecar resolves [semantic-encoder], so neither of those two artefacts
+is described by it. Its frontend half has no such gap: it is resolved from the
+production dependencies, which is what the bundle is built from.
+
+To audit an install that uses an optional group, resolve that group yourself
+with the commands at the top of this file rather than reading the release
+inventory.
+
+------------------------------------------------------------------------
+AGPL Cascade -- None Upstream
+------------------------------------------------------------------------
+
+OpenConstructionERP itself is distributed under the GNU Affero General
+Public License v3.0 or later. No package it depends on is AGPL, in the
+base install or in any optional group.
+
+Releases up to and including 18.7.0 were different. They depended on
+PyMuPDF (Artifex Software, Inc., AGPL-3.0-or-later) as a base
+dependency, so it was present in every artefact: the wheel, the Docker
+image and every desktop installer. Anyone assessing an install of one of
+those releases should read this section as it stood in that release.
+
+PyMuPDF has since been removed. Every feature that read PDFs through it
+now reads them through pypdfium2 (Apache-2.0 and BSD-3-Clause), which was
+already in every install underneath pdfplumber, behind one module,
+backend/app/core/pdf_reader.py:
+
+  * PDF drawing takeoff: vector recognition, the "find similar symbols"
+    count, page rendering for the raster detector and for the optional
+    online AI analysis, and page counting and text on upload.
+  * Bill of quantities import from PDF.
+  * File search: PDF text, and page rendering so OCR can read scans.
+  * Geo Hub: rasterising a PDF site plan for a map overlay.
+
+The vector layer comes out in the same shape and the same page
+coordinates as before, so measurements taken on a drawing before the
+change still line up with it after. One former use did not move to
+pypdfium2 because it reads no PDF: rasterising an SVG company logo for
+generated documents. The browser now turns an SVG logo into a PNG when
+it is uploaded, the PNG is stored next to it, and documents print the
+PNG. The server reads no SVG.
+
+Two checks keep it this way. scripts/check_repo_hygiene.py fails when
+shipped code imports fitz or pymupdf, and
+scripts/check_dependency_licences.py fails on any AGPL package in the
+environment it inspects; no entry on its accepted list can excuse one.
+
+No AGPL upstream is not the same as no copyleft upstream. The copyleft
+packages are named here, resolved from the dependency tree rather than
+read off this file's own lists:
+
+
+  * psycopg2-binary -- LGPL-3.0-or-later with the OpenSSL exception. A base
+    dependency, so it is in every artefact. We use it as an unmodified
+    library through its published Python API.
+  * python-bidi -- LGPL-3.0-or-later. A base dependency since right-to-left
+    PDF text, so it is in every artefact. We use it as an unmodified
+    library through its published Python API.
+  * certifi -- MPL-2.0. Reached through httpx and httpcore, so it is in
+    every artefact. MPL-2.0 is file-level copyleft and attaches to that
+    package's own files, which we do not modify.
+  * orjson -- the package is offered under Apache-2.0 or MIT and its wheel
+    also carries an MPL-2.0 text for code it vendors. A base dependency.
+  * tqdm -- MPL-2.0 and MIT. Reached only through an optional group, and
+    through every one of them that adds a model or a vector store.
+  * Qt 5 -- LGPL-3.0. Not a package and not in any inventory: it is
+    redistributed inside the opencv-python and opencv-contrib-python
+    wheels, the non-headless OpenCV builds paddleocr declares, so it
+    arrives for someone who installs the [cv] extra and for nobody else.
+    No artefact we publish carries it. The container image resolves
+    [server] and [semantic-clients], and backend/requirements-desktop.lock
+    pins opencv-python-headless on its own. A bullet here used to name
+    python-bidi and crc32c instead, when neither package was in this
+    project on any platform. python-bidi now is, and has its own bullet
+    above.
+  * FFmpeg -- LGPL-2.1-or-later. Not a package and not in any inventory:
+    it is a set of libraries redistributed inside the
+    opencv-python-headless wheel, which is a base dependency, so it is in
+    every artefact. We neither modify it nor link it statically. It is a
+    separate dynamically loaded file, and its notices travel with it, in
+    the Python package and the container image; in the desktop
+    installers it is packed into the frozen backend and its notices are
+    not. The entry in the native binaries section below records how it
+    was found, and the LGPL section after that says how we answer for it.
+
+None of these is modified by us and none is statically linked into our own
+code, so each is used on the terms its own licence sets for an unmodified
+library. The desktop shell is a separate closure of about five hundred Rust
+crates, overwhelmingly MIT or Apache-2.0; the copyleft in it is MPL-2.0, in
+cssparser, cssparser-macros, dtoa-short, selectors and option-ext, all
+reached through the application framework and all unmodified.
+
+------------------------------------------------------------------------
+Trademarks
+------------------------------------------------------------------------
+
+All product names, logos, and trademarks are property of their respective
+owners. All company, product, and service names used in this software and
+its documentation are for identification purposes only. Use of these
+names, trademarks, and brands does not imply endorsement.
+
+IFC(R) is a trademark of buildingSMART International.
+DIN is a registered trademark of DIN Deutsches Institut fuer Normung e.V.
+GAEB is a trademark of the Gemeinsamer Ausschuss Elektronik im Bauwesen.
+NRM is a trademark of the Royal Institution of Chartered Surveyors (RICS).
+MasterFormat(R) is a trademark of the Construction Specifications Institute (CSI).
+ISO is a registered trademark of the International Organization for Standardization.
+
+OpenConstructionERP is an independent project and is not affiliated with,
+endorsed by, or sponsored by any of the trademark owners listed above.
+Comparative references to commercial products reflect publicly available
+feature information at the time of publication and are used for fair
+comparative purposes under EU Directive 2006/114/EC and US Lanham Act
+Section 43(a).
+
+------------------------------------------------------------------------
+Data Sources
+------------------------------------------------------------------------
+
+The CWICR cost database aggregated and published with this software is
+compiled by DataDrivenConstruction from cost standards published by public
+sector bodies. Each base is derived from a national or regional norm system
+issued by a state authority.
+
+Deriving a base reproduces material from the source publication. Item
+descriptions, the arrangement of the classification tree, and in several
+bases the published code numbers are carried into the derived data, so the
+data does contain descriptive text taken from those publications. Prices
+are not carried through: the rate columns are aggregates computed across
+price variants and then converted per market, not figures transcribed from
+a source. Every base and the basis relied on for it is listed below.
+
+  Base / region   Source publication                        Basis
+  -------------   ----------------------------------------  ---------------
+  Global CWICR    GESN / FER / TER norm structure (CIS)     PENDING, see the
+                                                            note below
+  ZH_CHINA        China, Beijing 2012 + Bole 2022           Official
+                  construction quota (Dinge)                government tariff
+  TR_NATIONAL     Turkiye, CSB national unit prices         Official
+                  (Birim Fiyat)                             publication,
+                                                            FSEK Art. 31
+  BR_NATIONAL     Brazil, SINAPI analytical compositions    Open data,
+                  (CAIXA / IBGE)                            Decreto
+                                                            7.983/2013
+  ES_ANDALUCIA    Spain, Base de Costes de la Construccion  Open
+                  de Andalucia (BCCA 2023)                  institutional
+                                                            publication
+  IT_TOSCANA      Italy, Prezzario dei Lavori Pubblici      CC BY 4.0, see
+                  della Toscana (edizione 2026)             attribution below
+  GR_NATIONAL     Greece, analytical price lists for works  Public document,
+                  (GGDE)                                    Law 2121/1993
+  VN_NATIONAL     Vietnam, Dinh muc (TT 12/2021/TT-BXD)     Not subject to
+                                                            copyright, IP Law
+                                                            art. 15
+  ID_NATIONAL     Indonesia, AHSP (Permen PUPR 2016/2022)   Not subject to
+                                                            copyright,
+                                                            UU 28/2014
+
+Attribution required by CC BY 4.0, for the Italian base:
+
+  "Prezzario dei Lavori Pubblici della Toscana, edizione 2026", published
+  by Regione Toscana, licensed under Creative Commons Attribution 4.0
+  International (CC BY 4.0),
+  https://creativecommons.org/licenses/by/4.0/
+
+  This work has been MODIFIED by DataDrivenConstruction. The source items
+  were parsed into the CWICR canonical schema, resource components were
+  restructured, unit labels were normalised, descriptions were translated
+  into additional languages, and aggregate price columns were computed.
+  Regione Toscana does not endorse this project or its use of the material.
+
+The basis for the global CWICR base (GESN / FER / TER) is PENDING and is
+deliberately left open rather than assumed. That base is the largest single
+dataset here, 55,719 work items repriced into 30 markets, and it is the one
+base for which no written basis has been recorded. Settling it needs two
+facts: which edition of the norms was used, and the terms under which that
+edition was published. Until both are recorded here, treat this row as
+unresolved. Do not read the surrounding rows as covering it.
+
+Classification codes (e.g., DIN 276 cost-group numbers, CSI MasterFormat
+division numbers, NRM element codes) are used as factual references. No
+standards body's copyrighted descriptive text is reproduced in the database;
+the descriptive text noted above comes from the public sector cost
+publications in the table, not from the classification standards.
+
+------------------------------------------------------------------------
+Data Exchange Standards
+------------------------------------------------------------------------
+
+This software implements published data exchange formats. Element names,
+document structures and data types of an interchange format are facts about
+that format, and an implementation has to use them or it does not
+interoperate. The particular files a standards body publishes are a
+different matter, so none of them is redistributed here.
+
+GAEB DA XML. The reader, the writer, the validation rules, the profile
+schema in backend/app/modules/boq/gaeb_profile/ and the test fixtures under
+backend/tests/fixtures/gaeb/ are all our own work, written from the element
+model that the publicly available GAEB DA XML 3.3 Fachdokumentation
+describes. No schema file and no conformance file published by GAEB, DIN or
+BVBS is included in this repository, in the Python package, in the container
+image or in the desktop installers. The specification itself is copyrighted:
+its 3.3 Fachdokumentation carries "(c) 2023 by DIN Deutsches Institut fuer
+Normung e. V." on the title page. The schema files can be downloaded from the
+publisher without payment or registration, but no statement granting a right
+to redistribute them was found on the download pages, in the site imprint, in
+the Fachdokumentation or inside the files, so we treat redistribution as not
+permitted. Our test suite validates our output against the publisher's schema
+by fetching it at test time, which is use rather than redistribution.
+
+The conformance files are a separate question with a clearer answer. They are
+published by BVBS Bundesverband Software und Digitalisierung im Bauwesen e. V.,
+formerly Bundesverband Bausoftware, which runs the GAEB certification
+programme. That association is not the source of the rebar bending schedule
+format that shares the acronym; this product implements that separately in
+backend/app/modules/rebar_schedule/. Its files download freely, but its imprint
+states that distribution and any exploitation beyond the limits of copyright
+require written consent, and that downloads are permitted for private,
+non-commercial use only. We have no such consent, so those files are not here
+either. Fixtures we authored ourselves cover the same shapes.
+
+docs/standards/GAEB.md carries the full statement, including what we assert
+about conformance and what we do not. We hold no BVBS certification and make
+no certification claim.
+
+Classification standards (DIN 276, NRM, MasterFormat) are covered in the
+Data Sources section above.
+
+------------------------------------------------------------------------
+Cryptographic Notice
+------------------------------------------------------------------------
+
+This software contains only standard, published cryptography used for
+authentication (bcrypt password hashing and signed JSON Web Tokens) and
+no bulk data encryption. Cryptography whose function is limited to
+authentication and digital signature falls outside the encryption
+controls in Category 5, Part 2 of the US Export Administration
+Regulations and the equivalent EU dual-use list, so it needs no special
+export licence; the same is true of standard cryptography published as
+open source. The software still may not be exported to or used
+in comprehensively sanctioned destinations (currently Cuba, Iran, North
+Korea, and the Crimea, Donetsk and Luhansk regions of Ukraine) or by
+sanctioned or denied parties. As with any software, you remain
+responsible for complying with the export, re-export, import, use and
+sanctions laws that apply to you. This notice is information, not legal
+advice.
+
+------------------------------------------------------------------------
+AI / Machine Learning Notice
+------------------------------------------------------------------------
+
+This software integrates with third-party Large Language Model APIs
+(Anthropic Claude, OpenAI, Google Gemini, Mistral, Groq, DeepSeek) when
+configured by the user. AI-generated cost estimates, classifications,
+and suggestions are preliminary and must be verified by a qualified
+construction-estimation professional before use in a binding commercial
+context. The authors and contributors of OpenConstructionERP disclaim
+all liability for decisions made on the basis of AI-generated output.
+
+------------------------------------------------------------------------
+Bundled Font Software
+------------------------------------------------------------------------
+
+The font binaries below are committed into this repository. Most of them
+ship inside the Python wheel and the desktop installer; the one under
+scripts/ is there so that the build scripts render the same picture on
+anyone's machine and reaches no artefact, but publishing the repository
+publishes the binary, so the obligation is the same. They are files
+rather than packages, so no dependency scanner enumerates them and they
+appear in no generated inventory of dependencies. They are listed here
+because this notice presents itself as complete. Wherever a font does
+travel inside a built artefact, the licence text named below travels
+beside it, which is what these licences require.
+
+DejaVu Sans, DejaVu Sans Bold
+    backend/app/core/fonts/DejaVuSans.ttf
+    backend/app/core/fonts/DejaVuSans-Bold.ttf
+    Licence text: backend/app/core/fonts/LICENSE_DEJAVU
+
+    That file carries three separate statements and they are not
+    interchangeable. Changes made by the DejaVu project are released
+    into the public domain. The underlying outlines are the Bitstream
+    Vera fonts, Copyright (c) 2003 by Bitstream, Inc., all rights
+    reserved, under the Bitstream Vera Fonts License, which requires
+    that the copyright and trademark notices and its permission notice
+    be included in all copies of one or more of the Font Software
+    typefaces. Further glyphs are imported from the Arev fonts,
+    Copyright (c) 2006 by Tavmjong Bah, all rights reserved, under the
+    Arev Fonts License, which carries its own separately binding notice
+    clause. Bitstream Vera is a trademark of Bitstream, Inc.
+
+Instrument Serif
+    frontend/public/assets/vendor/fonts/webfonts/instrument-serif-*.woff2
+    Licence text:
+    frontend/public/assets/vendor/fonts/licenses/instrument-serif-OFL.txt
+
+    Copyright 2022 The Instrument Serif Project Authors. Licensed under
+    the SIL Open Font License, Version 1.1. Clause 2 permits bundling
+    and redistribution with any software provided that each copy
+    contains the copyright notice and the licence, and allows these to
+    be included as stand-alone text files.
+
+Inter
+    scripts/assets/fonts/Inter-Variable-Latin.ttf
+    Licence text: scripts/assets/fonts/Inter-OFL.txt
+
+    Copyright (c) 2016 The Inter Project Authors. Licensed under the SIL
+    Open Font License, Version 1.1, on the terms above. The file here is
+    a subset of an upstream release, cut down to the Latin ranges the
+    build scripts set, with the variable weight axis left intact. The
+    licence permits modification and requires that derivatives stay
+    under it and not use the reserved name; this subset is not
+    distributed under the Inter name as a typeface.
+
+IBM Plex Sans
+    frontend/public/assets/vendor/fonts/webfonts/ibm-plex-sans-*.woff2
+    Licence text:
+    frontend/public/assets/vendor/fonts/licenses/ibm-plex-sans-OFL.txt
+
+    Copyright 2019 IBM Corp. All rights reserved. Licensed under the SIL
+    Open Font License, Version 1.1, on the terms above.
+
+Source Sans 3
+    frontend/public/assets/vendor/fonts/webfonts/source-sans-3-*.woff2
+    Licence text:
+    frontend/public/assets/vendor/fonts/licenses/source-sans-3-OFL.txt
+
+    Copyright 2010-2020 Adobe (http://www.adobe.com/), with Reserved Font
+    Name 'Source'. Licensed under the SIL Open Font License, Version 1.1,
+    on the terms above.
+
+Plus Jakarta Sans
+    frontend/public/assets/vendor/fonts/webfonts/plus-jakarta-sans-*.woff2
+    Licence text:
+    frontend/public/assets/vendor/fonts/licenses/plus-jakarta-sans-OFL.txt
+
+    Copyright 2020 The Plus Jakarta Sans Project Authors. Licensed under
+    the SIL Open Font License, Version 1.1, on the terms above.
+
+Noto Sans Thai
+    backend/app/core/fonts/noto/NotoSansThai-Regular.ttf
+    Licence text: backend/app/core/fonts/noto/NotoSansThai-OFL.txt
+
+    Copyright 2022 The Noto Project Authors
+    (https://github.com/notofonts/thai). Licensed under the SIL Open
+    Font License, Version 1.1, on the terms above. Noto is a trademark
+    of Google Inc., which the font's own metadata states and which the
+    OFL does not grant: the licence permits modification and its
+    disclaimer expressly declines to warrant non-infringement of
+    trademark, so a modified face must not keep the name.
+
+Noto Sans Devanagari
+    backend/app/core/fonts/noto/NotoSansDevanagari-Regular.ttf
+    Licence text:
+    backend/app/core/fonts/noto/NotoSansDevanagari-OFL.txt
+
+    Copyright 2022 The Noto Project Authors
+    (https://github.com/notofonts/devanagari). Licensed under the SIL
+    Open Font License, Version 1.1, on the same terms, and covered by
+    the same trademark statement.
+
+Noto Naskh Arabic
+    backend/app/core/fonts/noto/NotoNaskhArabic-Regular.ttf
+    backend/app/core/fonts/noto/NotoNaskhArabic-Bold.ttf
+    Licence text:
+    backend/app/core/fonts/noto/NotoNaskhArabic-OFL.txt
+
+    Copyright 2022 The Noto Project Authors
+    (https://github.com/notofonts/arabic). Licensed under the SIL Open
+    Font License, Version 1.1, on the same terms, and covered by the
+    same trademark statement. The unhinted build of release 2.021.
+
+    No Noto face here declares a Reserved Font Name. The names are not
+    reserved by the licence, which is checked rather than assumed:
+    clause 3 restricts only names "specified as such after the
+    copyright statement(s)", and no copyright line specifies any.
+    The restraint on renaming above rests on trademark, not on clause 3.
+
+    All three faces are committed whole, as their authors published them.
+    Subsetting at embed time is ordinary use and reportlab already does
+    it, so a generated PDF carries only the glyphs it needs. Subsetting
+    the committed file is a different act: the OFL binds "in part or in
+    whole", so a cut-down file would still owe the same notice, and a
+    face cut to one sample's glyphs silently stops drawing everything
+    else. Do not shrink them to save repository space.
+
+This section is kept honest by scripts/check_bundled_font_licences.py,
+which fails the build when a shipped font has no resolvable licence
+text, when that text would be dropped from the wheel by the packaging
+exclude rules, or when a licence governing a shipped font is not named
+here.
+
+------------------------------------------------------------------------
+Native Binaries Inside Python Wheels
+------------------------------------------------------------------------
+
+A Python package can declare one licence and ship object code under
+another. The declared licence covers the code in the repository the
+package was built from; a native library compiled into the extension
+module, or a whole native program copied in beside it, arrives with the
+wheel and is not described by that declaration. Every inventory we
+generate reads package metadata, so it reports the declaration and
+cannot see the binary. That is not the generator being wrong, it is the
+generator answering the question it was asked.
+
+This is common rather than exceptional, so it was measured instead of
+recalled. Every package in the resolved base closure was read from its
+own install record: thirty of the seventy-nine ship a compiled library,
+and many of those ship compiled code somebody else wrote. What separates
+them is not whether they bundle, it is whether they reproduce the
+notices of what they bundled. Most do, and do it well.
+opencv-python-headless carries 183 kB of third-party licence text in its
+dist-info, pypdfium2 carries eighteen separate licence files, numpy
+names OpenBLAS and the exact filenames it lands in as an appendix to its
+own licence, pyarrow ships a NOTICE beside its licence, Pillow's licence
+runs to 78 kB for this reason. Those ask nothing of us. The file is inside the wheel
+and travels wherever the wheel travels.
+
+The entries below are the cases examined in full: the ones whose
+dist-info carries their own licence and nothing for what they bundled,
+the ones remedied here by a committed licence text, and one whose
+bundled code is worth naming even though its notices are carried
+properly. Each entry says which of those it is. All are base
+dependencies, so all of this reaches the wheel, the Docker image and
+every desktop installer.
+
+What was not examined should be visible rather than implied, since that
+is the failure this whole section exists to correct. The Rust and C++
+extension modules in the base closure -- pydantic-core, rapidfuzz, lazrs
+and watchfiles among them -- each link a static dependency closure that
+no package metadata describes, and each ships a bare licence of its own.
+None of them was traced. They are the same shape as the cryptography
+entry below, which was traced and turned out to be a real gap, so the
+absence of a row for them is a limit of this sweep and not a finding
+about them.
+
+The sweep read Windows wheels, which is what a developer install on a
+maintainer machine resolves. Linux wheels of the same packages generally
+carry more rather than less, and where that changes the picture it is
+said in the entry.
+
+HarfBuzz, inside uharfbuzz
+    Wheel contents: uharfbuzz/_harfbuzz.pyd (or .so / .dylib)
+    Licence text: backend/app/core/licenses/LICENSE_HARFBUZZ
+
+    uharfbuzz, the Python wrapper, is licensed under the Apache License
+    2.0 and declares it, so docs/legal/THIRD_PARTY_LICENSES.md lists it from
+    metadata without help. HarfBuzz itself, which is statically linked
+    into that extension module, is licensed under the so-called "Old
+    MIT" licence, which is neither Apache-2.0 nor the modern MIT text.
+    It permits use, copying, modification and distribution for any
+    purpose "provided that the above copyright notice and the following
+    two paragraphs appear in all copies of this software", and names
+    nineteen copyright holders between 1998 and 2023, among them Google,
+    Red Hat, Adobe, Mozilla, Nokia and Behdad Esfahbod. Its own header
+    notes that some subdirectories carry different licences in their own
+    COPYING files.
+
+    The licence text is committed here because it ships nowhere else.
+    The wheel contains exactly one licence file and it is the Apache
+    one; the compiled binary was searched directly and carries no
+    copyright or licence string at all. We redistribute that object code
+    inside every desktop installer, because the sidecar is frozen with
+    PyInstaller, and inside the Docker image. Without this file the
+    notice Old MIT requires in all copies would appear in none of them.
+
+    Both licences are compatible with AGPL-3.0 and neither adds a
+    restriction it forbids. Apache-2.0 is one-way compatible with
+    GPL-3.0 and so with AGPL-3.0; the combined work is distributed under
+    AGPL-3.0 while the Apache component retains its notices under
+    section 4 of its own licence. Old MIT is bare permissive, with no
+    patent, advertising or copyleft clause, and imposes only the notice
+    requirement satisfied above.
+
+PostgreSQL 16, inside pixeltable-pgserver
+    Wheel contents: pixeltable_pgserver/pginstall/, holding bin/, lib/,
+    include/ and share/ -- postgres, initdb, pg_ctl, pg_dump, pg_upgrade,
+    libpq and the rest of a complete server distribution, about 40 MB.
+    Licence text: backend/app/core/licenses/LICENSE_POSTGRESQL
+
+    pixeltable-pgserver declares the Apache Software License, which is
+    the licence of its own Python code. What the wheel actually carries
+    is PostgreSQL itself, which is under the PostgreSQL Licence, a
+    permissive licence in the BSD family whose one obligation is that
+    the copyright notice and its permission paragraph appear in all
+    copies. That text is not in the wheel. The wheel carries exactly one
+    licence file, the Apache one, in its dist-info; the 1667 files of the
+    installed package were searched to any depth and hold no COPYRIGHT,
+    LICENSE, COPYING or notice file of any kind.
+
+    This is a base dependency and the desktop build collects the whole
+    pginstall tree deliberately, through a PyInstaller hook written for
+    that purpose, because the embedded cluster cannot start without it.
+    So the binaries reach every artefact we ship and the notice their
+    licence asks for reaches none of them. The remedy is the same one
+    used for HarfBuzz above, a committed licence text that travels with
+    the code, and it is now applied. LICENSE_POSTGRESQL is the COPYRIGHT
+    file from the PostgreSQL source tree, taken verbatim from the
+    project's own repository, and it carries both the copyright notice
+    and the permission paragraph the licence asks to appear in all
+    copies. It covers the pginstall tree here and the copy of libpq that
+    reaches us a second way, through psycopg2-binary in the entry below.
+
+libpq and OpenSSL 3, inside psycopg2-binary
+    Wheel contents: psycopg2/.libs/, holding libpq, libssl-3 and
+    libcrypto-3 on the Windows wheel, which is the one inspected here.
+    Bundling those is what the `-binary` variant is for, so the Linux
+    and macOS wheels carry the equivalent shared objects.
+    Licence texts: backend/app/core/licenses/LICENSE_OPENSSL and
+    backend/app/core/licenses/LICENSE_POSTGRESQL
+
+    The psycopg2-binary row in the list above gives LGPL-3.0-or-later
+    with the OpenSSL exception, which is psycopg2's own licence and the
+    reason the exception exists. The exception is what permits the
+    combination; it is not a statement about the OpenSSL code itself,
+    which is separate software redistributed inside the same wheel. Its
+    dist-info carries the psycopg2 LGPL notice and nothing else.
+    OpenSSL 3 is Apache-2.0 and libpq is under the PostgreSQL Licence,
+    so both carry notice requirements of their own, and the same remedy
+    covers both. LICENSE_OPENSSL is the LICENSE.txt file from the
+    OpenSSL source tree, taken verbatim from the project's own
+    repository; it is the Apache License 2.0, which OpenSSL has used
+    since version 3.0. LICENSE_POSTGRESQL, described in the entry above,
+    covers libpq here as well, since libpq is part of the same source
+    tree and under the same licence as the server.
+
+OpenSSL 4, inside cryptography
+    Wheel contents: cryptography/hazmat/bindings/_rust.pyd (or .so), a
+    single 9.5 MB module.
+    Licence text: backend/app/core/licenses/LICENSE_OPENSSL
+
+    cryptography is offered under Apache-2.0 or BSD-3-Clause and its
+    dist-info carries both texts plus a combined one. It links OpenSSL
+    statically rather than shipping it as a separate library, so no
+    inventory and no file listing shows it; the version string was read
+    out of the module itself and reads OpenSSL 4.0.1. OpenSSL is
+    Apache-2.0, the same licence cryptography already ships, so no
+    unfamiliar terms arrive with it, but Apache-2.0 section 4 asks for
+    the attribution notices of the work being redistributed and those
+    are not in the wheel. This is the same shape as the psycopg2 entry
+    above and the same remedy covers it, which is why the two are worth
+    reading together: OpenSSL reaches every artefact we ship by at least
+    two independent routes, and one committed copy of its licence answers
+    for both.
+
+Vendored C libraries, inside duckdb
+    Wheel contents: _duckdb.cp312-win_amd64.pyd (or the platform
+    equivalent), a single 35.6 MB module.
+
+    duckdb declares MIT and its dist-info carries the DuckDB Foundation
+    MIT text, which covers DuckDB. The module was searched directly and
+    holds the marks of a good deal of vendored C beside it: utf8proc,
+    fsst, Thrift, zstd, miniz, cpp-httplib, Mbed TLS, and an ICU
+    copyright line naming Unicode, Inc. Those are permissive, mostly MIT
+    and Apache-2.0 with the Unicode licence for ICU, and none of them
+    adds a copyleft term. What none of them has is a notice inside the
+    artefact. The remedy is the same as the entries above, and it has
+    not been applied here: eight vendored libraries have to be traced to
+    the canonical text of each before anything can be committed, and
+    that is a piece of work of its own. It is recorded as open rather
+    than left to be read out of the absence of a row.
+
+FFmpeg and Intel IPP, inside opencv-python-headless
+    Wheel contents: cv2/opencv_videoio_ffmpeg500_64.dll beside cv2.pyd
+    on Windows. On Linux the codecs are five separate shared objects
+    under opencv_python_headless.libs/, named libavcodec, libavformat,
+    libavutil, libswresample and libswscale.
+    Licence text: backend/app/core/licenses/LICENSE_LGPL_2_1
+
+    This entry is here for the opposite reason to the others. What it
+    records is what opencv's own LICENSE-3RD-PARTY.txt says, because a
+    reader looking for copyleft in a headless computer vision package
+    would not expect to find any. FFmpeg is redistributed in every
+    opencv-python package, headless included, and it is under the GNU
+    Lesser General Public License version 2.1. Headless strips the GUI
+    toolkits, not the codecs. We neither modify it nor link it
+    statically. Intel IPP ICV is a different case again: proprietary,
+    statically linked into the x86_64 build, and permitted under Intel's
+    own redistribution terms reproduced in the same file.
+
+    This entry used to end by saying the notices are carried correctly
+    in the dist-info so nothing is missing, and that FFmpeg ships as a
+    separate dynamically loaded library, which is the form LGPL asks
+    for. Both are true of the wheel and of the container image, where
+    the codecs sit beside cv2 as ordinary files and opencv's notice file
+    is installed with them. Neither is true of the desktop installers.
+    There the backend is frozen into a single executable, the codecs are
+    packed inside it, and opencv's notice file is not packed with them.
+    That was measured by reading the table of contents of the published
+    16.0.0 Linux and macOS sidecars. Neither holds a dist-info for
+    opencv, and the name LICENSE-3RD-PARTY.txt does not appear in either
+    one. The LGPL section below says what we do about that.
+
+    The Linux wheel, which is what the container image installs, carries
+    ten more libraries beside the codecs: libvpx, libaom, libavif,
+    libdrm, libpng, libopenblasp, libgfortran, libquadmath, libcrypto
+    and libssl. Most of them are covered by that same third-party file,
+    and three are worth naming rather than counting.
+
+    libgfortran and libquadmath are GPL-3.0-or-later. Anyone who greps a
+    dependency tree for GPL-3.0 will find those two and stop reading, so
+    here is the rest of it. Both carry the GCC Runtime Library
+    Exception, an additional permission the GCC authors attach to the
+    runtime libraries their compiler links into whatever it compiles.
+    Without it every program built with GCC would inherit the GPL from
+    its compiler's runtime, which nobody intended and which the
+    exception exists to prevent. Its condition is that the compilation
+    used a compiler that is itself free software with no proprietary
+    code-generation plugin, and that is how these wheels are built, with
+    stock GCC in the manylinux images. So these two files place no
+    obligation on us or on you beyond the notice you are reading now.
+    They are also the two that opencv's own third-party file does not
+    mention at all, which is why they are named here rather than left to
+    be counted.
+
+    And the OpenSSL here is a 1.1 series build, the soname reads
+    libcrypto.so.1.1, which predates the move to Apache-2.0. Opencv's
+    own file puts it under the OpenSSL and SSLeay double licence, so the
+    Apache text committed above for the OpenSSL 3 and 4 copies is not
+    the licence of this one. The older text is committed alongside it at
+    backend/app/core/licenses/LICENSE_OPENSSL_SSLEAY.
+
+------------------------------------------------------------------------
+LGPL Components and How We Convey Them
+------------------------------------------------------------------------
+
+Several libraries under the GNU Lesser General Public License reach the
+software you download from us. LGPL is written to let software under
+other terms, including ours and including proprietary terms, use a
+library like this. It does that on conditions, and the conditions are
+about what the person who receives the software can do afterwards. This
+section states what we ship, what we owe you for it and how you get it.
+
+None of these libraries is modified by us. There is no fork, no patch
+and no vendored copy of any of them anywhere in this project. Each one
+is used as an unmodified library through its published interface, and
+each one remains a separate work from OpenConstructionERP rather than a
+part of it. Nothing in our licence, community or commercial, changes
+their terms, because they are not ours to relicense.
+
+The components:
+
+    psycopg2-binary, LGPL-3.0-or-later with an OpenSSL linking
+    exception. The PostgreSQL driver that SQLAlchemy loads when a
+    database URL names postgresql+psycopg2. It is a base dependency, so
+    it is in the Python package, in the container image and in every
+    desktop installer. Nothing in our code imports it by name; the
+    driver is resolved from the URL at connection time.
+
+    python-bidi, LGPL-3.0-or-later. The Unicode Bidirectional Algorithm
+    that puts Arabic, Persian, Urdu and Hebrew into reading order in
+    generated PDFs (app/core/pdf_rtl.py). A base dependency, so it is in
+    the Python package, the container image and every desktop installer.
+    Its wheel is a small compiled extension with no dependencies of its
+    own, and upstream publishes a source distribution for every release.
+
+    FFmpeg, LGPL-2.1-or-later, redistributed inside the
+    opencv-python-headless wheel. opencv-python-headless is also a base
+    dependency, so FFmpeg is in the same three places. Note that the
+    OpenCV package declares Apache-2.0 for itself, so an inventory built
+    from package metadata will show you Apache-2.0 and not the LGPL
+    underneath it. The entry above says where the codecs actually are.
+
+    GTK 3, WebKitGTK, glib, GnuTLS, GStreamer and the rest of the Linux
+    desktop stack, LGPL-2.1. The .deb and the .rpm declare these as
+    package dependencies and do not contain them, which is the ordinary
+    arrangement and puts the obligation on the distribution rather than
+    on us. The .AppImage is different: it contains them. The next
+    section lists what is in it.
+
+    Qt 5, LGPL-3.0, inside the non-headless OpenCV wheels. paddleocr
+    declares opencv-python and opencv-contrib-python, and both bundle
+    Qt 5.15.19 and the libqxcb platform plugin. They reach a user who
+    installs the optional [cv] group and no artefact we publish, because
+    the container resolves [server] and [semantic-clients] and the
+    desktop lock pins the headless build. It is named here because that
+    user receives Qt 5 through us, and because both wheels declare
+    Apache-2.0, so nothing generated from metadata will tell them.
+
+    Qt 6 Core, LGPL-3.0, inside the earlier Windows desktop installers.
+    This one is different from the Qt 5 above in every respect except the
+    name: a different version, a different delivery path, and we were the
+    party redistributing it. The command line IFC exporter of the 18.x
+    converter generation imported it directly, so Qt6Core.dll was in every
+    Windows installer up to and including 18.7.0, about ten megabytes of
+    it (installers up to and including 16.1.0 also carried Qt 6 Gui and
+    Qt 6 Widgets and the platforms and styles plugin folders). Later
+    installers carry no Qt: the bundled converter is the release 2026.10
+    package, a Python application with no Qt in it. The section below on
+    the bundled converter says what is in the installer and what notices
+    travel with it.
+
+Licence texts are committed at backend/app/core/licenses/LICENSE_LGPL_3_0,
+backend/app/core/licenses/LICENSE_LGPL_2_1 and
+backend/app/core/licenses/LICENSE_GPL_3_0. The third is there because
+LGPL-3.0 is written as a set of additional permissions on top of GPL-3.0
+and asks for both documents; the AGPL text we ship for our own code is a
+different licence and does not stand in for it.
+
+Telling you the library is there, and giving you its text.
+    In the Python package and the container image the licence arrives
+    with the library, because pip installs each package's own dist-info
+    beside its code, and OpenCV adds its own third-party notice at
+    cv2/LICENSE-3RD-PARTY.txt, which names FFmpeg and prints the
+    LGPL-2.1 text. In the desktop installers none of that arrived. The
+    backend is frozen into one executable and only what the build
+    collects goes in. The published 16.0.0 Linux sidecar carries the
+    psycopg2 extension with fifteen native libraries beside it, the
+    OpenCV extension with fifteen more, and 365 dist-info entries of
+    which neither psycopg2's nor OpenCV's is one. The published 16.0.0
+    macOS sidecar carries _psycopg.cpython-312-darwin.so, cv2 and seven
+    FFmpeg dylibs, and 38 dist-info directories holding 371 entries,
+    again with neither of those two among them. In both of them the name
+    LICENSE-3RD-PARTY.txt does not occur once. The code arrived and the
+    licence did not. The three texts named above are committed inside
+    the backend package for that reason, on the same route that already
+    carries the HarfBuzz text, which both measurements found present in
+    both sidecars.
+
+Giving you the library's source.
+    We ship these libraries unmodified at pinned versions, and every
+    release carries an SBOM naming the exact version of each. The
+    upstream sources are public: psycopg2 at github.com/psycopg/psycopg2
+    and on PyPI, python-bidi at github.com/MeirKriheli/python-bidi and on
+    PyPI, FFmpeg at ffmpeg.org along with the build recipe at
+    github.com/opencv/opencv-python, Qt at code.qt.io and download.qt.io
+    for both the 5 and 6 series, and the Linux desktop stack in the
+    source packages of the distribution the AppImage is built on.
+
+    Two of these travel with the release rather than waiting to be
+    asked for. Each release carries LGPL-SOURCES.md, which lists the
+    source archives attached to it and, just as importantly, names the
+    components for which no archive was attached and why. Read that
+    first; the offer below covers everything it does not.
+
+    That is where they are, and it is not by itself the offer the
+    licence asks for, so here it is. For three years from the date you
+    received any binary artefact of OpenConstructionERP, we will give
+    you the complete corresponding source of any LGPL component in it,
+    on a medium customarily used for software interchange, for a charge
+    no greater than our cost of performing the distribution. Write to
+    info@datadrivenconstruction.io naming the version you received. This
+    offer is open to anyone who holds a copy of the artefact, whether
+    they got it from us or from someone else, and it applies to the
+    community edition and the commercial edition alike.
+
+Letting you replace the library with your own build.
+    In the Python package and the container image each library is an
+    ordinary separate file. Install your own build of psycopg2 or of
+    OpenCV over ours and the application uses it, with nothing to
+    rebuild and nothing to ask us for.
+
+    Qt 6 Core in the Windows installers up to and including 18.7.0 was
+    the simplest case here and the one the licence describes most
+    directly. It was an ordinary DLL beside the converter that loaded it,
+    resolved by name through the import table, so putting your own build
+    of Qt 6 Core in its place was a file copy. Later installers carry no
+    Qt 6.
+
+    In the desktop installers the backend is a single frozen executable
+    and you cannot swap a file inside it. What replaces that is the
+    route of rebuilding, and everything needed for it is already public:
+    the application is AGPL-3.0 with its full source, the build
+    specification is committed at desktop/pyinstaller.spec, and the
+    exact dependency versions are pinned at
+    backend/requirements-desktop.lock. Install your own build of the
+    library, run that specification, and you have a working replacement
+    executable. We believe that satisfies what LGPL-3.0 section 4 asks
+    for by way of its first option, and we say believe rather than state
+    because whether a frozen bundle of this shape needs more than that
+    is a question we have put to counsel rather than settled ourselves.
+
+    In the AppImage the LGPL libraries are separate shared objects
+    inside a read-only image, and the image opens with its own documented
+    flag: run it with --appimage-extract and you get a directory tree
+    whose AppRun starts the application. Replace a library in that tree
+    and run AppRun, and your build is what loads.
+
+The community edition and the commercial edition.
+    They are the same binaries. There is no separate commercial build,
+    no component held back from the open edition and none added to the
+    paid one. A commercial licence changes what you may do with
+    OpenConstructionERP's own code; it changes nothing about the
+    libraries in this section, which reach a commercial customer on
+    exactly the LGPL terms described above. If you redistribute the
+    software under a commercial licence, these same three obligations
+    become yours towards the people you give it to, and the offer of
+    source above is written so that you can point them at it.
+
+------------------------------------------------------------------------
+Bundled Libraries Inside the Linux AppImage
+------------------------------------------------------------------------
+
+The .deb and the .rpm depend on the distribution's copies of the Linux
+desktop libraries and contain none of them. The .AppImage is built to
+run on any distribution, which it does by carrying its own copies, and
+that makes us the party redistributing them.
+
+This was measured rather than assumed. The published 16.0.0 AppImage
+was unpacked and its contents listed. It holds two hundred and
+two shared object files under usr/lib, a hundred and seventy-two
+distinct names among them because some loadable modules sit at two
+paths, and the LGPL ones among them
+include GTK 3 with libgtk-3 and libgdk-3, glib with libglib-2.0,
+libgio-2.0, libgobject-2.0 and libgmodule-2.0, the webview with
+libwebkit2gtk-4.1 and libjavascriptcoregtk-4.1, ATK, Pango, cairo,
+gdk-pixbuf, librsvg, libsoup 3, libsecret, libgcrypt, the GnuTLS stack
+with libgnutls, libnettle, libhogweed, libtasn1 and libp11-kit, and the
+GStreamer libraries the webview uses for media. Their upstreams are the
+GNOME, WebKit and GnuTLS projects and their sources are published there
+and in the source packages of the distribution the image is built on.
+
+The image also carries seventeen Debian copyright files under
+usr/share/doc, which is what the bundling tool collects on its own.
+They cover glib, Pango, gdk-pixbuf, librsvg and a handful of smaller
+libraries. They do not cover GTK 3 or WebKitGTK, the two largest LGPL
+components in the image. The offer of source in the section above is
+written to cover everything here, and the LGPL-2.1 text committed at
+backend/app/core/licenses/LICENSE_LGPL_2_1 is the licence they are
+under.
+
+The AppImage extracts with its own --appimage-extract flag into a
+directory tree that runs from AppRun, so a recipient who wants to run it
+against their own build of any of these libraries can replace the file
+and start it, without rebuilding the image and without asking us for
+anything.
+
+------------------------------------------------------------------------
+Bundled Converter Inside the Windows Desktop Installer
+------------------------------------------------------------------------
+
+The Windows installer, and only the Windows installer, carries a second
+program of ours and the runtime it needs. The release job fetches the DDC
+IFC converter, the portable package `DDC-IFC-to-Excel-2.0.0` of
+release `v2026.10.0` of the public repository
+`datadrivenconstruction/cad2data-Revit-IFC-DWG`, checks its SHA-256 against
+the digest pinned in the job and against the release's `SHA256SUMS.txt`, and
+stages the unpacked package as a Tauri resource, so a fresh install converts
+IFC offline with no download. The job fails the build rather than shipping
+without it, and it runs on Windows alone; the macOS and Linux packages carry
+nothing from it, and the converters have no macOS or Linux build.
+
+The converters of this release read IFC, DWG and RVT files with
+DataDrivenConstruction's own readers. They contain no third-party CAD SDK.
+
+What the staged directory contains is three things with three different
+licensing positions:
+
+    DDC IFC to Excel (the converter and its reader)
+        Proprietary software of DataDrivenConstruction, all rights
+        reserved, free for private and commercial use under the
+        DataDrivenConstruction EULA named in the release notes. It is not licensed under the AGPL and
+        the AGPL is not offered for it. It travels beside
+        OpenConstructionERP in one installer without becoming part of the
+        same work.
+
+    CPython 3.13 runtime
+        Copyright (C) Python Software Foundation, under the Python
+        Software Foundation License. The package carries it as a complete
+        interpreter under `runtime/`, with its licence text in
+        `runtime/LICENSE.txt`, and the converter runs on it.
+
+    openpyxl 3.1.5 and et-xmlfile 2.0.0
+        MIT licensed Python libraries the converter uses to write
+        workbooks, installed into the runtime above. The package records
+        their versions and sources in `SOURCES.json`.
+
+The package is unpacked unchanged, so `runtime/LICENSE.txt` and
+`SOURCES.json` arrive with the binaries they describe rather than only with
+this file.
+
+This section exists because nothing else in this notice mentioned any of
+it. A reader working out what a Windows installer contains would have
+found no proprietary component named anywhere, and the sections above
+present themselves as complete.
+
+------------------------------------------------------------------------
+Disclaimer of Warranty
+------------------------------------------------------------------------
+
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+See the AGPL-3.0 license for the full warranty disclaimer.
+
+------------------------------------------------------------------------
+Contact
+------------------------------------------------------------------------
+
+For legal, licensing, or compliance inquiries:
+    info@datadrivenconstruction.io
+    https://datadrivenconstruction.io

@@ -1,0 +1,28 @@
+--- a/app/modules/site_inventory/service.py
++++ b/app/modules/site_inventory/service.py
+@@ -357,6 +357,25 @@
+         if payload.goods_receipt_id is not None:
+             await self._require_goods_receipt_in_project(project_id, payload.goods_receipt_id)
+ 
++        # SD1 adaptation: serialize writes for one project/material and reuse
++        # the upstream ledger to reject insufficient source-location stock.
++        lock_key = f"sd1_site_inventory:{project_id}:{payload.item_id}"
++        await self.session.execute(
++            select(func.pg_advisory_xact_lock(func.hashtextextended(lock_key, 0)))
++        )
++        if payload.movement_type in {"CONSUMPTION", "WASTE", "TRANSFER"}:
++            rows = await self._all_movements(project_id)
++            source = str(payload.location_id) if payload.location_id is not None else None
++            available = ledger.stock_on_hand_by_item_at_location(
++                [_to_ledger_movement(row) for row in rows], source
++            ).get(str(payload.item_id), _ZERO)
++            requested = _to_decimal(payload.quantity)
++            if requested > available:
++                raise HTTPException(
++                    status_code=status.HTTP_409_CONFLICT,
++                    detail=f"库存不足：可用 {available}，申请 {requested}。Insufficient stock.",
++                )
++
+         movement = StockMovement(
+             project_id=project_id,
+             item_id=payload.item_id,

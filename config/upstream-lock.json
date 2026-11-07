@@ -1,0 +1,16 @@
+{
+  "project": "OpenConstructionERP",
+  "version": "19.0.0",
+  "repository": "https://github.com/datadrivenconstruction/OpenConstructionERP",
+  "ref": "v19.0.0",
+  "license": "AGPL-3.0-or-later; preserve upstream LICENSE/NOTICE",
+  "files": [
+    {
+      "filename": "openconstructionerp-19.0.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/10/83/251368cb56d43c755b1961fc3fcc3fe9fa625c7ae4f25998bb72e06fe381/openconstructionerp-19.0.0-py3-none-any.whl",
+      "sha256": "e30cb58a190c3e8f2ef262c6ed49664ae296e003e3524e9760899f39df59dbee",
+      "size": 83964397
+    }
+  ],
+  "tag_commit": "7be066347abb3fc1d4f3cdafb78e8910f97a7dd0"
+}

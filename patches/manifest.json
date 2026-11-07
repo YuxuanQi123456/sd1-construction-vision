@@ -1,0 +1,19 @@
+{
+  "version": "19.0.0",
+  "patches": [
+    {
+      "file": "app/modules/site_inventory/service.py",
+      "before_sha256": "aaa2b7d292e4f94251250be5103f577ed8efcf41bf33d7a5c1ccc50f6b4b1596",
+      "after_sha256": "0e4ab3fc7f6d1aaa2ebbe9bb3ee48294b6ef43b894a282dca39324dc0dfbec3d",
+      "needle": "        movement = StockMovement(\n",
+      "insert": "        # SD1 adaptation: serialize writes for one project/material and reuse\n        # the upstream ledger to reject insufficient source-location stock.\n        lock_key = f\"sd1_site_inventory:{project_id}:{payload.item_id}\"\n        await self.session.execute(\n            select(func.pg_advisory_xact_lock(func.hashtextextended(lock_key, 0)))\n        )\n        if payload.movement_type in {\"CONSUMPTION\", \"WASTE\", \"TRANSFER\"}:\n            rows = await self._all_movements(project_id)\n            source = str(payload.location_id) if payload.location_id is not None else None\n            available = ledger.stock_on_hand_by_item_at_location(\n                [_to_ledger_movement(row) for row in rows], source\n            ).get(str(payload.item_id), _ZERO)\n            requested = _to_decimal(payload.quantity)\n            if requested > available:\n                raise HTTPException(\n                    status_code=status.HTTP_409_CONFLICT,\n                    detail=f\"库存不足：可用 {available}，申请 {requested}。Insufficient stock.\",\n                )\n\n"
+    },
+    {
+      "file": "app/cli_static.py",
+      "before_sha256": "499722330e7f3f2ba34c8c9a07a39c3e13150ac2d23b694b2f04f1445c0883fd",
+      "after_sha256": "83644f9f0c08fa9d82e202c8ecddb16b3644c635e7fd0da48f2d9d7b9fbe9b95",
+      "needle": "        # Check if the requested file physically exists in the frontend\n",
+      "insert": "        # SD1 adaptation: one explicit local demo entry; keep other HTML\n        # and API routing behavior unchanged.\n        if path == \"/sd1-demo/index.html\":\n            demo_entry = frontend_dir / \"sd1-demo\" / \"index.html\"\n            if demo_entry.is_file() and demo_entry.resolve().is_relative_to(frontend_dir.resolve()):\n                return FileResponse(str(demo_entry), media_type=\"text/html\", headers={\"Cache-Control\": \"no-store\"})\n            return await http_exception_handler(request, exc)\n\n"
+    }
+  ]
+}

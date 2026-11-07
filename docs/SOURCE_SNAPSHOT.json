@@ -1,0 +1,20 @@
+{
+  "at": "2026-11-07T13:36:21.089012+00:00",
+  "source_project": "水电一局演示Demo",
+  "source_commit": "bb20d0fad2b957696c961b44244a39bb4fc96f1f",
+  "mode": "Independent lean source snapshot; original Git history is local only.",
+  "copied_non_evidence_files": 152,
+  "manual_validation_scripts": {
+    "evidence/V09/check_shared_detector.py": "tests/manual/check_shared_detector.py",
+    "evidence/V11/browser_brand_layout.py": "tests/manual/browser_brand_layout.py"
+  },
+  "adapted_launchers": [
+    "启动施工视觉.cmd",
+    "停止施工视觉.cmd",
+    "vision/启动视频AI.cmd",
+    "vision/停止视频AI.cmd"
+  ],
+  "models_and_videos_included": false,
+  "runtime_deployment": "Fresh environment/model restoration required; never start the old folder by accident.",
+  "git_file_semantics": "New snapshot normalizes owned CMD index lines with CRLF checkout; patch context whitespace is preserved."
+}

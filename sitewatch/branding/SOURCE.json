@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-07T10:55:09.628690+00:00",
+  "organization": "中国水利水电第一工程局有限公司",
+  "homepage": "https://1j.powerchina.cn/",
+  "asset_url": "https://1j.powerchina.cn/cms_files/jcms1/web72/site/picture/0/2205201407022917361.png",
+  "file": "logo.png",
+  "mime_type": "image/png",
+  "dimensions_wh": [
+    344,
+    63
+  ],
+  "bytes": 14172,
+  "sha256": "2bc435b618a05a9e3833a4feebf99167b535422d8cfe03f6d3cb0db1a463bd4c",
+  "transformation": "None. Original official website PNG bytes retained.",
+  "request_headers": {
+    "User-Agent": "Mozilla/5.0",
+    "Referer": "https://1j.powerchina.cn/"
+  },
+  "rights": "Official corporate identifier; not relicensed under the application open-source license. Used for the user-requested Shuidian Bureau 1 demo branding.",
+  "checked": "Read-only source audit and local visual inspection of the official combined mark."
+}

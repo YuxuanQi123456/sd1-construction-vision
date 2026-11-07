@@ -1,0 +1,163 @@
+[
+  {
+    "file": "florenc.webm",
+    "source": "https://commons.wikimedia.org/wiki/File:Rekonstrukce_smy%C4%8Dky_Florenc,_p%C5%99en%C3%A1%C5%A1en%C3%AD_koleje.webm",
+    "author": "ŠJů",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "sha256": "77412d6c74bcb0f2679b5d6d22a3e617ba8397f5bff9ef4274ba684d92b3504b",
+    "bytes": 1368052,
+    "nature": "Public real footage; not a Shuidian site or authoritative violation label."
+  },
+  {
+    "file": "hostivar.webm",
+    "source": "https://commons.wikimedia.org/wiki/File:Praha-Hostiva%C5%99,_p%C5%99en%C3%A1%C5%A1en%C3%AD_kolejnic_kolejov%C3%BDm_bagrem.webm",
+    "author": "ŠJů",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "sha256": "409d0bae14bd98fd767ae8fef2d20a4b21a5726eb0a7a23896824cf12172d301",
+    "bytes": 3837384,
+    "nature": "Public real footage; not a Shuidian site or authoritative violation label."
+  },
+  {
+    "file": "excavator-loading.webm",
+    "source": "https://commons.wikimedia.org/wiki/File:Excavator_digging_land_and_loading_truck.webm",
+    "author": "KEmel49",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sha256": "40b48f4a0a29f58416023ecd32453060b361b707c62c782887845217c99c4d8f",
+    "bytes": 28408467,
+    "nature": "Public real footage; not a Shuidian site or authoritative violation label."
+  },
+  {
+    "file": "working-the-grinder.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Working_the_Grinder.jpg",
+    "author": "Mungai Kiroga",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sha256": "decf3125dcdf6574af64e1ab77eec24895c089acca8dddf4b59d5df32cd37e1f",
+    "bytes": 273952,
+    "nature": "Public real footage; not a Shuidian site or authoritative violation label."
+  },
+  {
+    "file": "niosh-runway-worker.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Runway_construction_worker_operating_a_dowel_drilling_machine.jpg",
+    "author": "NIOSH",
+    "license": "公有领域（美国联邦政府作品）",
+    "license_url": "https://commons.wikimedia.org/wiki/File:Runway_construction_worker_operating_a_dowel_drilling_machine.jpg#Licensing",
+    "sha256": "e5acd48dd01ac8d0ffeb59aca4f13877f79b64217a07f5b9c9be17341478612f",
+    "bytes": 2185180,
+    "nature": "Public real footage; not a Shuidian site or authoritative violation label."
+  },
+  {
+    "file": "downloads/vision-samples/bricklayer.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:A_Bricklayer.jpg",
+    "original_url": "https://upload.wikimedia.org/wikipedia/commons/d/df/A_Bricklayer.jpg",
+    "author": "Awolude Theophilus",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "bytes": 805049,
+    "sha256": "b2d280ecdabdfbc80ff447225d49faddbd36da0995ce0d517a7bd1d80260d9a4",
+    "dimensions": [
+      2256,
+      1496
+    ],
+    "changes": "Original bytes; no helmet, PPE, or person added or removed. Any later bounding boxes are model output overlays."
+  },
+  {
+    "file": "downloads/vision-samples/plasterer-original.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Plasterer_at_work_on_a_wall_arp.jpg",
+    "original_url": "https://upload.wikimedia.org/wikipedia/commons/archive/a/af/20230602193501%21Plasterer_at_work_on_a_wall_arp.jpg",
+    "version": "Original author upload dated 2009-02-24, before 2023 colour adjustment",
+    "author": "Adrian Pingstone (Arpingstone)",
+    "license": "Public domain, released worldwide by author",
+    "license_url": "https://commons.wikimedia.org/wiki/File:Plasterer_at_work_on_a_wall_arp.jpg#Licensing",
+    "bytes": 3453316,
+    "sha256": "94fc89974e3b141c442d83fbbe3770db0f32c41ac2c4301acab07e220d24cda2",
+    "dimensions": [
+      2664,
+      1969
+    ],
+    "changes": "Original archived bytes; no helmet, PPE, or person added or removed. Any later bounding boxes are model output overlays."
+  },
+  {
+    "file": "window-florenc-0-8.0.mp4",
+    "sha256": "5ba18caeb610a7142367d3d99b9693d9bc183bf0f80a90d78430c8976b6a6628",
+    "bytes": 893725,
+    "source": "https://commons.wikimedia.org/wiki/File:Rekonstrukce_smy%C4%8Dky_Florenc,_p%C5%99en%C3%A1%C5%A1en%C3%AD_koleje.webm",
+    "author": "ŠJů",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "derived_from": {
+      "file": "florenc.webm",
+      "sha256": "77412d6c74bcb0f2679b5d6d22a3e617ba8397f5bff9ef4274ba684d92b3504b"
+    },
+    "changes": "Existing local derivative: first 0–8.0 seconds, normalized/transcoded from the original WebM to H.264 MP4 for decoding; no objects or PPE added/removed. Original source bytes retained separately. Exact prior invocation was not recorded in this subtask."
+  },
+  {
+    "file": "downloads/demo-hd/pexels-8963856.mp4",
+    "sha256": "f44a8a34012478cf92f14c45a7672280487b020e805aba3a5b4bf214975b77b7",
+    "bytes": 19435359,
+    "author": "Mikael Blomkvist",
+    "source": "https://www.pexels.com/video/man-wearing-hard-hat-looking-at-camera-8963856/",
+    "license": "Pexels License",
+    "license_url": "https://www.pexels.com/license/",
+    "nature": "真实公开摄影；非水电一局现场；用于已佩戴装备的演示，不作负面违规人物案例。",
+    "changes": "Publisher original bytes retained; no enhancement or resizing."
+  },
+  {
+    "file": "downloads/demo-hd/pexels-8964378.mp4",
+    "sha256": "de726ec837019c91673e56bae99e7293597a6c79a3bd572551c5efd1316f9380",
+    "bytes": 18110973,
+    "author": "Mikael Blomkvist",
+    "source": "https://www.pexels.com/video/engineers-having-a-discussion-8964378/",
+    "license": "Pexels License",
+    "license_url": "https://www.pexels.com/license/",
+    "nature": "真实公开摄影；非水电一局现场；用于已佩戴装备的演示，不作负面违规人物案例。",
+    "changes": "Publisher original bytes retained; no enhancement or resizing."
+  },
+  {
+    "file": "downloads/demo-hd/pexels-10202856.jpg",
+    "sha256": "51fe0ae6c2a7c41486af2785fd905db62607d4dcb8c90c47d6291d4d8ec59611",
+    "bytes": 2417773,
+    "author": "This Viktọ",
+    "source": "https://www.pexels.com/photo/men-working-on-a-construction-site-while-wearing-hard-hats-10202856/",
+    "license": "Pexels License",
+    "license_url": "https://www.pexels.com/license/",
+    "nature": "真实公开摄影；非水电一局现场；用于已佩戴装备的演示，不作负面违规人物案例。",
+    "changes": "Publisher original bytes retained; no enhancement or resizing."
+  },
+  {
+    "file": "downloads/demo-hd/pexels-4981775.jpg",
+    "sha256": "34dfb5b46ee3794c3ec5fd4a15bdba43be012fb38d38916eeb2b809f49388393",
+    "bytes": 1349884,
+    "author": "Antoni Shkraba",
+    "source": "https://www.pexels.com/photo/a-bearded-man-wearing-a-hard-hat-4981775/",
+    "license": "Pexels License",
+    "license_url": "https://www.pexels.com/license/",
+    "nature": "真实公开摄影；非水电一局现场；用于已佩戴装备的演示，不作负面违规人物案例。",
+    "changes": "Publisher original bytes retained; no enhancement or resizing."
+  },
+  {
+    "file": "downloads/demo-hd/hostivar-1080p-0-8.webm",
+    "sha256": "86ec231cc4cf45132c190307a1f6291c17e84d64db3c2cdcac5200ae1de0cf44",
+    "bytes": 691695,
+    "author": "ŠJů",
+    "source": "https://commons.wikimedia.org/wiki/File:Praha-Hostiva%C5%99,_p%C5%99en%C3%A1%C5%A1en%C3%AD_kolejnic_kolejov%C3%BDm_bagrem.webm",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "nature": "原1080p视频前8秒，视频流直接复制，不缩放、不重编码；原素材仍保留。",
+    "changes": "First 8 seconds; video packets copied without re-encoding or scaling."
+  },
+  {
+    "file": ".runtime/vision-media/window-hostivar-0-8.0.mp4",
+    "sha256": "f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062",
+    "bytes": 1769425,
+    "author": "ŠJů",
+    "source": "https://commons.wikimedia.org/wiki/File:Praha-Hostiva%C5%99,_p%C5%99en%C3%A1%C5%A1en%C3%AD_kolejnic_kolejov%C3%BDm_bagrem.webm",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "nature": "保留既有960×540演示片，未覆盖。",
+    "changes": "Publisher original bytes retained; no enhancement or resizing."
+  }
+]
