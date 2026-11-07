@@ -1,0 +1,491 @@
+{
+  "schema": "sd1-v13-model-selection-v1",
+  "scope": "fixed leadership demo; no new training or model download; no API calls in comparison",
+  "inferences": 36,
+  "decision": {
+    "default": "action-10294766",
+    "default_model": "sitewatch",
+    "default_profile": "standard",
+    "default_threshold": 0.4,
+    "fallbacks": [
+      {
+        "id": "close-team",
+        "model": "constructelligence-v03",
+        "profile": "standard"
+      },
+      {
+        "id": "close-worker",
+        "model": "constructelligence-v03",
+        "profile": "standard"
+      }
+    ],
+    "remove_leadership_entries": [
+      "original-1080",
+      "existing-video"
+    ],
+    "preserve_original_track_and_training_acceptance_files": true
+  },
+  "manual_judgments": [
+    {
+      "source": "track",
+      "seconds": 0,
+      "judgment": "原片人物约33x66像素、帽约11x11像素。SiteWatch distant .4有人无帽，.2补出帽.351。非清晰稳定的领导演示样例。"
+    },
+    {
+      "source": "track",
+      "seconds": 3,
+      "judgment": "可见两名地面工人；SiteWatch distant .4/.2均无帽，.2仅补出低分第二个人。standard偏向识别驾驶室人，未解决地面PPE。"
+    },
+    {
+      "source": "track",
+      "seconds": 7,
+      "judgment": "SiteWatch distant .4检出两人一帽.833与NO-Safety Vest .721候选。standard把树冠误认Excavator .666。降至.2增加树叶/栏杆假人，拒绝轨道领导入口。"
+    },
+    {
+      "source": "worker",
+      "seconds": 0,
+      "judgment": "人物近景肖像，黄帽与颈部耳罩清晰；两模型均出人帽，Constructelligence仅两框更干净。"
+    },
+    {
+      "source": "worker",
+      "seconds": 3,
+      "judgment": "SiteWatch把耳罩/衣领区域误认Safety Vest .718；Constructelligence人.822、帽.882。镜头为摆拍肖像，缺少持续施工作业。"
+    },
+    {
+      "source": "worker",
+      "seconds": 6,
+      "judgment": "Constructelligence人.835、帽.847稳定，肖像动作有限。SiteWatch NO-Mask/NO-Safety Vest仅模型人工复核候选，不能作为法规违规结论。"
+    },
+    {
+      "source": "team",
+      "seconds": 0,
+      "judgment": "双人佩戴安全帽并拿夹板交流。Constructelligence两人两帽一vest一no-vest；SiteWatch多出重复帽框。公开人物不作负面违规宣传。"
+    },
+    {
+      "source": "team",
+      "seconds": 3,
+      "judgment": "两人看夹板，均检出人帽；Constructelligence框更清楚。画面是现场交流，非工具施工动作。"
+    },
+    {
+      "source": "team",
+      "seconds": 7,
+      "judgment": "一人抬手交流，两顶帽持续清楚；Constructelligence两人两帽加vest/no-vest候选。可作PPE视频备用。"
+    },
+    {
+      "source": "action",
+      "seconds": 0,
+      "judgment": "结构钢筋/模板内多人弯腰操作材料，存在真实遮挡和截断人物。SiteWatch四个人框、两顶正确可见帽；部分vest框重叠。Constructelligence .4没有整人框。"
+    },
+    {
+      "source": "action",
+      "seconds": 3,
+      "judgment": "前景人员手持工具走动，其余人员在结构内弯腰作业；有实际作业与位移。SiteWatch持续检出人帽，但坐姿人员有.458/.439重复人框。"
+    },
+    {
+      "source": "action",
+      "seconds": 7,
+      "judgment": "可见蹲姿和站姿作业人员。SiteWatch四个人框、四个帽框，其中左侧同一帽.834/.539重复，对应三顶物理帽。足以作诚实PPE视频演示默认，原始预测全保留。"
+    }
+  ],
+  "sample_results": [
+    {
+      "source": "track",
+      "seconds": 0,
+      "config": "sitewatch-distant",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 3,
+      "config": "sitewatch-distant",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 7,
+      "config": "sitewatch-distant",
+      "threshold": 0.4,
+      "person_boxes": 2,
+      "helmet_boxes": 1,
+      "helmet_confidences": [
+        0.833
+      ]
+    },
+    {
+      "source": "track",
+      "seconds": 0,
+      "config": "sitewatch-standard",
+      "threshold": 0.4,
+      "person_boxes": 0,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 3,
+      "config": "sitewatch-standard",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 7,
+      "config": "sitewatch-standard",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "worker",
+      "seconds": 0,
+      "config": "sitewatch-standard",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 1,
+      "helmet_confidences": [
+        0.911
+      ]
+    },
+    {
+      "source": "worker",
+      "seconds": 3,
+      "config": "sitewatch-standard",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 1,
+      "helmet_confidences": [
+        0.872
+      ]
+    },
+    {
+      "source": "worker",
+      "seconds": 6,
+      "config": "sitewatch-standard",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 1,
+      "helmet_confidences": [
+        0.876
+      ]
+    },
+    {
+      "source": "team",
+      "seconds": 0,
+      "config": "sitewatch-standard",
+      "threshold": 0.4,
+      "person_boxes": 2,
+      "helmet_boxes": 3,
+      "helmet_confidences": [
+        0.937,
+        0.918,
+        0.597
+      ]
+    },
+    {
+      "source": "team",
+      "seconds": 3,
+      "config": "sitewatch-standard",
+      "threshold": 0.4,
+      "person_boxes": 2,
+      "helmet_boxes": 2,
+      "helmet_confidences": [
+        0.95,
+        0.929
+      ]
+    },
+    {
+      "source": "team",
+      "seconds": 7,
+      "config": "sitewatch-standard",
+      "threshold": 0.4,
+      "person_boxes": 2,
+      "helmet_boxes": 2,
+      "helmet_confidences": [
+        0.94,
+        0.88
+      ]
+    },
+    {
+      "source": "track",
+      "seconds": 0,
+      "config": "constructelligence-v03-standard",
+      "threshold": 0.4,
+      "person_boxes": 0,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 3,
+      "config": "constructelligence-v03-standard",
+      "threshold": 0.4,
+      "person_boxes": 0,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 7,
+      "config": "constructelligence-v03-standard",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "worker",
+      "seconds": 0,
+      "config": "constructelligence-v03-standard",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 1,
+      "helmet_confidences": [
+        0.847
+      ]
+    },
+    {
+      "source": "worker",
+      "seconds": 3,
+      "config": "constructelligence-v03-standard",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 1,
+      "helmet_confidences": [
+        0.882
+      ]
+    },
+    {
+      "source": "worker",
+      "seconds": 6,
+      "config": "constructelligence-v03-standard",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 1,
+      "helmet_confidences": [
+        0.847
+      ]
+    },
+    {
+      "source": "team",
+      "seconds": 0,
+      "config": "constructelligence-v03-standard",
+      "threshold": 0.4,
+      "person_boxes": 2,
+      "helmet_boxes": 2,
+      "helmet_confidences": [
+        0.849,
+        0.798
+      ]
+    },
+    {
+      "source": "team",
+      "seconds": 3,
+      "config": "constructelligence-v03-standard",
+      "threshold": 0.4,
+      "person_boxes": 2,
+      "helmet_boxes": 2,
+      "helmet_confidences": [
+        0.841,
+        0.823
+      ]
+    },
+    {
+      "source": "team",
+      "seconds": 7,
+      "config": "constructelligence-v03-standard",
+      "threshold": 0.4,
+      "person_boxes": 2,
+      "helmet_boxes": 2,
+      "helmet_confidences": [
+        0.826,
+        0.795
+      ]
+    },
+    {
+      "source": "track",
+      "seconds": 0,
+      "config": "constructelligence-v03-distant",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 3,
+      "config": "constructelligence-v03-distant",
+      "threshold": 0.4,
+      "person_boxes": 1,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 7,
+      "config": "constructelligence-v03-distant",
+      "threshold": 0.4,
+      "person_boxes": 2,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 0,
+      "config": "sitewatch",
+      "threshold": 0.2,
+      "person_boxes": 1,
+      "helmet_boxes": 1,
+      "helmet_confidences": [
+        0.351
+      ]
+    },
+    {
+      "source": "track",
+      "seconds": 3,
+      "config": "sitewatch",
+      "threshold": 0.2,
+      "person_boxes": 2,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 7,
+      "config": "sitewatch",
+      "threshold": 0.2,
+      "person_boxes": 5,
+      "helmet_boxes": 1,
+      "helmet_confidences": [
+        0.833
+      ]
+    },
+    {
+      "source": "track",
+      "seconds": 0,
+      "config": "constructelligence-v03",
+      "threshold": 0.2,
+      "person_boxes": 2,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 3,
+      "config": "constructelligence-v03",
+      "threshold": 0.2,
+      "person_boxes": 2,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "track",
+      "seconds": 7,
+      "config": "constructelligence-v03",
+      "threshold": 0.2,
+      "person_boxes": 3,
+      "helmet_boxes": 0,
+      "helmet_confidences": []
+    },
+    {
+      "source": "action",
+      "seconds": 0,
+      "config": "sitewatch",
+      "threshold": 0.4,
+      "person_boxes": 4,
+      "helmet_boxes": 2,
+      "helmet_confidences": [
+        0.936,
+        0.879
+      ]
+    },
+    {
+      "source": "action",
+      "seconds": 3,
+      "config": "sitewatch",
+      "threshold": 0.4,
+      "person_boxes": 4,
+      "helmet_boxes": 2,
+      "helmet_confidences": [
+        0.924,
+        0.613
+      ]
+    },
+    {
+      "source": "action",
+      "seconds": 7,
+      "config": "sitewatch",
+      "threshold": 0.4,
+      "person_boxes": 4,
+      "helmet_boxes": 4,
+      "helmet_confidences": [
+        0.913,
+        0.907,
+        0.834,
+        0.539
+      ]
+    },
+    {
+      "source": "action",
+      "seconds": 0,
+      "config": "constructelligence-v03",
+      "threshold": 0.4,
+      "person_boxes": 0,
+      "helmet_boxes": 2,
+      "helmet_confidences": [
+        0.788,
+        0.626
+      ]
+    },
+    {
+      "source": "action",
+      "seconds": 3,
+      "config": "constructelligence-v03",
+      "threshold": 0.4,
+      "person_boxes": 2,
+      "helmet_boxes": 1,
+      "helmet_confidences": [
+        0.736
+      ]
+    },
+    {
+      "source": "action",
+      "seconds": 7,
+      "config": "constructelligence-v03",
+      "threshold": 0.4,
+      "person_boxes": 3,
+      "helmet_boxes": 2,
+      "helmet_confidences": [
+        0.779,
+        0.773
+      ]
+    }
+  ],
+  "raw_predictions_preserved": true,
+  "new_video": {
+    "source": "https://www.pexels.com/video/construction-workers-at-construction-site-10294766/",
+    "download": "https://videos.pexels.com/video-files/10294766/10294766-hd_1920_1080_30fps.mp4",
+    "author": "This Viktọ",
+    "license": "Pexels License",
+    "license_url": "https://www.pexels.com/license/",
+    "sha256": "53734aaf05d235e72e44bdac3c7164c9906e8cd2305a804b07f0e1f646a1af6c",
+    "bytes": 11303162,
+    "fps": 29.97002997002997,
+    "frame_count": 468.0,
+    "duration_seconds": 15.6156,
+    "width": 1920,
+    "height": 1080,
+    "codec_fourcc": "h264"
+  },
+  "original_videos_sha_verified": true,
+  "model_card_checked": "https://huggingface.co/constructelligence/construction-site-safety-hazards",
+  "recommendation_basis": "Own frame comparisons, not a claim of author benchmark generalization; per-media recommendation avoids universal replacement."
+}

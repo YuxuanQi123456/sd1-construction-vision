@@ -1,6 +1,6 @@
 # 头部第二意见：可配置 GPT API v2
 
-2026-11-08 用户指定 GPT-6.1 Sol、Max 推理，API Key 后填。仅替换既有头部第二意见后端；YOLO 原分数/类别/裁图/导出不改，保留显式 `qwen_local` 选项，不自动降级。
+2026-11-08 用户指定 GPT-6.1 Sol、Max 推理，API Key 后填。仅替换既有头部第二意见后端；YOLO 原分数/类别/裁图/导出不改，当前仅支持 `openai`，本地千问后端已移除，不自动降级。
 
 ## 本机配置
 
@@ -11,7 +11,7 @@
 ## 稳定接口与边界
 
 - 新模块 `sitewatch/app/review_api.py`：`load_review_config(project_root)` 返回内部配置（包含 Key，仅内部使用）；`api_backend_status(project_root)` 返回安全的 `ready/provider/model/reasoning_effort/url/config_path/error` 等状态，不含 Key，不访问网络。`request_image_opinion(crop_path, project_root, prompt)` 仅在用户点击后发送请求，返回安全后端信息、回答原文及计量/响应 ID 等白名单元数据。
-- `region_review.backend_status` 默认分派 API；`classify_crop` 默认通过 API，再沿用 `parse_option`/LABELS/空置信度与既有证据字段。显式 `qwen_local` 走原 Gradio、端口/PID/socket/固定权重验证。配置错误与未知 provider 不回退到另一模型。
+- `region_review.backend_status` 默认分派 API；`classify_crop` 默认通过 API，再沿用 `parse_option`/LABELS/空置信度与既有证据字段。`qwen_local` 与其他未知 provider 明确拒绝。配置错误与未知 provider 不回退到另一模型。
 - `ready` 对 API 仅表示配置允许发起调用，须同时标记未进行连通性验证；缺 Key 不触网、不导入 Gradio、不要求千问权重。页面准确提示配置状态，保存结果按实际 backend 来源标注。
 - Responses：`POST <base_url>/responses`，`model=gpt-6.1-sol`，`reasoning={effort:max}`，`store=false`，一条消息包含原冻结提示与未画框 PNG 裁图的 Base64 `input_image`；不发送检测类别/分数/预期答案。不传 temperature、工具、历史答案；每次新请求。
 - 默认 TLS 验证，拒绝跨站重定向；base_url 不允许用户信息、query、fragment，非 HTTPS 仅允许 localhost/loopback 调试。限制响应与裁图体积，超时/HTTP错误/不完整或拒答响应可见失败；不自动重发计费请求，不用空回答伪造成功。

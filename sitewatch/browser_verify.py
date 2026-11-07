@@ -94,22 +94,22 @@ async def check_regions(page, context, args, record, expect):
             "raw_detector_unchanged": True, "zip_crop_and_answer_verified": True})
     picker = page.locator('[data-testid="stSelectbox"]').filter(has_text="检测模型").get_by_role("combobox")
     await picker.click()
-    await page.get_by_role("option", name="Constructelligence 对照（仍有误检）", exact=True).click()
-    await expect(page.get_by_role("checkbox", name="显示全部14类（含人员、设备及可能误检）", exact=True)).to_have_count(1)
+    await page.get_by_role("option", name="Constructelligence · 近景 PPE", exact=True).click()
+    await expect(page.get_by_role("checkbox", name="显示全部14类目标标签（含设备与车辆）", exact=True)).to_have_count(1)
     await expect(page.get_by_role("button", name="下载原始检测 JSON", exact=True)).to_have_count(0)
     await expect(page.get_by_text("AI 区域意见：", exact=False)).to_have_count(0)
     await wait_script_idle(page, expect)
     # Switching back before another inference must not resurrect the stale
     # baseline image or second opinion stored before the model change.
     await picker.click()
-    await page.get_by_role("option", name="SiteWatch 基线（默认）", exact=True).click()
-    await expect(page.get_by_role("checkbox", name="显示全部25类（含人员、设备及可能误检）", exact=True)).to_have_count(1)
+    await page.get_by_role("option", name="SiteWatch · 施工场景 PPE", exact=True).click()
+    await expect(page.get_by_role("checkbox", name="显示全部25类目标标签（含设备与车辆）", exact=True)).to_have_count(1)
     await wait_script_idle(page, expect)
     await expect(page.get_by_role("button", name="下载原始检测 JSON", exact=True)).to_have_count(0)
     await expect(page.get_by_text("AI 区域意见：", exact=False)).to_have_count(0)
     await picker.click()
-    await page.get_by_role("option", name="Constructelligence 对照（仍有误检）", exact=True).click()
-    await expect(page.get_by_role("checkbox", name="显示全部14类（含人员、设备及可能误检）", exact=True)).to_have_count(1)
+    await page.get_by_role("option", name="Constructelligence · 近景 PPE", exact=True).click()
+    await expect(page.get_by_role("checkbox", name="显示全部14类目标标签（含设备与车辆）", exact=True)).to_have_count(1)
     await wait_script_idle(page, expect)
     source = args.project_root / "downloads/vision-samples/working-the-grinder.jpg"
     await upload_and_review(page, source, expect)
@@ -121,8 +121,8 @@ async def check_regions(page, context, args, record, expect):
     assert any(d["class_name"] == "person" and d["source"] == "constructelligence-v03" for d in candidate["frames"][0]["detections"])
     await expect(page.get_by_text("当前帧未检出可复核的头部框，不能据此判断是否戴帽。", exact=True)).to_be_visible()
     await expect(page.get_by_role("button", name="复核所选头部", exact=True)).to_have_count(0)
-    await page.get_by_text("显示全部14类（含人员、设备及可能误检）", exact=True).click()
-    await expect(page.get_by_role("checkbox", name="显示全部14类（含人员、设备及可能误检）", exact=True)).to_be_checked()
+    await page.get_by_text("显示全部14类目标标签（含设备与车辆）", exact=True).click()
+    await expect(page.get_by_role("checkbox", name="显示全部14类目标标签（含设备与车辆）", exact=True)).to_be_checked()
     await page.get_by_text("模型来源与许可", exact=True).click()
     await expect(page.get_by_text("固定版本 79673cff5a8bb249fc8ec9cca3daa19e2ef95191；14 类；CPU 推理", exact=True)).to_be_visible()
     await page.screenshot(path=str(args.output / "region-candidate-grinder.png"), full_page=True)
@@ -132,8 +132,8 @@ async def check_regions(page, context, args, record, expect):
                               "grinder_person_detected": True, "all_classes_display_enabled": True,
                               "no_head_does_not_imply_safety": True}
     await picker.click()
-    await page.get_by_role("option", name="SiteWatch 基线（默认）", exact=True).click()
-    await expect(page.get_by_role("checkbox", name="显示全部25类（含人员、设备及可能误检）", exact=True)).to_have_count(1)
+    await page.get_by_role("option", name="SiteWatch · 施工场景 PPE", exact=True).click()
+    await expect(page.get_by_role("checkbox", name="显示全部25类目标标签（含设备与车辆）", exact=True)).to_have_count(1)
     await expect(page.get_by_role("button", name="下载原始检测 JSON", exact=True)).to_have_count(0)
 
 
@@ -217,7 +217,7 @@ async def run(args, record):
                        args.project_root / ".runtime/vision-media/window-florenc-0-8.0.mp4"]
             if args.additional_image:
                 sources.insert(2, args.additional_image)
-            all_classes = page.get_by_role("checkbox", name="显示全部25类（含人员、设备及可能误检）", exact=True)
+            all_classes = page.get_by_role("checkbox", name="显示全部25类目标标签（含设备与车辆）", exact=True)
             await expect(all_classes).not_to_be_checked()
             for i, source in enumerate(sources):
                 mime = "image/jpeg" if source.suffix == ".jpg" else "video/mp4"
@@ -262,10 +262,10 @@ async def run(args, record):
                         assert "detections.json" in archive.namelist()
                         provenance = json.loads(archive.read("source-provenance.json"))
                         assert provenance["sha256"] == result["source_sha256"]
-                    await page.get_by_text("显示全部25类（含人员、设备及可能误检）", exact=True).click()
+                    await page.get_by_text("显示全部25类目标标签（含设备与车辆）", exact=True).click()
                     await expect(all_classes).to_be_checked()
                     await page.screenshot(path=str(args.output / "02-niosh-all-classes.png"), full_page=True)
-                    await page.get_by_text("显示全部25类（含人员、设备及可能误检）", exact=True).click()
+                    await page.get_by_text("显示全部25类目标标签（含设备与车辆）", exact=True).click()
                     await expect(all_classes).not_to_be_checked()
                 await page.screenshot(path=str(args.output / f"{i+2:02d}-{source.stem}.png"), full_page=True)
                 record["uploads"].append({"file": source.name, "frames": len(result["frames"]),

@@ -76,7 +76,9 @@ async def run(args, report):
     assert len(manifest['entries']) == 6
     entries = {item['id']: item for item in manifest['entries']}
     assert len(entries) == 6
-    assert {'original-1080', 'existing-video', args.video_id, args.photo_id} <= entries.keys()
+    assert {'site-action', 'close-worker', 'close-team', 'bricklayer-review', args.video_id, args.photo_id} <= entries.keys()
+    assert not {'original-1080', 'existing-video'} & entries.keys()
+    assert manifest['entries'][0]['id'] == 'site-action'
     assert all(item['recommended_model_id'] in {'sitewatch', 'constructelligence-v03'} for item in entries.values())
     async with async_playwright() as playwright:
         browser = await playwright.chromium.connect_over_cdp(args.cdp)
@@ -216,7 +218,8 @@ async def run(args, report):
                     await compared.scroll_into_view_if_needed()
                     await page.screenshot(path=str(args.output/'03-comparison-preserved.png'), full_page=True)
                     await page.get_by_text('大图看检测结果', exact=True).click()
-                    report['quality_switch_previous_api_opinion'] = await region_opinion()
+                    if args.check_region_review:
+                        report['quality_switch_previous_api_opinion'] = await region_opinion()
                     await page.get_by_text('保留原片画质（较慢）', exact=True).click()
                     await expect(quality).not_to_be_checked()
                     await assert_result_cleared()
@@ -227,14 +230,17 @@ async def run(args, report):
                     report['comparison_changes_display_only'] = True
                     await page.get_by_role('button', name='开始识别与复核', exact=True).click()
                     await expect(page.get_by_text('识别完成：', exact=False)).to_be_visible(timeout=240000)
-                    report['asset_switch_previous_api_opinion'] = await region_opinion()
+                    if args.check_region_review:
+                        report['asset_switch_previous_api_opinion'] = await region_opinion()
 
             # A user choice overrides the asset's recommended model.
-            report['model_switch_previous_api_opinion'] = await region_opinion()
+            if args.check_region_review:
+                report['model_switch_previous_api_opinion'] = await region_opinion()
             await model_picker.click()
-            await page.get_by_role('option', name='SiteWatch 基线（默认）', exact=True).click()
+            await page.get_by_role('option', name='SiteWatch · 施工场景 PPE', exact=True).click()
             await assert_result_cleared()
-            report['model_switch_clears_result_and_api_opinion'] = True
+            report['model_switch_clears_result'] = True
+            report['api_opinion_switch_checks_executed'] = args.check_region_review
             await check_current(entries[args.photo_id], '05-manual-model', expected_model='sitewatch')
             await model_picker.click()
             await page.get_by_role('option', name='自动（按素材推荐）', exact=True).click()
@@ -249,7 +255,7 @@ async def run(args, report):
                 {'name': source.name, 'mimeType': 'video/mp4', 'buffer': source.read_bytes()})
             old_entry = {'id': 'retained-upload-video', 'relative_path': str(source.relative_to(args.project_root)),
                          'sha256': digest(source.read_bytes()), 'media_type': 'video',
-                         'width': entries['existing-video']['width'], 'height': entries['existing-video']['height']}
+                         'width': 960, 'height': 540}
             await check_current(old_entry, '04-retained-upload')
             report['old_upload_flow_retained'] = True
             report['switching_asset_clears_old_result'] = True
@@ -288,8 +294,10 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--url', default='http://127.0.0.1:8768')
     parser.add_argument('--cdp', default='http://127.0.0.1:9226')
-    parser.add_argument('--video-id', default='close-worker')
+    parser.add_argument('--video-id', default='site-action')
     parser.add_argument('--photo-id', default='portrait-photo')
+    parser.add_argument('--check-region-review', action='store_true',
+                        help='Make real paid API requests for opinion switching checks; off by default')
     args = parser.parse_args()
     if args.output.exists():
         parser.error('Choose a new evidence directory')

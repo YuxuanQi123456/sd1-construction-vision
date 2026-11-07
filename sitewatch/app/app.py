@@ -38,15 +38,15 @@ st.markdown(f'''<div class="sd1-masthead">
   </div><span class="sd1-demo">演示环境</span>
 </div>
 <div class="sd1-hero"><div class="sd1-eyebrow">安全生产 / 视觉智能</div>
-  <h2>施工影像智能复核</h2><p>识别人员与防护装备，结合 AI 区域复核，让现场影像形成可追溯的复核依据。</p>
+  <h2>施工现场安全监测</h2><p>识别人员、安全帽与反光背心，结合 AI 区域复核，留存现场安全检查依据。</p>
 </div>
 <div class="sd1-steps">
   <div class="sd1-step"><b>01</b><div><strong>导入现场影像</strong><span>选择高清样例或上传照片、视频</span></div></div>
   <div class="sd1-step"><b>02</b><div><strong>AI 识别与定位</strong><span>查看人员、安全帽与防护装备</span></div></div>
   <div class="sd1-step"><b>03</b><div><strong>人工复核与留证</strong><span>核对区域意见，导出影像与记录</span></div></div>
 </div>''', unsafe_allow_html=True)
-MODEL_LABELS = {"sitewatch": "SiteWatch 基线（默认）",
-                "constructelligence-v03": "Constructelligence 对照（仍有误检）"}
+MODEL_LABELS = {"sitewatch": "SiteWatch · 施工场景 PPE",
+                "constructelligence-v03": "Constructelligence · 近景 PPE"}
 
 
 def demo_media_entries() -> list[dict]:
@@ -203,6 +203,7 @@ with st.sidebar.expander("模型来源与许可", expanded=False):
     st.markdown("[SiteWatch / Hani Moustafa](https://github.com/AitchEm-bot/sitewatch) · 源代码 MIT · YOLO 与权重 AGPL-3.0")
     st.markdown(f"当前检测模型：[ {MODEL_LABELS[model_id]} ]({detector.provenance['repository']}) · {detector.provenance['weight_license']}")
     st.caption(f"固定版本 {detector.provenance['commit']}；{len(detector.names)} 类；CPU 推理")
+    st.caption('这里的类别数是目标标签数；本演示重点展示人员、安全帽、反光背心及未佩戴候选。')
     st.code(detector.model_sha256, language=None)
     st.json(detector.names)
     if detector.person_spec:
@@ -308,7 +309,7 @@ with tab_live:
 with tab_review:
     st.markdown("### 影像识别与复核")
     st.caption("先选素材并开始识别，再查看检测框、复核局部区域，最后导出证据。")
-    show_all = st.checkbox(f"显示全部{len(detector.names)}类（含人员、设备及可能误检）", value=False,
+    show_all = st.checkbox(f"显示全部{len(detector.names)}类目标标签（含设备与车辆）", value=False,
                            key=f"show-all-{model_id}")
     st.caption('当前识别场景：' + ('远景视频 · 人员与防护装备' if profile == 'distant' else '照片 / 近景 · 人员与防护装备'))
     display_mode = st.radio('画面显示', ['大图看检测结果', '左右对照'], horizontal=True, key='review-display')
@@ -441,9 +442,9 @@ with tab_review:
                     st.write(f"检测器原结论：{detection['class_name']}；原检测分数 {detection['confidence']:.3f}")
                     st.write("AI 区域意见：" + opinion["opinion"]["label"])
                     actual_backend = opinion["opinion"].get("backend", {})
-                    actual_model = actual_backend.get("model", "Qwen3-VL-4B-Instruct local NF4")
+                    actual_model = actual_backend.get("model", "未记录模型来源")
                     actual_effort = actual_backend.get("reasoning_effort")
-                    actual_location = "远程 API" if actual_backend.get("provider") == "openai" else "本地模型"
+                    actual_location = "远程 API" if actual_backend.get("provider") == "openai" else "历史来源未确认"
                     st.caption(f"实际来源：{actual_model}" + (f" · {actual_effort}" if actual_effort else "")
                                + f" · {actual_location}；文字意见无校准概率，不沿用检测器分数。")
                     if opinion["comparison"] == "disagree":

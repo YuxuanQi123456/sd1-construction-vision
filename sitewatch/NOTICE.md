@@ -16,6 +16,6 @@ Ultralytics YOLO 及 `sitewatch_best.pt` 衍生权重适用 AGPL-3.0；完整 Ul
 
 候选对照权重Constructelligence v0.3来自 https://huggingface.co/constructelligence/construction-site-safety-hazards ，固定revision79673cff5a8bb249fc8ec9cca3daa19e2ef95191，权重AGPL-3.0，实际14类。来源、下载地址和SHA锁在model-candidates.json；只作为明确选择的对照，不悄悄替换原默认。公共测试指标不能当现场准确率，已知裸头误报仍保留。
 
-区域第二意见默认使用用户配置的GPT-6.1 Sol Max API；该服务调用不代表本项目重新分发其模型权重。显式本地Qwen3-VL官方Gradio应用和已核验4B NF4权重继续保留，其Apache-2.0来源见 ../vision/NOTICE.md。只提交未画框的裁剪图和固定视觉分类问题，不传人工预期答案。原始检测类别/分数不修改，复核文字没有校准概率，分歧需人工核对。裁剪、原文和实际模型信息保存在完整证据包。
+区域第二意见默认使用用户配置的GPT-6.1 Sol Max API；该服务调用不代表本项目重新分发其模型权重。本地千问模块与权重已按用户要求删除，不再作为运行依赖。只提交未画框的裁剪图和固定视觉分类问题，不传人工预期答案。原始检测类别/分数不修改，复核文字没有校准概率，分歧需人工核对。裁剪、原文和实际模型信息保存在完整证据包。
 
 远景演示配置补回上游原本的通用人员分支：Ultralytics官方YOLOv8n COCO权重，固定HF revision27f858f2dc238503a66ce10248cf7ec71a3ded5d、SHA31e20dde3def09e2cf938c7be6fe23d9150bbbe503982af13345706515f2ef95、AGPL-3.0，只允许class0/person。manifest见person-model.json。PPE专用模型仍是原固定权重；照片640/视频1280配置及人员640分支分开记录，保留去重前原始分支。当前为固定素材演示适配，不把样例调参或同片训练效果当泛化成绩。

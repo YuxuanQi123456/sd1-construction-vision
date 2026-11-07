@@ -2,6 +2,27 @@
   "schema": "demo-media-v1",
   "entries": [
     {
+      "id": "site-action",
+      "title": "现场作业：结构施工安全监测",
+      "media_type": "video",
+      "relative_path": "downloads/demo-hd/pexels-10294766.mp4",
+      "sha256": "53734aaf05d235e72e44bdac3c7164c9906e8cd2305a804b07f0e1f646a1af6c",
+      "bytes": 11303162,
+      "author": "This Viktọ",
+      "license": "Pexels License",
+      "license_url": "https://www.pexels.com/license/",
+      "source": "https://www.pexels.com/video/construction-workers-at-construction-site-10294766/",
+      "recommended_profile": "standard",
+      "recommended_model_id": "sitewatch",
+      "description": "真实结构施工作业；非水电一局现场。展示人员、安全帽与反光背心检测，不作施工动作分类或人员违规宣传。固定演示素材，部分遮挡与重复框仍需人工查看。",
+      "width": 1920,
+      "height": 1080,
+      "fps": 29.97002997002997,
+      "duration_seconds": 15.6156,
+      "codec": "h264",
+      "download_url": "https://videos.pexels.com/video-files/10294766/10294766-hd_1920_1080_30fps.mp4"
+    },
+    {
       "id": "close-worker",
       "title": "高清近景：单人安全帽",
       "media_type": "video",
@@ -19,7 +40,7 @@
       "fps": 25.0,
       "duration_seconds": 6.56,
       "codec": "h264",
-      "recommended_model_id": "sitewatch",
+      "recommended_model_id": "constructelligence-v03",
       "download_url": "https://videos.pexels.com/video-files/8963856/8963856-uhd_3840_2160_25fps.mp4"
     },
     {
@@ -40,7 +61,7 @@
       "fps": 25.0,
       "duration_seconds": 10.8,
       "codec": "h264",
-      "recommended_model_id": "sitewatch",
+      "recommended_model_id": "constructelligence-v03",
       "download_url": "https://videos.pexels.com/video-files/8964378/8964378-uhd_3840_2160_25fps.mp4"
     },
     {
@@ -80,46 +101,22 @@
       "download_url": "https://images.pexels.com/photos/4981775/pexels-photo-4981775.jpeg?cs=srgb&dl=pexels-shkrabaanthony-4981775.jpg&fm=jpg"
     },
     {
-      "id": "original-1080",
-      "title": "1080p原画质：轨道施工",
-      "media_type": "video",
-      "relative_path": "downloads/demo-hd/hostivar-1080p-0-8.webm",
-      "sha256": "86ec231cc4cf45132c190307a1f6291c17e84d64db3c2cdcac5200ae1de0cf44",
-      "bytes": 691695,
-      "author": "ŠJů",
-      "license": "CC BY 4.0",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "source": "https://commons.wikimedia.org/wiki/File:Praha-Hostiva%C5%99,_p%C5%99en%C3%A1%C5%A1en%C3%AD_kolejnic_kolejov%C3%BDm_bagrem.webm",
-      "recommended_profile": "distant",
-      "description": "原1080p视频前8秒，视频流直接复制，不缩放、不重编码；原素材仍保留。",
-      "derived_from_sha256": "409d0bae14bd98fd767ae8fef2d20a4b21a5726eb0a7a23896824cf12172d301",
-      "changes": "First 8 seconds; video packets copied without re-encoding or scaling.",
-      "width": 1920,
-      "height": 1080,
-      "fps": 25.0,
-      "duration_seconds": 8.003,
-      "codec": "vp8",
-      "recommended_model_id": "sitewatch"
-    },
-    {
-      "id": "existing-video",
-      "title": "保留：既有远景视频",
-      "media_type": "video",
-      "relative_path": ".runtime/vision-media/window-hostivar-0-8.0.mp4",
-      "sha256": "f0ae3900a83c6364056c20679d9a9de030fa59bbfe288a1a1c6bcabaad697062",
-      "bytes": 1769425,
-      "author": "ŠJů",
-      "license": "CC BY 4.0",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "source": "https://commons.wikimedia.org/wiki/File:Praha-Hostiva%C5%99,_p%C5%99en%C3%A1%C5%A1en%C3%AD_kolejnic_kolejov%C3%BDm_bagrem.webm",
-      "recommended_profile": "distant",
-      "description": "保留既有960×540演示片，未覆盖。",
-      "width": 960,
-      "height": 540,
-      "fps": 25.0,
-      "duration_seconds": 8.0,
-      "codec": "h264",
-      "recommended_model_id": "sitewatch"
+      "id": "bricklayer-review",
+      "title": "区域复核对照：砌筑照片",
+      "media_type": "image",
+      "relative_path": "downloads/vision-samples/bricklayer.jpg",
+      "sha256": "b2d280ecdabdfbc80ff447225d49faddbd36da0995ce0d517a7bd1d80260d9a4",
+      "bytes": 805049,
+      "author": "Awolude Theophilus",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "source": "https://commons.wikimedia.org/wiki/File:A_Bricklayer.jpg",
+      "recommended_profile": "standard",
+      "recommended_model_id": "sitewatch",
+      "description": "公开实拍，非水电一局现场。用于展示检测器与头部复核意见可能不一致；原始框和分数保留，不把公开人物作法规违规结论。",
+      "width": 2256,
+      "height": 1496,
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/df/A_Bricklayer.jpg"
     }
   ]
 }

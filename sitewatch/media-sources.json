@@ -159,5 +159,29 @@
     "license_url": "https://creativecommons.org/licenses/by/4.0/",
     "nature": "保留既有960×540演示片，未覆盖。",
     "changes": "Publisher original bytes retained; no enhancement or resizing."
+  },
+  {
+    "id": "site-action",
+    "title": "现场作业：结构施工安全监测",
+    "media_type": "video",
+    "relative_path": "downloads/demo-hd/pexels-10294766.mp4",
+    "sha256": "53734aaf05d235e72e44bdac3c7164c9906e8cd2305a804b07f0e1f646a1af6c",
+    "bytes": 11303162,
+    "author": "This Viktọ",
+    "license": "Pexels License",
+    "license_url": "https://www.pexels.com/license/",
+    "source": "https://www.pexels.com/video/construction-workers-at-construction-site-10294766/",
+    "recommended_profile": "standard",
+    "recommended_model_id": "sitewatch",
+    "description": "真实结构施工作业；非水电一局现场。展示人员、安全帽与反光背心检测，不作施工动作分类或人员违规宣传。固定演示素材，部分遮挡与重复框仍需人工查看。",
+    "width": 1920,
+    "height": 1080,
+    "fps": 29.97002997002997,
+    "duration_seconds": 15.6156,
+    "codec": "h264",
+    "download_url": "https://videos.pexels.com/video-files/10294766/10294766-hd_1920_1080_30fps.mp4",
+    "file": "downloads/demo-hd/pexels-10294766.mp4",
+    "nature": "Public real footage; not a Shuidian site or authoritative violation label.",
+    "changes": "Original bytes; no resizing, enhancement, inserted PPE or altered detector output."
   }
 ]
