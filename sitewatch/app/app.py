@@ -45,8 +45,8 @@ st.markdown(f'''<div class="sd1-masthead">
   <div class="sd1-step"><b>02</b><div><strong>AI 识别与定位</strong><span>查看人员、安全帽与防护装备</span></div></div>
   <div class="sd1-step"><b>03</b><div><strong>人工复核与留证</strong><span>核对区域意见，导出影像与记录</span></div></div>
 </div>''', unsafe_allow_html=True)
-MODEL_LABELS = {"sitewatch": "SiteWatch · 施工场景 PPE",
-                "constructelligence-v03": "Constructelligence · 近景 PPE"}
+MODEL_LABELS = {"sitewatch": "施工场景识别",
+                "constructelligence-v03": "近景防护识别"}
 
 
 def demo_media_entries() -> list[dict]:
@@ -149,7 +149,7 @@ automatic_profile = (demo_entry.get('recommended_profile', 'standard') if demo_e
 profile = automatic_profile if profile_choice == 'auto' else profile_choice
 st.sidebar.caption(f'本次检测模型：{MODEL_LABELS[model_id]}。' +
                    ('已按所选素材推荐解析。' if model_choice == 'auto' and demo_entry else
-                    '上传素材自动使用 SiteWatch。' if model_choice == 'auto' else '已手动指定。'))
+                    '已自动采用施工场景识别方案。' if model_choice == 'auto' else '已手动指定。'))
 preserve_resolution = st.sidebar.checkbox('保留原片画质（较慢）', value=True, key='preserve-resolution')
 with st.sidebar.expander("高级识别设置", expanded=False):
     enhancement_requested = st.toggle("图像增强", value=False, disabled=preserve_resolution)
@@ -195,8 +195,9 @@ def render_violation_log() -> None:
 # ----- shared resources ----------------------------------------------------
 try:
     detector = get_detector(conf_threshold, model_id, profile)
-except Exception as exc:
-    st.error(f"视觉识别模型加载失败：{exc}")
+except Exception:
+    logging.exception("Visual detection model failed to load")
+    st.error("视觉识别暂不可用，请联系演示管理员检查运行资源。")
     st.stop()
 
 with st.sidebar.expander("模型来源与许可", expanded=False):
@@ -231,11 +232,9 @@ with tab_live:
         try:
             from streamlit_webrtc import VideoProcessorBase, webrtc_streamer
             import av  # noqa: F401  (ensures the runtime is available)
-        except Exception as exc:  # noqa: BLE001
-            st.error(
-                "摄像头组件未安装，当前无法启用实时画面。"
-                f"\n\n({exc})"
-            )
+        except Exception:  # noqa: BLE001
+            logging.exception("Camera component unavailable")
+            st.error("摄像头组件未安装，当前无法启用实时画面。")
         else:
 
             class SiteWatchProcessor(VideoProcessorBase):
@@ -367,9 +366,10 @@ with tab_review:
                                          max_seconds=max_seconds, callback=update,
                                          preserve_resolution=preserve_resolution)
                 st.session_state["review"] = (signature, str(destination), result)
-            except Exception as exc:
+            except Exception:
+                logging.exception("Visual footage processing failed")
                 st.session_state.pop("review", None)
-                st.error(f"复核失败：{exc}。已完成的原始证据保存在本机复核目录。")
+                st.error("复核失败：影像处理未完成，请重试或联系管理员。已完成的原始证据保存在本机复核目录。")
             placeholder.empty()
             status.empty()
         saved = st.session_state.get("review")
@@ -411,11 +411,12 @@ with tab_review:
                                         mime=media_mime(source_path), on_click='ignore', use_container_width=True)
             with st.expander("查看检测明细与原始分数", expanded=False):
                 st.dataframe([{"类别": d["class_name"], "检测分数": d["confidence"],
-                               "检测框坐标": d["bbox_xyxy"], "模型来源": d["source"]}
+                               "检测框坐标": d["bbox_xyxy"],
+                               "识别方案": MODEL_LABELS.get(d["source"], "人员补充识别")}
                               for d in frame["detections"] if show_all or d["class_name"] in REVIEW_LABELS], use_container_width=True)
                 st.caption(NOTICE)
-            st.markdown("#### AI 区域复核")
-            st.caption("只分析所选头部，提供第二模型意见；原检测类别和分数保留，不自动认定违规。")
+            st.markdown("#### 智能视觉复核")
+            st.caption("对所选头部进行辅助复核，结合原图查看防护装备佩戴情况。")
             heads = head_indices(frame)
             if not heads:
                 st.info("当前帧未检出可复核的头部框，不能据此判断是否戴帽。")
@@ -426,13 +427,13 @@ with tab_review:
                 detection = frame["detections"][detection_index]
                 available = backend_status(PROJECT_ROOT)
                 if not available["ready"]:
-                    st.info(available.get("error", "区域复核尚未配置；已有检测结果仍可查看和导出。"))
-                elif available.get("provider") == "openai":
-                    st.caption("GPT API 已配置，点击时联网复核所选裁图；连通性与效果以本次实际调用为准。")
+                    st.info("智能复核暂不可用，已有检测结果仍可查看和导出。请联系演示管理员检查配置。")
+                else:
+                    st.caption("智能复核已配置，点击后分析当前所选头部画面。")
                 if st.button("复核所选头部", disabled=not available["ready"],
                              key=f"review-head-{destination.name}-{selected}-{detection_index}"):
                     try:
-                        with st.spinner("AI 正在观察所选头部…"):
+                        with st.spinner("正在复核所选头部…"):
                             review_head_region(destination, selected, detection_index, PROJECT_ROOT)
                     except Exception:
                         st.error("区域复核失败；原检测结果与失败记录已保留，请检查复核配置或连接后重试。")
@@ -440,29 +441,24 @@ with tab_review:
                 if opinion and opinion["status"] == "complete":
                     st.image(str(destination / opinion["crop_file"]), caption="本次复核的未画框裁剪图", width=320)
                     st.write(f"检测器原结论：{detection['class_name']}；原检测分数 {detection['confidence']:.3f}")
-                    st.write("AI 区域意见：" + opinion["opinion"]["label"])
-                    actual_backend = opinion["opinion"].get("backend", {})
-                    actual_model = actual_backend.get("model", "未记录模型来源")
-                    actual_effort = actual_backend.get("reasoning_effort")
-                    actual_location = "远程 API" if actual_backend.get("provider") == "openai" else "历史来源未确认"
-                    st.caption(f"实际来源：{actual_model}" + (f" · {actual_effort}" if actual_effort else "")
-                               + f" · {actual_location}；文字意见无校准概率，不沿用检测器分数。")
+                    st.write("智能复核意见：" + opinion["opinion"]["label"])
+                    st.caption("复核方式：头部区域智能识别 · 结果供人工核对。")
                     if opinion["comparison"] == "disagree":
-                        st.warning("两模型意见不同，请结合原图人工复核。")
+                        st.warning("复核意见与检测结果存在差异，请结合原图确认。")
                     elif opinion["comparison"] == "uncertain":
                         st.info("区域意见尚不能确认，请查看原图和原始回答。")
                     else:
-                        st.caption("两模型在所选区域的意见一致，仍需人工核对。")
-                    with st.expander("查看复核原文与来源", expanded=False):
+                        st.caption("复核意见与检测结果一致，请结合现场情况核对。")
+                    with st.expander("查看复核记录", expanded=False):
                         st.text(opinion["opinion"]["raw_answer"])
                         st.caption(f"复核时间 {opinion['at']}；源帧 {opinion['frame_index']} / {opinion['timestamp_seconds']:.2f}s")
                         st.code(opinion["crop_sha256"], language=None)
                 elif opinion and opinion["status"] == "failed":
                     st.error("该区域上次复核未完成，没有生成替代结论；失败证据已保留，可重试。")
             st.download_button("下载原始检测 JSON", (destination / "detections.json").read_bytes(),
-                               file_name="sitewatch-detections.json", mime="application/json", on_click="ignore")
+                               file_name="visual-detections.json", mime="application/json", on_click="ignore")
             st.download_button("下载完整证据（原文件 / 检测框 / JSON）", evidence_zip(destination).read_bytes(),
-                               file_name="sitewatch-evidence.zip", mime="application/zip", on_click="ignore")
+                               file_name="visual-evidence.zip", mime="application/zip", on_click="ignore")
         elif tmp_path.suffix.lower() in {".jpg", ".jpeg", ".png"}:
             preview = cv2.imread(str(tmp_path))
             if preview is None:
@@ -478,7 +474,7 @@ with tab_review:
 
 st.markdown('''<div class="sd1-footer">水电一局 · 施工视觉AI演示<br>
 AI 检测用于辅助人工复核，识别框不等于违规结论；仅分析已列出的采样画面。<br>
-基于 SiteWatch 开源应用适配 · 模型与源码许可见侧栏“模型来源与许可”。</div>''', unsafe_allow_html=True)
+技术信息与开源组件许可见侧栏“模型来源与许可”。</div>''', unsafe_allow_html=True)
 
 
 # Render the sidebar violation log last, so it includes anything logged during

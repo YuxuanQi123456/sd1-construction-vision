@@ -124,16 +124,16 @@ async def run(args, report):
             async def assert_result_cleared():
                 await wait_script_idle(page, expect)
                 await expect(page.get_by_role('button', name='下载原始检测 JSON', exact=True)).to_have_count(0)
-                await expect(page.get_by_text('AI 区域意见：', exact=False)).to_have_count(0)
+                await expect(page.get_by_text('智能复核意见：', exact=False)).to_have_count(0)
 
             async def region_opinion():
                 button = page.get_by_role('button', name='复核所选头部', exact=True)
                 await expect(button).to_be_enabled(timeout=180000)
                 before = await download_data(page, context, '下载原始检测 JSON')
                 await button.click()
-                await expect(page.get_by_text('AI 区域意见：', exact=False)).to_be_visible(timeout=240000)
+                await expect(page.get_by_text('智能复核意见：', exact=False)).to_be_visible(timeout=240000)
                 assert await download_data(page, context, '下载原始检测 JSON') == before
-                return await page.get_by_text('AI 区域意见：', exact=False).inner_text()
+                return await page.get_by_text('智能复核意见：', exact=False).inner_text()
 
             async def check_current(entry, label, *, expected_model=None):
                 print('Checking '+label, flush=True)
@@ -154,7 +154,7 @@ async def run(args, report):
                 assert result['model']['id'] == expected_model
                 assert result['settings']['profile'] == entry.get('recommended_profile', 'distant')
                 await expect(page.get_by_text('本次检测模型：', exact=False)).to_contain_text(
-                    'SiteWatch' if expected_model == 'sitewatch' else 'Constructelligence')
+                    '施工场景识别' if expected_model == 'sitewatch' else '近景防护识别')
                 if entry['media_type'] == 'video':
                     assert result['settings']['max_seconds'] == 1
                     assert len(result['frames']) == 1
@@ -237,7 +237,7 @@ async def run(args, report):
             if args.check_region_review:
                 report['model_switch_previous_api_opinion'] = await region_opinion()
             await model_picker.click()
-            await page.get_by_role('option', name='SiteWatch · 施工场景 PPE', exact=True).click()
+            await page.get_by_role('option', name='施工场景识别', exact=True).click()
             await assert_result_cleared()
             report['model_switch_clears_result'] = True
             report['api_opinion_switch_checks_executed'] = args.check_region_review

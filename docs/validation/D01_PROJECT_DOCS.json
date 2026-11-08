@@ -6,14 +6,14 @@
     {
       "path": "docs/VISUAL_TASKBOOK.md",
       "lines": 134,
-      "chinese_characters": 3335,
-      "sha256": "a1d19fb853a6c66340c2bc457100277836f30e055d0c1776bc27c893ee82528a"
+      "chinese_characters": 3347,
+      "sha256": "b24745a8f4175e3426da8c135fec31cfd2b9d169372069f3f1d91f8f02be5c80"
     },
     {
       "path": "docs/VISUAL_PROGRESS.md",
       "lines": 157,
-      "chinese_characters": 3332,
-      "sha256": "9913f641c28c9be5e1505f0883f3550e677bfd2c423e0a6666547b67be62e678"
+      "chinese_characters": 3398,
+      "sha256": "58e89de731c33cd4d685f1c32f4676f124a82dc8048cf5407cb777e094a726d0"
     },
     {
       "path": "docs/VISUAL_OPTIMIZATION_PLAN.md",
@@ -53,5 +53,9 @@
     "at": "2026-11-08T04:21:04.478250+00:00",
     "prefix": "VISUAL_",
     "relative_references_updated": true
+  },
+  "content_update": {
+    "at": "2026-11-08T06:32:25.516990+00:00",
+    "reason": "V14 display naming; actual technology remains documented and provenance preserved."
   }
 }

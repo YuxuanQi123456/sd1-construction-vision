@@ -35,7 +35,7 @@ async def upload_and_review(page, source, expect):
     await expect(page.get_by_text(source.name, exact=True)).to_be_visible()
     await expect(page.get_by_text("当前影像：" + source.name, exact=True)).to_be_visible(timeout=60000)
     await expect(page.get_by_role("button", name="下载原始检测 JSON", exact=True)).to_have_count(0, timeout=60000)
-    await expect(page.get_by_text("AI 区域意见：", exact=False)).to_have_count(0)
+    await expect(page.get_by_text("智能复核意见：", exact=False)).to_have_count(0)
     await wait_script_idle(page, expect)
     await page.get_by_role("button", name="开始识别与复核", exact=True).click()
     await expect(page.get_by_text("识别完成：", exact=False)).to_be_visible(timeout=120000)
@@ -55,7 +55,7 @@ async def check_regions(page, context, args, record, expect):
         button = page.get_by_role("button", name="复核所选头部", exact=True)
         await expect(button).to_be_enabled(timeout=120000)
         await button.click()
-        await expect(page.get_by_text("AI 区域意见：" + expected_label, exact=True)).to_be_visible(timeout=180000)
+        await expect(page.get_by_text("智能复核意见：" + expected_label, exact=True)).to_be_visible(timeout=180000)
         after = await native_download(page, context, "下载原始检测 JSON", args.output / f"region-{source.stem}-after.json")
         assert after == before, "Second opinion must not rewrite raw detector output"
         zip_path = args.output / f"region-{source.stem}-evidence.zip"
@@ -84,7 +84,7 @@ async def check_regions(page, context, args, record, expect):
             if filename == "bricklayer.jpg":
                 assert region["detector_detection"]["class_name"] == "Hardhat"
                 assert region["comparison"] == "disagree"
-                await expect(page.get_by_text("两模型意见不同，请结合原图人工复核。", exact=True)).to_be_visible()
+                await expect(page.get_by_text("复核意见与检测结果存在差异，请结合原图确认。", exact=True)).to_be_visible()
         (args.output / f"region-{source.stem}-review.json").write_text(json.dumps(region, ensure_ascii=False, indent=2)+"\n")
         await page.screenshot(path=str(args.output / f"region-{index+1:02d}-{source.stem}.png"), full_page=True)
         record["region_reviews"].append({"file": filename, "option": region["opinion"]["option"],
@@ -94,21 +94,21 @@ async def check_regions(page, context, args, record, expect):
             "raw_detector_unchanged": True, "zip_crop_and_answer_verified": True})
     picker = page.locator('[data-testid="stSelectbox"]').filter(has_text="检测模型").get_by_role("combobox")
     await picker.click()
-    await page.get_by_role("option", name="Constructelligence · 近景 PPE", exact=True).click()
+    await page.get_by_role("option", name="近景防护识别", exact=True).click()
     await expect(page.get_by_role("checkbox", name="显示全部14类目标标签（含设备与车辆）", exact=True)).to_have_count(1)
     await expect(page.get_by_role("button", name="下载原始检测 JSON", exact=True)).to_have_count(0)
-    await expect(page.get_by_text("AI 区域意见：", exact=False)).to_have_count(0)
+    await expect(page.get_by_text("智能复核意见：", exact=False)).to_have_count(0)
     await wait_script_idle(page, expect)
     # Switching back before another inference must not resurrect the stale
     # baseline image or second opinion stored before the model change.
     await picker.click()
-    await page.get_by_role("option", name="SiteWatch · 施工场景 PPE", exact=True).click()
+    await page.get_by_role("option", name="施工场景识别", exact=True).click()
     await expect(page.get_by_role("checkbox", name="显示全部25类目标标签（含设备与车辆）", exact=True)).to_have_count(1)
     await wait_script_idle(page, expect)
     await expect(page.get_by_role("button", name="下载原始检测 JSON", exact=True)).to_have_count(0)
-    await expect(page.get_by_text("AI 区域意见：", exact=False)).to_have_count(0)
+    await expect(page.get_by_text("智能复核意见：", exact=False)).to_have_count(0)
     await picker.click()
-    await page.get_by_role("option", name="Constructelligence · 近景 PPE", exact=True).click()
+    await page.get_by_role("option", name="近景防护识别", exact=True).click()
     await expect(page.get_by_role("checkbox", name="显示全部14类目标标签（含设备与车辆）", exact=True)).to_have_count(1)
     await wait_script_idle(page, expect)
     source = args.project_root / "downloads/vision-samples/working-the-grinder.jpg"
@@ -132,7 +132,7 @@ async def check_regions(page, context, args, record, expect):
                               "grinder_person_detected": True, "all_classes_display_enabled": True,
                               "no_head_does_not_imply_safety": True}
     await picker.click()
-    await page.get_by_role("option", name="SiteWatch · 施工场景 PPE", exact=True).click()
+    await page.get_by_role("option", name="施工场景识别", exact=True).click()
     await expect(page.get_by_role("checkbox", name="显示全部25类目标标签（含设备与车辆）", exact=True)).to_have_count(1)
     await expect(page.get_by_role("button", name="下载原始检测 JSON", exact=True)).to_have_count(0)
 
@@ -293,7 +293,7 @@ async def run(args, record):
                 await expect(page.get_by_text("复核失败：", exact=False)).to_have_count(0)
                 await wait_script_idle(page, expect)
                 await page.get_by_role("button", name="开始识别与复核", exact=True).click()
-                await expect(page.get_by_text("Video decode ended early", exact=False)).to_be_visible(timeout=60000)
+                await expect(page.get_by_text("影像处理未完成", exact=False)).to_be_visible(timeout=60000)
                 await expect(page.get_by_text("识别完成：", exact=False)).to_have_count(0)
                 await page.screenshot(path=str(args.output / "91-premature-video.png"), full_page=True)
                 record["premature_video_visible_failure"] = True

@@ -1,0 +1,74 @@
+{
+  "task": "V14_NEUTRAL_UI",
+  "at": "2026-11-08T06:32:25.501743+00:00",
+  "passed": true,
+  "scope": "Presentation wording only; no model/backend switch or new training.",
+  "business_labels": [
+    "施工场景识别",
+    "近景防护识别",
+    "智能视觉复核",
+    "复核方式：头部区域智能识别 · 结果供人工核对。"
+  ],
+  "actual_backend_provenance_preserved": true,
+  "false_local_inference_claim_added": false,
+  "open_source_notices_and_licenses_retained": true,
+  "protected_backend_modules_unchanged": [
+    "sitewatch/app/region_review.py",
+    "sitewatch/app/review_api.py",
+    "sitewatch/app/review_evidence.py",
+    "sitewatch/app/cv_pipeline/detection.py"
+  ],
+  "fixture": {
+    "method": "Streamlit AppTest + real CPU YOLO + localhost Responses fixture; not live GPT",
+    "source_sha256": "34dfb5b46ee3794c3ec5fd4a15bdba43be012fb38d38916eeb2b809f49388393",
+    "detector": "constructelligence-v03",
+    "frames": 1,
+    "detections": 2,
+    "missing_key_no_request": true,
+    "key_configured_no_automatic_request": true,
+    "user_click_requests": 3,
+    "requested_model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "store": false,
+    "crop_bytes_and_pixels_unchanged": true,
+    "original_detector_json_unchanged": true,
+    "success_failure_recovery": true,
+    "previous_attempt_preserved": true,
+    "evidence_zip_no_key": true,
+    "neutral_business_labels": true,
+    "generic_model_options": true,
+    "model_and_media_errors_use_business_messages": true,
+    "actual_backend_provenance_preserved": true,
+    "no_false_local_inference_label": true,
+    "live_gpt_called": false,
+    "external_api_calls": 0
+  },
+  "browser": {
+    "at": "2026-11-08T06:30:57.728356+00:00",
+    "passed": true,
+    "external_api_calls": 0,
+    "page_errors": [],
+    "external_browser_requests": [],
+    "neutral_heading_and_config_status": true,
+    "display_model_name": "施工场景识别",
+    "original_detector_source_preserved": true,
+    "frames": 1,
+    "api_review_button_not_clicked": true
+  },
+  "provenance": {
+    "pristine": 27,
+    "adapted": 13,
+    "canonical_and_deployed_rebuild_passed": true
+  },
+  "runtime_service_restarted_to_load_code": true,
+  "verification_diagnostics": {
+    "initial_browser_check": "saw stale UI",
+    "root_cause": "sitewatch/run.py starts Streamlit with --server.fileWatcherType none, so running process retained the compiled old script.",
+    "resolution": "Restarted only the owned Source PPE service after verifying app/patch synchronization. Saved model inputs, videos and review records were preserved.",
+    "second_browser_check": {
+      "cause": "The test used Playwright default 5s while the Streamlit script was still rendering the result/downloads; browser snapshot showed Running, not a completed app.",
+      "resolution": "Wait for the actual Streamlit script-idle state before checking the region heading; allow 30s rendering assertion."
+    }
+  },
+  "real_external_api_calls_this_task": 0
+}
