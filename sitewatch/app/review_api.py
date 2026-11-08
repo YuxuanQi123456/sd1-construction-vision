@@ -30,6 +30,8 @@ DEFAULT_CONFIG = {
 }
 MAX_CONFIG_BYTES = 64 * 1024
 MAX_CROP_BYTES = 20 * 1024 * 1024
+MAX_SUMMARY_IMAGE_BYTES = 20 * 1024 * 1024
+MAX_SUMMARY_TOTAL_BYTES = 40 * 1024 * 1024
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 
@@ -238,15 +240,65 @@ def request_image_opinion(crop_path, project_root, prompt, *, _config=None):
         raise ReviewAPIError("所选头部裁图必须为 PNG 或 JPEG，未发送 API 请求")
     if not isinstance(prompt, str) or not prompt.strip():
         raise ReviewAPIError("复核提示不能为空，未发送 API 请求")
+    content = [
+        {"type": "input_text", "text": prompt},
+        {"type": "input_image", "image_url": "data:" + mime + ";base64," + base64.b64encode(image).decode("ascii"), "detail": "high"},
+    ]
+    return _request_image_content(content, config, project_root, started)
+
+
+def request_image_summary(image_paths, project_root, prompt, *, _config=None):
+    """Send one to three unannotated summary images in a single request.
+
+    Callers may supply the validated configuration snapshot they already used for
+    attempt provenance. This function never rereads that supplied snapshot.
+    """
+    config = dict(_config) if _config is not None else load_review_config(project_root)
+    if config["provider"] != "openai":
+        raise ReviewAPIError("当前未选择 API 复核后端")
+    if not config["api_key"]:
+        raise ReviewAPIError("复核 API 尚未填写 Key，请编辑 config/review-api.local.json 的 api_key")
+    if not isinstance(image_paths, (list, tuple)) or not 1 <= len(image_paths) <= 3:
+        raise ReviewAPIError("巡查总结须选择 1 到 3 张画面，未发送 API 请求")
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise ReviewAPIError("巡查总结提示不能为空，未发送 API 请求")
+    started = time.perf_counter()
+    content = [{"type": "input_text", "text": prompt}]
+    total = 0
+    for image_path in image_paths:
+        try:
+            path = Path(image_path)
+            if path.stat().st_size > MAX_SUMMARY_IMAGE_BYTES:
+                raise ReviewAPIError("巡查总结单张画面超过大小限制，未发送 API 请求")
+            with path.open("rb") as source:
+                image = source.read(MAX_SUMMARY_IMAGE_BYTES + 1)
+        except ReviewAPIError:
+            raise
+        except (OSError, TypeError, ValueError):
+            raise ReviewAPIError("无法读取巡查总结画面，未发送 API 请求") from None
+        if len(image) > MAX_SUMMARY_IMAGE_BYTES:
+            raise ReviewAPIError("巡查总结单张画面超过大小限制，未发送 API 请求")
+        total += len(image)
+        if total > MAX_SUMMARY_TOTAL_BYTES:
+            raise ReviewAPIError("巡查总结画面总大小超过限制，未发送 API 请求")
+        if image.startswith(b"\x89PNG\r\n\x1a\n"):
+            mime = "image/png"
+        elif image.startswith(b"\xff\xd8"):
+            mime = "image/jpeg"
+        else:
+            raise ReviewAPIError("巡查总结画面必须为 PNG 或 JPEG，未发送 API 请求")
+        content.append({"type": "input_image", "image_url": "data:" + mime + ";base64," + base64.b64encode(image).decode("ascii"), "detail": "high"})
+    return _request_image_content(content, config, project_root, started)
+
+
+def _request_image_content(content, config, project_root, started):
+    """Shared single-shot Responses transport for head opinions and summaries."""
     payload = {
         "model": config["model"],
         "reasoning": {"effort": config["reasoning_effort"]},
         "store": False,
         "max_output_tokens": config["max_output_tokens"],
-        "input": [{"role": "user", "content": [
-            {"type": "input_text", "text": prompt},
-            {"type": "input_image", "image_url": "data:" + mime + ";base64," + base64.b64encode(image).decode("ascii"), "detail": "high"},
-        ]}],
+        "input": [{"role": "user", "content": content}],
     }
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     request = Request(config["base_url"] + "/responses", data=data,
@@ -280,13 +332,36 @@ def request_image_opinion(crop_path, project_root, prompt, *, _config=None):
         raise ReviewAPIError("复核 API 返回无效 HTTP 响应，没有生成复核结论") from None
     except (URLError, OSError, ValueError):
         raise ReviewAPIError("无法连接复核 API，请检查接口地址和网络；没有自动重试") from None
-    raw = _answer(answer, config["api_key"])
     backend = _safe_backend(config, project_root, connected=True)
     metadata = {}
     for target, source in (("response_id", "id"), ("response_model", "model")):
-        value = answer.get(source)
+        value = answer.get(source) if isinstance(answer, dict) else None
         if isinstance(value, str):
             metadata[target] = _redact(value, config["api_key"])[:256]
+    try:
+        raw = _answer(answer, config["api_key"])
+    except ReviewAPIError as exc:
+        # A completed HTTP exchange may still be incomplete/refused by the
+        # model. Retain only safe provenance, usage and assistant text so a
+        # failed summary remains auditable without saving arbitrary payloads.
+        parts = []
+        if isinstance(answer, dict) and isinstance(answer.get("output"), list):
+            for message in answer["output"]:
+                if (not isinstance(message, dict) or message.get("type") != "message"
+                        or message.get("role") != "assistant" or not isinstance(message.get("content"), list)):
+                    continue
+                for item in message["content"]:
+                    if not isinstance(item, dict):
+                        continue
+                    value = (item.get("text") if item.get("type") == "output_text" else
+                             item.get("refusal") if item.get("type") == "refusal" else None)
+                    if isinstance(value, str):
+                        parts.append(value)
+        exc.evidence = {"backend": backend, "raw_answer": _redact("\n".join(parts), config["api_key"]),
+                        "elapsed_seconds": time.perf_counter() - started,
+                        "usage": _usage(answer.get("usage")) if isinstance(answer, dict) else {},
+                        "api": ["POST /responses"], "fresh_session": True, **metadata}
+        raise
     return {"backend": backend, "raw_answer": raw,
             "elapsed_seconds": time.perf_counter() - started,
             "usage": _usage(answer.get("usage")), "api": ["POST /responses"],
