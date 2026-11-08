@@ -20,6 +20,7 @@ from cv_pipeline.fusion import LOG_PATH, fuse
 from cv_pipeline.motion import MotionDetector
 from review_evidence import NOTICE, REVIEW_LABELS, evidence_zip, new_review_dir, review_file
 from region_review import backend_status, head_indices, latest_region_review, review_head_region
+from safety_summary_ui import render_safety_summary
 from utils.drawing import draw_overlay
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -455,6 +456,7 @@ with tab_review:
                         st.code(opinion["crop_sha256"], language=None)
                 elif opinion and opinion["status"] == "failed":
                     st.error("该区域上次复核未完成，没有生成替代结论；失败证据已保留，可重试。")
+            render_safety_summary(destination, result, PROJECT_ROOT)
             st.download_button("下载原始检测 JSON", (destination / "detections.json").read_bytes(),
                                file_name="visual-detections.json", mime="application/json", on_click="ignore")
             st.download_button("下载完整证据（原文件 / 检测框 / JSON）", evidence_zip(destination).read_bytes(),
