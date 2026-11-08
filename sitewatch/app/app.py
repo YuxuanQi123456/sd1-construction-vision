@@ -21,6 +21,7 @@ from cv_pipeline.motion import MotionDetector
 from review_evidence import NOTICE, REVIEW_LABELS, evidence_zip, new_review_dir, review_file
 from region_review import backend_status, head_indices, latest_region_review, review_head_region
 from safety_summary_ui import render_safety_summary
+from safety_summary import summary_export_lock
 from utils.drawing import draw_overlay
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -459,8 +460,15 @@ with tab_review:
             render_safety_summary(destination, result, PROJECT_ROOT)
             st.download_button("下载原始检测 JSON", (destination / "detections.json").read_bytes(),
                                file_name="visual-detections.json", mime="application/json", on_click="ignore")
-            st.download_button("下载完整证据（原文件 / 检测框 / JSON）", evidence_zip(destination).read_bytes(),
-                               file_name="visual-evidence.zip", mime="application/zip", on_click="ignore")
+            try:
+                with summary_export_lock(destination):
+                    package_bytes = evidence_zip(destination).read_bytes()
+            except Exception:
+                logging.exception("Could not prepare complete visual evidence")
+                st.warning("完整证据包暂不可用，请稍后重试。原始检测和巡查总结仍可单独下载。")
+            else:
+                st.download_button("下载完整证据（原文件 / 检测框 / JSON）", package_bytes,
+                                   file_name="visual-evidence.zip", mime="application/zip", on_click="ignore")
         elif tmp_path.suffix.lower() in {".jpg", ".jpeg", ".png"}:
             preview = cv2.imread(str(tmp_path))
             if preview is None:

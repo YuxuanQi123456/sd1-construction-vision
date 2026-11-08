@@ -1,6 +1,6 @@
 # 当前架构
 
-业务范围是施工影像安全监测演示：本地 YOLO 初筛、GPT 头部复核、人工查看与证据导出。优先复现完整 SiteWatch 应用，保留上游源码与许可；`sitewatch/app` 的薄适配由 `sitewatch/patches/local-review.patch` 重建。`verify_provenance.py` 核对原始 27 文件与适配副本。
+业务范围是施工影像安全监测演示：本地 YOLO 初筛、GPT 头部复核、AI 巡查总结、人工确认与证据导出。优先复现完整 SiteWatch 应用，保留上游源码与许可；`sitewatch/app` 的薄适配由 `sitewatch/patches/local-review.patch` 重建。`verify_provenance.py` 核对原始 27 文件与当前 15 份适配 Python 文件。
 
 ```mermaid
 flowchart LR
@@ -12,8 +12,15 @@ flowchart LR
   Key[本机忽略配置] --> GPT[GPT Responses API]
   Head -->|用户点击| GPT
   GPT --> Opinion[原答 / 实际模型 / 分歧]
+  Evidence --> Preview[首中末最多3张采样预览]
+  Preview -->|用户点击总结| GPT
+  GPT --> Summary[总结 / 疑点 / 画面依据 / 局限]
+  Summary --> Human[待确认 / 已确认 / 已排除 + 备注]
+  Human --> TXT[巡查总结 TXT]
   Evidence --> ZIP[人工复核与证据 ZIP]
   Opinion --> ZIP
+  Summary --> ZIP
+  TXT --> ZIP
 ```
 
 ## 模型和素材
@@ -27,6 +34,16 @@ SiteWatch 为 YOLOv8m PPE、25 目标类；Constructelligence v0.3 为 14 类近
 只支持 `openai` provider，默认 `gpt-6.1-sol` / `max`，固定头部 A/B/C/D 问题。Key 只在 `config/review-api.local.json`，不从其他项目取值，不进入证据。状态查询不触网；实际调用传原裁图、`store:false`，单次请求、不自动重试、不跟随重定向。失败保存脱敏 attempt，原检测保持；结果记录实际模型、配置快照与响应信息。素材、检测模型/参数、推理尺度变化隔离旧显示；修改本机 GPT 配置不会主动隐藏已有意见，历史调用来源保存在证据中。前台使用业务名称和中性复核说明，不展示具体供应商或部署位置，不声明复核为本地运行。开源来源及许可证继续提供。接口见 [head-review-api-v2](../contracts/head-review-api-v2.md)。
 
 本地 Qwen 模块、量化权重、Gradio/Transformers/bnb 安装及 full profile 已移除。历史记录仅说明曾做过的比较，不再提供可启动入口。
+
+## AI 巡查总结与人工记录（V15）
+
+`safety_summary.py` 只读本次 `detections.json` 和未画框采样输入，选择首、中、末最多 3 个唯一位置，另存最长边 1280 的 PNG 预览。Responses 单次多图请求附真实时间、尺寸和检测参考；原件与原检测不改。头部仍为固定裁图 A/B/C/D，总结独立使用 `summary_max_output_tokens=8192`，头部预算仍 4096；默认 Sol / Max 不变。仅按钮触发请求，人工保存、普通 rerun、导出均不触网。
+
+模型只能返回 overview/observations/limitations/findings，以及每项 title/detail/suggestion/frame_positions。服务端严格校验字段、数量和证据范围，再分配 ID、时间和初始 `pending`。未检出不等于缺失、零疑点不等于全程安全，不推测精确距离或隐藏设备。`safety_summary_ui.py` 安全显示纯文字，状态和备注仅在显式保存时落盘；不同任务/总结版本隔离，过期版本拒绝保存。
+
+每个 review 的 `safety-summary/attempts` 保存不可变原答、实际来源、输入 SHA 与耗用；`latest-attempt.json` 与 `latest-success.json` 分开，失败保留旧成功。`decisions/<summary_id>.json` 独立保存人工状态、备注及时间历史，重新总结不继承旧决定。原子替换、线程/文件锁及报告回滚保证保存一致；主页面在 `summary_export_lock` 内校验 TXT 并读取 ZIP，报告更新失败不提供过时包。技术 JSON 留真实模型来源，不含 Key。
+
+这是本机按任务保存的人工记录，不含登录权限、派单、整改销项或历史任务列表；主页面新检测会建立新任务，不能承诺关闭页面后自动找回选中任务。接口与边界见 [总结契约](../contracts/safety-summary-v1.md)，验证见 [V15](validation/V15_SAFETY_SUMMARY.json)。
 
 ## 环境与交接
 

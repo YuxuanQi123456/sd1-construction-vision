@@ -32,6 +32,8 @@ python3.12 scripts/manage_ppe.py start --wait
 
 打开 http://127.0.0.1:8767，按 [演示顺序](PPE_DEMO.md) 操作。关机后重新启动。代码与依赖安装独立于模型资源，不能复制旧 venv；旧 full 安装不再支持。根目录启动器只启 PPE 与检查 GPT 配置。
 
+V15 已增加检测结果下方的 AI 巡查总结、待确认问题与三状态/备注保存，接口见 [总结契约](../contracts/safety-summary-v1.md)，验证见 [V15](validation/V15_SAFETY_SUMMARY.json)。复用现有图像配置，无新模型/依赖；旧本机配置缺少 `summary_max_output_tokens` 时默认8192，头部仍4096。总结只按按钮发一次请求，人工保存和导出不触网。`.runtime` 的任务及人工记录不进Git，当前没有历史任务页面；分享实际报告请用TXT/ZIP，不共享Key。
+
 ## 资源在哪里
 
 统一清单 `config/runtime-assets.json` 固定全部字节与SHA。[资源 Release](https://github.com/YuxuanQi123456/sd1-construction-vision/releases/tag/runtime-20261107-v1) 继续复用原有 41 份非千问附件，千问附件已删除；以当前清单为准，旧 tag 的源码归档属于历史版本，开发请 clone 当前 main。

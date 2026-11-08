@@ -1,0 +1,220 @@
+{
+  "task": "V15_SAFETY_SUMMARY",
+  "at": "2026-11-08T11:32:27.477447+00:00",
+  "passed": true,
+  "code_baseline": "9610849 + final export lock/UI captions/patch",
+  "scope": "AI summary over representative sampled images, with per-task manual review and TXT/ZIP export; fixed demo acceptance, not production risk validation.",
+  "reuse": [
+    "Pinned SiteWatch application",
+    "Streamlit forms/downloads",
+    "existing original detection evidence",
+    "Responses multi-image API with existing configured Sol/Max"
+  ],
+  "tests": {
+    "summary_core_and_transport": 34,
+    "existing_head_api_regression": 20,
+    "total": 54,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "commands": [
+      "portable-env/bin/python -m unittest discover -s tests -p test_*summary*.py",
+      "portable-env/bin/python -m unittest discover -s tests -p test_review_api.py"
+    ]
+  },
+  "integration": {
+    "at": "2026-11-08T11:27:19.733214+00:00",
+    "passed": true,
+    "method": "Real CPU YOLO + Streamlit AppTest + localhost Responses fixture",
+    "real_external_api_calls": 0,
+    "frames": 3,
+    "summary_images": 3,
+    "preview_sha256": [
+      "905cb9bde92c44fcf896b440ecad8771b478d76474c89cf9f194d3194e8c5561",
+      "ce92796aaae0f4ec96b9a09b98d76c38465c08efc3bddbd88e5d85d8fcb9ce4a",
+      "0faa130ba832233caacb91506a30caa7b0f027bfd85b42254858e5b6f72874f8"
+    ],
+    "api_fixture_requests": 4,
+    "no_requests_on_detection_rerun_or_manual_save": true,
+    "original_detections_and_inputs_unchanged": true,
+    "initial_pending": true,
+    "confirmed_and_dismissed_persisted": true,
+    "original_ai_attempt_immutable": true,
+    "regeneration_resets_human_states": true,
+    "failed_generation_retains_old_success": true,
+    "zero_findings_supported": true,
+    "input_switch_isolated": true,
+    "txt_and_zip_latest_state_match": true,
+    "request_model_and_max_preserved": true,
+    "no_key_in_export": true
+  },
+  "live_success": {
+    "at": "2026-11-08T11:18:59.753016+00:00",
+    "passed": true,
+    "real_api_calls": 1,
+    "method": "Real CPU default construction video + Streamlit AppTest + one configured live Responses summary request",
+    "request_images": 3,
+    "source_sha256": "53734aaf05d235e72e44bdac3c7164c9906e8cd2305a804b07f0e1f646a1af6c",
+    "detection_frames": 8,
+    "summary_frame_positions": [
+      0,
+      4,
+      7
+    ],
+    "summary_timestamps": [
+      0.0,
+      4.0040000000000004,
+      7.007000000000001
+    ],
+    "summary_id": "summary-d6bcd5a55b924dbba86960cac544d444",
+    "overview": "采样画面中，多名人员在钢筋笼、模板及脚手架杆件之间弯腰或蹲姿作业。可见黄色、白色安全帽和荧光反光背心，部分手部可见手套。地面局部散有短料，模板底部可见木块，前景可见竖向钢筋端头。人员和杆件遮挡较多，通行及端部防护情况需现场核查。",
+    "observations": [
+      "多人在钢筋笼与模板旁进行低位操作。",
+      "可见安全帽、反光背心，蓝衣人员手部可见手套。",
+      "局部地面散有细长材料，模板底部可见木块。",
+      "前景有竖向钢筋端头，周边支架杆件密集。"
+    ],
+    "limitations": [
+      "部分人员及地面被遮挡，前景钢筋局部失焦。",
+      "无法逐人确认装备完整性及佩戴细节。",
+      "仅有三张采样画面，不能代表连续作业全过程。"
+    ],
+    "findings": [
+      {
+        "id": "finding-01",
+        "title": "零散材料可能影响落脚",
+        "detail": "人员脚边可见细长散料，是否位于通行范围内不清。",
+        "suggestion": "人工核查落脚及通行区域，整理非必需散料。",
+        "evidence": [
+          {
+            "frame_position": 0,
+            "frame_index": 0,
+            "timestamp_seconds": 0.0,
+            "input_file": "frame-000000-input.png"
+          },
+          {
+            "frame_position": 7,
+            "frame_index": 210,
+            "timestamp_seconds": 7.007000000000001,
+            "input_file": "frame-000210-input.png"
+          }
+        ],
+        "review_status": "pending",
+        "review_note": "",
+        "reviewed_at": null
+      },
+      {
+        "id": "finding-02",
+        "title": "钢筋端头防护需核查",
+        "detail": "前景可见多根竖向钢筋端头，局部失焦，防护及人员接近范围不清。",
+        "suggestion": "人工确认端头防护与隔离情况，按需完善。",
+        "evidence": [
+          {
+            "frame_position": 0,
+            "frame_index": 0,
+            "timestamp_seconds": 0.0,
+            "input_file": "frame-000000-input.png"
+          },
+          {
+            "frame_position": 4,
+            "frame_index": 120,
+            "timestamp_seconds": 4.0040000000000004,
+            "input_file": "frame-000120-input.png"
+          }
+        ],
+        "review_status": "pending",
+        "review_note": "",
+        "reviewed_at": null
+      }
+    ],
+    "all_findings_pending": true,
+    "actual_model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "response_model": "gpt-6.1-sol",
+    "usage": {
+      "input_tokens": 6231,
+      "output_tokens": 3223,
+      "total_tokens": 9454,
+      "output_tokens_details": {
+        "reasoning_tokens": 2783
+      }
+    },
+    "summary_wall_seconds": 50.8,
+    "input_and_detector_unchanged": true,
+    "rerun_no_extra_request": true,
+    "txt_and_zip_verified": true,
+    "key_not_in_export": true
+  },
+  "live_attempts": {
+    "real_external_api_calls": 2,
+    "automatic_retries": 0,
+    "first": {
+      "status": "failed",
+      "reason": "incomplete after initial 4096 output allowance was consumed by reasoning",
+      "input_tokens": 6251,
+      "output_tokens": 4096,
+      "reasoning_tokens": 4096,
+      "total_tokens": 10347,
+      "elapsed_seconds": 66.27
+    },
+    "adjustment": "Independent summary_max_output_tokens=8192 plus shorter summary prompt; head allowance4096, model and max reasoning unchanged.",
+    "second": {
+      "status": "completed",
+      "total_tokens": 9454,
+      "wall_seconds": 50.8,
+      "findings": 2,
+      "all_pending": true
+    },
+    "total_tokens": 19801
+  },
+  "browser": {
+    "at": "2026-11-08T11:25:52.931941+00:00",
+    "passed": true,
+    "method": "Real Chromium UI over isolated copy of actual AI summary; generation disabled without Key",
+    "real_external_api_calls": 0,
+    "external_requests": [],
+    "page_errors": [],
+    "initial_actual_findings": 2,
+    "all_three_decisions_operated": true,
+    "notes_saved": true,
+    "explicit_save_persists": true,
+    "reload_existing_task_persists": true,
+    "txt_and_zip_match": true,
+    "no_generation_or_api_request": true,
+    "original_live_record_not_modified": true
+  },
+  "provenance": {
+    "pristine_source_files": 27,
+    "adapted_python_files": 15,
+    "canonical_rebuild_passed": true,
+    "deployed_rebuild_passed": true
+  },
+  "limits": [
+    "Summary represents at most3 selected sampled images, not all video frames.",
+    "Manual confirmation has no identity/authentication, assignment or rectification workflow.",
+    "Main app has no historical task list or automatic task/session restoration. Browser reload tested a fixed existing-task harness.",
+    "Live original findings remain pending; manual browser actions used an isolated copy."
+  ],
+  "hashes": {
+    "sitewatch/app/app.py": "3eed93bc8b72883b04d96afcc8da64e6b645b8a35a91d40b4cefd8035439f9db",
+    "sitewatch/app/review_api.py": "46bffde2d9e2eb7319a97de9a57c05cc2aabdcf895e412773e9abe20bf290430",
+    "sitewatch/app/safety_summary.py": "347be68154909b1ec16cfc1e7e2a4f0aee92c5f2777b23cc8163e48778b9d154",
+    "sitewatch/app/safety_summary_ui.py": "ce76c2e3871361c5ce8080d70fb5595f2769699577cc8f8eb72d83472125b43d",
+    "sitewatch/patches/local-review.patch": "d0b5c8a3206d1ef2098fe67838a5be9ab8bb4cb8343f3833e70de560fcc78067"
+  },
+  "deployed_browser": {
+    "at": "2026-11-08T11:32:47.252893+00:00",
+    "passed": true,
+    "real_external_api_calls": 0,
+    "page_errors": [],
+    "external_browser_requests": [],
+    "managed_service_restarted": true,
+    "actual_cpu_detection_completed": true,
+    "new_summary_entry_visible": true,
+    "configured_generation_button_enabled": true,
+    "generate_button_not_clicked": true,
+    "detection_did_not_call_summary": true,
+    "evidence_export_visible": true
+  }
+}

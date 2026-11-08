@@ -18,6 +18,7 @@ UI 只依赖以下接口；均为普通 Python 函数：
 - `latest_summary_attempt(review_dir) -> dict | None`：显示最近生成尝试是否失败，和旧成功总结区分。
 - `set_finding_decision(review_dir, summary_id, finding_id, status, note='') -> dict`：只有显式保存才更新。校验当前成功总结版本、finding ID 和合法状态；备注最长 1000 字符。原始 AI 结果不变，另存状态和带时间的历史；重新生成不继承旧总结的人工决定。
 - `summary_report(review_dir) -> str`：生成可读纯文本报告，包含真实分析范围、AI 结论、逐项依据、最新人工状态和备注。不在业务报告中添加模型厂商；技术来源留 JSON/完整证据。生成和人工保存时同步派生 `report.txt`，便于已有 ZIP 导出自动包含。
+- `summary_export_lock(review_dir)`：导出上下文锁；无总结目录时直接放行，有总结时在同一状态锁内校验/修复派生 TXT。主页面在此上下文内生成和读取 ZIP；修复失败停止本次下载，避免导出过时人工结论。`evidence_zip` 本身不重复加锁。
 
 成功 view 至少包含：
 
@@ -58,9 +59,11 @@ UI 只依赖以下接口；均为普通 Python 函数：
 
 `review_api.py` 新增 `request_image_summary(image_paths, project_root, prompt, *, _config=None) -> dict`：复用现有配置快照、认证、响应解析、白名单来源、脱敏和无重定向/无自动重试传输。图片最多 3 张，单图和总字节有界。保留 `request_image_opinion` 原单裁图接口和行为，已有 head API 测试必须继续通过。每次用户点击至多一次 HTTP 请求；显示、人工保存及导出零请求。
 
+总结使用独立 `summary_max_output_tokens=8192`（合法范围 1–16000），头部沿用 `max_output_tokens=4096`；旧本机配置缺少新项时读取默认值，不改写已填 Key。请求和技术证据使用同一配置快照，记录实际预算。提示优先精简概述与主要疑点，校验仍允许最多 6 项，不自动重试或降低用户指定的 Sol / Max。[官方多图输入说明](https://developers.openai.com/api/docs/guides/images-vision)。
+
 建议目录 `review_dir/safety-summary/`：唯一 attempts、最近 attempt、最近成功结果及独立人工决定/历史。原始成功尝试和失败尝试保留，JSON 原子写入；人工并发更新加锁，避免覆盖其他项。过时 summary_id 保存必须拒绝，人工确认不能引用另一版总结。保存的技术 JSON 必须包含原始回答、同一次请求的真实 backend/model/effort、输入清单与实际 token/耗时，不含 Key。
 
-已有 `evidence_zip` 递归导出，会包含新目录。无需改原检测契约。人工状态或文本报告为派生结果，不重写 AI 原始结果。
+已有 `evidence_zip` 递归导出，会包含新目录。无需改原检测契约。人工状态或文本报告为派生结果，不重写 AI 原始结果。状态写入与报告更新遵守先派生报告、后主状态、失败回滚；文件锁和原子替换避免并发覆盖与假成功。拒绝模型文字/人工备注中的孤立 Unicode surrogate，失败原答以安全 JSON 编码保留。
 
 ## 4. UI 接口与展示
 
@@ -74,4 +77,4 @@ UI 只依赖以下接口；均为普通 Python 函数：
 
 必要验证：单帧/多帧选择、JSON 验证与越界引用拒绝、零问题、全部初始 pending、三状态保存/刷新保留、旧版本拒绝、重新生成不继承、并发不丢其他决定、失败保留旧总结、不自动重发、Key 不泄漏、原检测/输入 SHA 不变、TXT/ZIP 一致。保留原头部 API 回归。
 
-工程集成使用真实 CPU 检测 + localhost Responses fixture 验证总结和人工保存；真实配置最多用一次小型总结请求验证，另记录输入范围/实际耗用，不能把 fixture 冒充真实模型质量。浏览器验证实际操作、状态与下载，过程中不增加付费调用。所有代码适配重建 patch，更新文档与阶段证据。
+工程集成使用真实 CPU 检测 + localhost Responses fixture 验证总结和人工保存；真实配置原计划一次小型总结请求，首次 4096 额度耗尽后显式调整独立预算与提示，再做一次验证，共两次，失败与耗用均保留，未自动重试。不能把 fixture 冒充真实模型质量。浏览器验证实际成功总结的隔离副本，操作状态与下载不增加付费调用，不改真实问题的 pending。主页面尚无历史任务选择，不将固定任务重载测试称为页面完整会话恢复。所有代码适配重建 patch，更新文档与阶段证据。

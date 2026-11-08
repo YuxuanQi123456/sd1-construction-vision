@@ -116,6 +116,7 @@ def render_safety_summary(review_dir, result, project_root) -> None:
     st.divider()
     st.markdown("#### AI 安全巡查总结")
     st.caption("从本次检测中选取首、中、末最多 3 个代表采样画面，归纳可见情况与疑似问题，供人工确认。")
+    st.caption("点击后生成一次总结，可能需要几十秒；人工确认与下载不会再次分析画面。")
 
     summary = None
     attempt = None
@@ -192,6 +193,7 @@ def render_safety_summary(review_dir, result, project_root) -> None:
     for column, status in zip(st.columns(3), REVIEW_STATUSES):
         column.metric(REVIEW_STATUSES[status], counts[status])
     st.caption("仅点击“保存人工确认”后写入；未保存的选择与备注不计入上方统计。")
+    st.caption("人工记录保存在本次任务中，重新识别会建立新任务。")
     if not findings:
         st.info("本次代表画面未形成疑似问题条目；这不代表现场或视频全程安全，请结合分析限制继续人工检查。")
     for number, finding in enumerate(findings, 1):

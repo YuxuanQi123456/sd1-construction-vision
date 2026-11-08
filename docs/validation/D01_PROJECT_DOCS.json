@@ -1,28 +1,28 @@
 {
   "passed": true,
-  "functional_baseline": "e202213",
+  "functional_baseline": "9610849 + V15 final integration",
   "scope": "Documentation only; static source/evidence/link checks; no runtime inference or API calls.",
   "documents": [
     {
       "path": "docs/VISUAL_TASKBOOK.md",
-      "lines": 134,
-      "chinese_characters": 3347,
-      "sha256": "b24745a8f4175e3426da8c135fec31cfd2b9d169372069f3f1d91f8f02be5c80"
+      "lines": 143,
+      "chinese_characters": 4131,
+      "sha256": "c8a94673b0c102a2dd639267eff2ef3eb8f8f211e22abbcfbf8b0edfe5277099"
     },
     {
       "path": "docs/VISUAL_PROGRESS.md",
-      "lines": 157,
-      "chinese_characters": 3398,
-      "sha256": "58e89de731c33cd4d685f1c32f4676f124a82dc8048cf5407cb777e094a726d0"
+      "lines": 186,
+      "chinese_characters": 4629,
+      "sha256": "10458ac06ddb953548e8d8017bc12542923067b8eee4de253e18652d12c9824d"
     },
     {
       "path": "docs/VISUAL_OPTIMIZATION_PLAN.md",
-      "lines": 70,
-      "chinese_characters": 3089,
-      "sha256": "007bd5ed6dea20cb4a1a542a43a7a629f7ee6e4a69cbcfa9481a947e55622e04"
+      "lines": 75,
+      "chinese_characters": 3725,
+      "sha256": "0df0c362aca6353608cb7e129369997b472d6a69f0cd59dbeaaa82323a553845"
     }
   ],
-  "relative_links_checked": 80,
+  "relative_links_checked": 123,
   "broken_links": [],
   "resources": {
     "bundles": 11,
@@ -33,12 +33,6 @@
     "ppe_targets": 22,
     "ppe_assets": 32
   },
-  "test_methods_statically_counted": {
-    "review_api": 20,
-    "review_manager": 7,
-    "bootstrap_runtime": 17,
-    "runtime_assets": 17
-  },
   "meeting_source_read": {
     "file": "水电一局_AI应用需求交流会议纪要_11月3日.pdf",
     "pages": 2,
@@ -46,7 +40,7 @@
   },
   "code_and_model_files_changed": false,
   "task": "D01_PROJECT_DOCS",
-  "verified_at": "2026-11-08T04:18:37.995466+00:00",
+  "verified_at": "2026-11-08T11:35:00.372114+00:00",
   "read_only_fact_review": "Passed; corrected README manual review wording and architecture API configuration state description.",
   "validation_kind": "Static document verification and source/evidence audit; no model inference, service mutation or paid API call.",
   "filename_update": {
@@ -55,7 +49,18 @@
     "relative_references_updated": true
   },
   "content_update": {
-    "at": "2026-11-08T06:32:25.516990+00:00",
-    "reason": "V14 display naming; actual technology remains documented and provenance preserved."
+    "at": "2026-11-08T11:35:00.372114+00:00",
+    "reason": "V15 summary/manual confirmation functionality, real-vs-fixture evidence and per-task limits updated; no API calls during this document check."
+  },
+  "test_methods_statically_counted_historical_V13": {
+    "review_api": 20,
+    "review_manager": 7,
+    "bootstrap_runtime": 17,
+    "runtime_assets": 17
+  },
+  "V15_executed_tests": {
+    "summary": 34,
+    "head_api": 20,
+    "total": 54
   }
 }
