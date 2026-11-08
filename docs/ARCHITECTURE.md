@@ -1,6 +1,6 @@
 # 当前架构
 
-业务范围是施工影像安全监测演示：本地 YOLO 初筛、GPT 头部复核、人工确认及证据导出。优先复现完整 SiteWatch 应用，保留上游源码与许可；`sitewatch/app` 的薄适配由 `sitewatch/patches/local-review.patch` 重建。`verify_provenance.py` 核对原始 27 文件与适配副本。
+业务范围是施工影像安全监测演示：本地 YOLO 初筛、GPT 头部复核、人工查看与证据导出。优先复现完整 SiteWatch 应用，保留上游源码与许可；`sitewatch/app` 的薄适配由 `sitewatch/patches/local-review.patch` 重建。`verify_provenance.py` 核对原始 27 文件与适配副本。
 
 ```mermaid
 flowchart LR
@@ -24,7 +24,7 @@ SiteWatch 为 YOLOv8m PPE、25 目标类；Constructelligence v0.3 为 14 类近
 
 ## GPT API 与状态
 
-只支持 `openai` provider，默认 `gpt-6.1-sol` / `max`，固定头部 A/B/C/D 问题。Key 只在 `config/review-api.local.json`，不从其他项目取值，不进入证据。状态查询不触网；实际调用传原裁图、`store:false`，单次请求、不自动重试、不跟随重定向。失败保存脱敏 attempt，原检测保持；结果记录实际模型、配置快照与响应信息。配置/素材/模型/推理尺度变化隔离旧显示，原始日志可追溯。接口见 [head-review-api-v2](../contracts/head-review-api-v2.md)。
+只支持 `openai` provider，默认 `gpt-6.1-sol` / `max`，固定头部 A/B/C/D 问题。Key 只在 `config/review-api.local.json`，不从其他项目取值，不进入证据。状态查询不触网；实际调用传原裁图、`store:false`，单次请求、不自动重试、不跟随重定向。失败保存脱敏 attempt，原检测保持；结果记录实际模型、配置快照与响应信息。素材、检测模型/参数、推理尺度变化隔离旧显示；修改本机 GPT 配置不会主动隐藏已有意见，历史意见显示该次实际模型来源。原始日志可追溯。接口见 [head-review-api-v2](../contracts/head-review-api-v2.md)。
 
 本地 Qwen 模块、量化权重、Gradio/Transformers/bnb 安装及 full profile 已移除。历史记录仅说明曾做过的比较，不再提供可启动入口。
 
