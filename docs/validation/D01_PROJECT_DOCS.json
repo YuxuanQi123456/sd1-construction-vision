@@ -4,22 +4,22 @@
   "scope": "Documentation only; static source/evidence/link checks; no runtime inference or API calls.",
   "documents": [
     {
-      "path": "docs/PROJECT_TASKBOOK.md",
+      "path": "docs/VISUAL_TASKBOOK.md",
       "lines": 134,
       "chinese_characters": 3335,
-      "sha256": "fc6da37585fbfae3c5c4f7188d0d0b170c078a36f9e3bb48f621a57ad5f72d40"
+      "sha256": "a1d19fb853a6c66340c2bc457100277836f30e055d0c1776bc27c893ee82528a"
     },
     {
-      "path": "docs/PROJECT_PROGRESS.md",
+      "path": "docs/VISUAL_PROGRESS.md",
       "lines": 157,
       "chinese_characters": 3332,
-      "sha256": "fbde58ac54f33ab928663635962be001c28c0e1fea3709b5c9307e5aa0515c2d"
+      "sha256": "9913f641c28c9be5e1505f0883f3550e677bfd2c423e0a6666547b67be62e678"
     },
     {
-      "path": "docs/OPTIMIZATION_PLAN.md",
+      "path": "docs/VISUAL_OPTIMIZATION_PLAN.md",
       "lines": 70,
       "chinese_characters": 3089,
-      "sha256": "b81d05b50314fbbd74ff9a5150ed2c2d8d2536848b4d37386909a048a007f4ee"
+      "sha256": "007bd5ed6dea20cb4a1a542a43a7a629f7ee6e4a69cbcfa9481a947e55622e04"
     }
   ],
   "relative_links_checked": 80,
@@ -48,5 +48,10 @@
   "task": "D01_PROJECT_DOCS",
   "verified_at": "2026-11-08T04:18:37.995466+00:00",
   "read_only_fact_review": "Passed; corrected README manual review wording and architecture API configuration state description.",
-  "validation_kind": "Static document verification and source/evidence audit; no model inference, service mutation or paid API call."
+  "validation_kind": "Static document verification and source/evidence audit; no model inference, service mutation or paid API call.",
+  "filename_update": {
+    "at": "2026-11-08T04:21:04.478250+00:00",
+    "prefix": "VISUAL_",
+    "relative_references_updated": true
+  }
 }

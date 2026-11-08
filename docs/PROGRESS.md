@@ -1,6 +1,6 @@
 # 进度记录
 
-汇报与共同开发请先看 [项目 Progress：已完成功能、技术实现与验证](PROJECT_PROGRESS.md)；本页保留阶段流水。范围依据见 [任务书](PROJECT_TASKBOOK.md)，下一步见 [优化计划](OPTIMIZATION_PLAN.md)。
+汇报与共同开发请先看 [项目 Progress：已完成功能、技术实现与验证](VISUAL_PROGRESS.md)；本页保留阶段流水。范围依据见 [任务书](VISUAL_TASKBOOK.md)，下一步见 [优化计划](VISUAL_OPTIMIZATION_PLAN.md)。
 
 ## 文档整理（2026-11-08）
 

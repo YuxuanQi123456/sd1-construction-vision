@@ -2,7 +2,7 @@
 
 面向水电一局领导汇报的公开协作项目，优先复现 [SiteWatch 开源应用](https://github.com/AitchEm-bot/sitewatch)，使用真实 YOLO 检测与 GPT 区域复核。云枢源码无法取得；Agent 业务由其他工作区承担。
 
-项目文档：[任务书](docs/PROJECT_TASKBOOK.md) · [Progress：已完成内容与技术实现](docs/PROJECT_PROGRESS.md) · [下一步优化计划](docs/OPTIMIZATION_PLAN.md)。
+项目文档：[任务书](docs/VISUAL_TASKBOOK.md) · [Progress：已完成内容与技术实现](docs/VISUAL_PROGRESS.md) · [下一步优化计划](docs/VISUAL_OPTIMIZATION_PLAN.md)。
 
 完整流程：**选择施工照片/视频 → 识别人员、安全帽与反光背心 → 选中头部交给 GPT 复核 → 人工查看与对照 → 下载原图、框图、JSON 与证据 ZIP。** 当前是固定素材演示，允许调参及样例微调，不将其表现当成新工地准确率。
 
