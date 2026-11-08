@@ -47,7 +47,7 @@ class SummaryAPITest(unittest.TestCase):
                 self.assertEqual(payload["model"], "gpt-6.1-sol")
                 self.assertEqual(payload["reasoning"], {"effort": "max"})
                 self.assertIs(payload["store"], False)
-                self.assertEqual(payload["max_output_tokens"], 4096)
+                self.assertEqual(payload["max_output_tokens"], 8192)
                 self.assertEqual(len(payload["input"]), 1)
                 content = payload["input"][0]["content"]
                 self.assertEqual(content[0], {"type": "input_text", "text": "固定总结提示"})
@@ -62,6 +62,7 @@ class SummaryAPITest(unittest.TestCase):
                 self.assertEqual(result["api"], ["POST /responses"])
                 self.assertTrue(result["fresh_session"])
                 self.assertTrue(result["backend"]["connectivity_verified"])
+                self.assertEqual(result["backend"]["max_output_tokens"], 8192)
                 self.assertEqual(result["usage"]["total_tokens"], 15)
                 self.assertGreaterEqual(result["elapsed_seconds"], 0)
                 self.assertNotIn(DUMMY_KEY, json.dumps(result))
@@ -69,8 +70,8 @@ class SummaryAPITest(unittest.TestCase):
 
     def test_supplied_config_snapshot_is_used_without_reread(self):
         with fixture_server() as (url, requests):
-            snapshot = self.config(base_url=url, model="snapshot-model", reasoning_effort="high", max_output_tokens=500)
-            self.config(base_url="http://127.0.0.1:1/v1", model="changed-model", reasoning_effort="low")
+            snapshot = self.config(base_url=url, model="snapshot-model", reasoning_effort="high", max_output_tokens=300, summary_max_output_tokens=500)
+            self.config(base_url="http://127.0.0.1:1/v1", model="changed-model", reasoning_effort="low", summary_max_output_tokens=1000)
             with patch.object(api, "load_review_config", side_effect=AssertionError("config reread")):
                 result = api.request_image_summary(self.images, self.root, "总结", _config=snapshot)
         payload = json.loads(requests[0]["body"])
@@ -79,7 +80,39 @@ class SummaryAPITest(unittest.TestCase):
         self.assertEqual(payload["max_output_tokens"], 500)
         self.assertEqual(result["backend"]["model"], payload["model"])
         self.assertEqual(result["backend"]["reasoning_effort"], payload["reasoning"]["effort"])
+        self.assertEqual(result["backend"]["max_output_tokens"], payload["max_output_tokens"])
+        self.assertEqual(snapshot["max_output_tokens"], 300, "Summary requests must not mutate the head snapshot")
         self.assertEqual(len(requests), 1)
+
+    def test_legacy_local_config_defaults_summary_budget_without_changing_head_or_file(self):
+        with fixture_server() as (url, requests):
+            legacy = self.config(base_url=url)
+            legacy.pop("summary_max_output_tokens")
+            path = self.root / api.LOCAL_CONFIG
+            path.write_text(json.dumps(legacy), encoding="utf-8")
+            before = path.read_bytes()
+            loaded = api.load_review_config(self.root)
+            self.assertEqual(loaded["summary_max_output_tokens"], 8192)
+            self.assertEqual(loaded["max_output_tokens"], 4096)
+            summary_result = api.request_image_summary([self.images[0]], self.root, "总结")
+            head_result = api.request_image_opinion(self.images[0], self.root, "头部复核")
+            self.assertEqual(path.read_bytes(), before)
+        self.assertEqual([json.loads(item["body"])["max_output_tokens"] for item in requests], [8192, 4096])
+        self.assertEqual(summary_result["backend"]["max_output_tokens"], 8192)
+        self.assertEqual(head_result["backend"]["max_output_tokens"], 4096)
+
+    def test_summary_budget_validation_rejects_invalid_values_without_network(self):
+        invalid = [0, -1, 16001, True, 1.5, "8192", None, [], {}]
+        with patch.object(api, "build_opener", side_effect=AssertionError("network")):
+            for value in invalid:
+                with self.subTest(value=value):
+                    self.config(summary_max_output_tokens=value)
+                    with self.assertRaisesRegex(api.ReviewAPIError, "summary_max_output_tokens"):
+                        api.request_image_summary([self.images[0]], self.root, "总结")
+                    self.assertFalse(api.api_backend_status(self.root)["ready"])
+        for value in (1, 16000):
+            self.config(summary_max_output_tokens=value)
+            self.assertEqual(api.load_review_config(self.root)["summary_max_output_tokens"], value)
 
     def test_invalid_count_path_image_or_prompt_never_creates_transport(self):
         self.config()

@@ -94,6 +94,7 @@ class SafetySummaryTests(unittest.TestCase):
             status = summary.summary_backend_status(self.root)
             self.assertTrue(status["ready"])
             self.assertFalse(status["connectivity_verified"])
+            self.assertEqual(status["max_output_tokens"], 8192)
             self.assertEqual(summary.load_summary(self.review), view)
             self.assertEqual(summary.latest_summary_attempt(self.review)["status"], "complete")
             report = summary.summary_report(self.review)
@@ -111,6 +112,8 @@ class SafetySummaryTests(unittest.TestCase):
         self.assertNotIn("openai", report.lower())
         record = summary.latest_summary_attempt(self.review)
         self.assertEqual(record["request_backend"]["model"], "gpt-6.1-sol")
+        self.assertEqual(record["request_backend"]["max_output_tokens"], 8192)
+        self.assertEqual(record["opinion"]["backend"]["max_output_tokens"], 8192)
         self.assertEqual(record["opinion"]["usage"]["total_tokens"], 15)
         self.assertNotIn(DUMMY_KEY, json.dumps(record))
         payload = json.loads(requests[0]["body"])
@@ -314,6 +317,8 @@ class SafetySummaryTests(unittest.TestCase):
             self.assertEqual(record["status"], "failed")
             self.assertIn(expected, record["opinion"]["raw_answer"])
             self.assertEqual(record["opinion"]["usage"]["total_tokens"], 15)
+            self.assertEqual(record["request_backend"]["max_output_tokens"], 8192)
+            self.assertEqual(record["opinion"]["backend"]["max_output_tokens"], 8192)
             self.assertGreaterEqual(record["opinion"]["elapsed_seconds"], 0)
             self.assertGreaterEqual(record["elapsed_seconds"], 0)
             self.assertNotIn(DUMMY_KEY, json.dumps(record))
@@ -436,12 +441,12 @@ class SafetySummaryTests(unittest.TestCase):
         original_snapshot = summary.review_backend_snapshot
         def change_config(config, root):
             safe = original_snapshot(config, root)
-            self.config(model="changed-model", reasoning_effort="low")
+            self.config(model="changed-model", reasoning_effort="low", summary_max_output_tokens=500)
             return safe
         reply = answer()
         reply["overview"] += DUMMY_KEY
         with fixture_server(response(json.dumps(reply), model="server-" + DUMMY_KEY)) as (url, requests):
-            self.config(base_url=url)
+            self.config(base_url=url, max_output_tokens=4096, summary_max_output_tokens=10000)
             with patch.object(summary, "review_backend_snapshot", side_effect=change_config):
                 view = summary.generate_summary(self.review, self.root)
         record = summary.latest_summary_attempt(self.review)
@@ -449,6 +454,9 @@ class SafetySummaryTests(unittest.TestCase):
         self.assertEqual(payload["model"], record["request_backend"]["model"])
         self.assertEqual(payload["reasoning"]["effort"], record["request_backend"]["reasoning_effort"])
         self.assertEqual(record["request_backend"]["model"], "gpt-6.1-sol")
+        self.assertEqual(record["request_backend"]["max_output_tokens"], 10000)
+        self.assertEqual(record["opinion"]["backend"]["max_output_tokens"], 10000)
+        self.assertEqual(payload["max_output_tokens"], 10000)
         self.assertNotIn(DUMMY_KEY, json.dumps(view))
         for path in (self.review / "safety-summary").rglob("*"):
             if path.is_file() and path.suffix in {".json", ".txt"}:

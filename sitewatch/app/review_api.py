@@ -27,6 +27,7 @@ DEFAULT_CONFIG = {
     "api_key": "",
     "timeout_seconds": 180,
     "max_output_tokens": 4096,
+    "summary_max_output_tokens": 8192,
 }
 MAX_CONFIG_BYTES = 64 * 1024
 MAX_CROP_BYTES = 20 * 1024 * 1024
@@ -116,10 +117,24 @@ def load_review_config(project_root):
     if (isinstance(timeout, bool) or not isinstance(timeout, (int, float))
             or not 1 <= timeout <= 600 or not math.isfinite(timeout)):
         raise ReviewAPIError("timeout_seconds 须为 1 到 600 秒")
-    maximum = config["max_output_tokens"]
-    if isinstance(maximum, bool) or not isinstance(maximum, int) or not 1 <= maximum <= 16000:
-        raise ReviewAPIError("max_output_tokens 须为 1 到 16000 的整数")
+    for name in ("max_output_tokens", "summary_max_output_tokens"):
+        _output_budget(config[name], name)
     return config
+
+
+def _output_budget(value, name):
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 16000:
+        raise ReviewAPIError(name + " 须为 1 到 16000 的整数")
+    return value
+
+
+def summary_request_config(config):
+    """Copy one validated snapshot with the independent summary output budget."""
+    snapshot = dict(config)
+    snapshot["max_output_tokens"] = _output_budget(
+        snapshot.get("summary_max_output_tokens", DEFAULT_CONFIG["summary_max_output_tokens"]),
+        "summary_max_output_tokens")
+    return snapshot
 
 
 def _safe_backend(config, project_root, *, connected=False):
@@ -131,6 +146,8 @@ def _safe_backend(config, project_root, *, connected=False):
         "provider": "openai",
         "model": _redact(config["model"], secret),
         "reasoning_effort": config["reasoning_effort"],
+        "max_output_tokens": config["max_output_tokens"],
+        "summary_max_output_tokens": config.get("summary_max_output_tokens", DEFAULT_CONFIG["summary_max_output_tokens"]),
         "url": _redact(config["base_url"], secret),
         "config_path": str(Path(project_root).resolve() / LOCAL_CONFIG),
         "label": _redact(f'{config["model"]} · {config["reasoning_effort"]}（API）', secret),
@@ -253,7 +270,7 @@ def request_image_summary(image_paths, project_root, prompt, *, _config=None):
     Callers may supply the validated configuration snapshot they already used for
     attempt provenance. This function never rereads that supplied snapshot.
     """
-    config = dict(_config) if _config is not None else load_review_config(project_root)
+    config = summary_request_config(_config if _config is not None else load_review_config(project_root))
     if config["provider"] != "openai":
         raise ReviewAPIError("当前未选择 API 复核后端")
     if not config["api_key"]:
