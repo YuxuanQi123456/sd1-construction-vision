@@ -1,5 +1,11 @@
 # 进度记录
 
+## V16：下一阶段领导演示深度调研（2026-11-10）
+
+围绕“让领导看到模型更智能、更高级”完成 60 篇论文综述、10 篇核心全文深读和 8 个开源仓库源码/依赖扫描。结论是下一条主线做 **检测→跨帧 track_id→演示区域进入/停留事件→关键帧证据→现有 AI 总结→人工确认**；首选 ByteTrack/现有 Ultralytics track 接口，SAM 2 做独立 GPU 视觉增强试验。BoT-SORT、Depth Anything V2、Grounding DINO、YOLO-World、MMAction2、CVAT/FiftyOne 分别作为有门槛的备选，不直接扩展当前页面。
+
+结论版见 [下一阶段深度调研](VISUAL_NEXT_DEMO_RESEARCH_20261110.md)。本轮只做检索、全文阅读和源码分析，未修改业务代码、未下载新模型权重、未调用付费 API。详细过程留在本机被忽略的 `deep-research-output/` 与 `github-research-output/`，后续实现需先按 M6 验收标准冻结固定视频和演示区域。
+
 ## V15：AI 巡查总结与人工确认（2026-11-08）
 
 用户要求在检测结果下方生成 AI 总结，问题交人工待确认。复用现有 SiteWatch/Streamlit、已完成检测证据与 Responses 图像接口；先冻结契约，再由独立 worktree 实现核心与页面，主智能体集成与回归。显式点击生成，最多取首/中/末三张未画框采样预览（最长边1280），输出概述、可见情况、疑似问题、核查建议和限制；每项附真实画面时间，初始一律 pending。
