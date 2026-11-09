@@ -1,6 +1,6 @@
 # 当前架构
 
-业务范围是施工影像安全监测演示：本地 YOLO 初筛、GPT 头部复核、AI 巡查总结、人工确认与证据导出。优先复现完整 SiteWatch 应用，保留上游源码与许可；`sitewatch/app` 的薄适配由 `sitewatch/patches/local-review.patch` 重建。`verify_provenance.py` 核对原始 27 文件与当前 15 份适配 Python 文件。
+业务范围是施工影像安全监测演示：本地 YOLO 初筛、ByteTrack 对象轨迹与候选区域事件、GPT 头部复核、AI 巡查总结、人工确认与证据导出。优先复现完整 SiteWatch 应用，保留上游源码与许可；`sitewatch/app` 的薄适配由 `sitewatch/patches/local-review.patch` 重建。`verify_provenance.py` 核对原始 27 文件与当前适配 Python 文件。
 
 ```mermaid
 flowchart LR
@@ -22,6 +22,12 @@ flowchart LR
   Summary --> ZIP
   TXT --> ZIP
 ```
+
+## 轨迹与候选区域事件
+
+检测完成后，`tracking.py` 从保存的 `detections.json` 读取人员/设备框，调用 Ultralytics 的 ByteTrack 适配器生成 `tracks.json` 和轨迹叠加图；原检测不被重写。`tracking_ui.py` 提供当前画面矩形候选区域输入，`save_zone_events` 生成 `events.json` 中的进入、停留和离开候选事件，并保留关键帧、时间和 `pending` 状态。区域坐标仅是检测画面像素，未经标定不转换为米。
+
+如果存在候选事件，AI 巡查总结会优先选取事件关键帧，并把事件类型、对象 ID 和画面位置作为检测参考；模型不得输出 ID 或人工状态，最终仍由服务端分配问题编号、人工状态和报告。跟踪和区域事件均为本次 review 目录内的候选记录，不代表员工身份、跨摄像头跟踪或生产告警。契约见 [轨迹事件](../contracts/tracking-events-v1.md)。
 
 ## 模型和素材
 

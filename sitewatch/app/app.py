@@ -22,6 +22,8 @@ from review_evidence import NOTICE, REVIEW_LABELS, evidence_zip, new_review_dir,
 from region_review import backend_status, head_indices, latest_region_review, review_head_region
 from safety_summary_ui import render_safety_summary
 from safety_summary import summary_export_lock
+from tracking import TrackingError, augment_tracking
+from tracking_ui import render_tracking_ui
 from utils.drawing import draw_overlay
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -40,12 +42,12 @@ st.markdown(f'''<div class="sd1-masthead">
   </div><span class="sd1-demo">演示环境</span>
 </div>
 <div class="sd1-hero"><div class="sd1-eyebrow">安全生产 / 视觉智能</div>
-  <h2>施工现场安全监测</h2><p>识别人员、安全帽与反光背心，结合 AI 区域复核，留存现场安全检查依据。</p>
+  <h2>施工现场安全监测</h2><p>识别人员与防护装备，生成对象轨迹和候选区域事件，留存现场安全检查依据。</p>
 </div>
 <div class="sd1-steps">
   <div class="sd1-step"><b>01</b><div><strong>导入现场影像</strong><span>选择高清样例或上传照片、视频</span></div></div>
   <div class="sd1-step"><b>02</b><div><strong>AI 识别与定位</strong><span>查看人员、安全帽与防护装备</span></div></div>
-  <div class="sd1-step"><b>03</b><div><strong>人工复核与留证</strong><span>核对区域意见，导出影像与记录</span></div></div>
+  <div class="sd1-step"><b>03</b><div><strong>轨迹事件与人工留证</strong><span>核对候选事件，导出影像与记录</span></div></div>
 </div>''', unsafe_allow_html=True)
 MODEL_LABELS = {"sitewatch": "施工场景识别",
                 "constructelligence-v03": "近景防护识别"}
@@ -367,6 +369,12 @@ with tab_review:
                                          do_enhance=do_enhance, sample_seconds=sample_seconds,
                                          max_seconds=max_seconds, callback=update,
                                          preserve_resolution=preserve_resolution)
+                if result["media_type"] == "video":
+                    try:
+                        result["tracking"] = augment_tracking(destination, result, sample_seconds=sample_seconds)
+                    except TrackingError as exc:
+                        logging.exception("ByteTrack evidence generation failed")
+                        result["tracking_error"] = str(exc)
                 st.session_state["review"] = (signature, str(destination), result)
             except Exception:
                 logging.exception("Visual footage processing failed")
@@ -417,6 +425,7 @@ with tab_review:
                                "识别方案": MODEL_LABELS.get(d["source"], "人员补充识别")}
                               for d in frame["detections"] if show_all or d["class_name"] in REVIEW_LABELS], use_container_width=True)
                 st.caption(NOTICE)
+            render_tracking_ui(destination, result, selected, frame, PROJECT_ROOT)
             st.markdown("#### 智能视觉复核")
             st.caption("对所选头部进行辅助复核，结合原图查看防护装备佩戴情况。")
             heads = head_indices(frame)

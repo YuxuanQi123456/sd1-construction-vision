@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import math
 from pathlib import Path
@@ -117,6 +118,14 @@ def render_safety_summary(review_dir, result, project_root) -> None:
     st.markdown("#### AI 安全巡查总结")
     st.caption("从本次检测中选取首、中、末最多 3 个代表采样画面，归纳可见情况与疑似问题，供人工确认。")
     st.caption("点击后生成一次总结，可能需要几十秒；人工确认与下载不会再次分析画面。")
+    events_path = review_dir / "events.json"
+    if events_path.is_file():
+        try:
+            event_count = len(json.loads(events_path.read_text(encoding="utf-8")).get("events", []))
+        except (OSError, ValueError, UnicodeError, AttributeError):
+            event_count = 0
+        if event_count:
+            st.caption(f"本次已有 {event_count} 条候选区域事件；生成总结时优先参考其关键帧，事件仍需人工确认。")
 
     summary = None
     attempt = None

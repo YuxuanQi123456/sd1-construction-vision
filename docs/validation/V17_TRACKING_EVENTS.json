@@ -1,0 +1,104 @@
+{
+  "task": "V17_TRACKING_EVENTS",
+  "at": "2026-11-10T03:33:00+00:00",
+  "passed": true,
+  "scope": "Open-source ByteTrack object tracks and candidate rectangular zone events added to the existing video evidence flow; open-vocabulary detection intentionally not integrated.",
+  "implementation": {
+    "tracker": "Ultralytics BYTETracker adapter using ByteTrack algorithm",
+    "upstream": "https://github.com/FoundationVision/ByteTrack",
+    "license_note": "ByteTrack upstream MIT; Ultralytics runtime remains separately licensed",
+    "runtime_dependency": "lap==0.5.14",
+    "outputs": [
+      "tracks.json",
+      "zones.json",
+      "events.json",
+      "*-tracks.jpg/png"
+    ],
+    "original_detections_unchanged": true,
+    "summary_prefers_event_keyframes": true
+  },
+  "unit_tests": {
+    "tracking": 3,
+    "safety_summary_regression": 34,
+    "commands": [
+      "portable-env/bin/python -m unittest discover -s tests -p test_tracking.py",
+      "portable-env/bin/python -m unittest discover -s tests -p test_*summary*.py"
+    ]
+  },
+  "real_cpu_video": {
+    "source": "default site-action construction video",
+    "sampled_frames": 8,
+    "detections": 94,
+    "track_count": 5,
+    "candidate_zone_events": 10,
+    "candidate_event_types": {"zone_enter": 5, "zone_stay": 5},
+    "sample_seconds": 1.0,
+    "max_seconds": 8,
+    "original_detections_sha_preserved": true,
+    "external_api_calls": 0
+  },
+  "browser": {
+    "at": "2026-11-09T19:30:07.794702+00:00",
+    "passed": true,
+    "external_requests": [],
+    "page_errors": [],
+    "real_external_api_calls": 0,
+    "detection_completed": true,
+    "tracking_visible": true,
+    "bytetrack_visible": true,
+    "zone_event_generation": true,
+    "events_pending": true,
+    "events_download": true,
+    "evidence_zip_contains_tracking": true,
+    "summary_entry_visible": true,
+    "summary_button_not_clicked": true,
+    "scope_note": "Dedicated Edge browser run over the same deployed app before final copy-only wording/notice updates; final functional route additionally rechecked with Streamlit AppTest."
+  },
+  "provenance": {
+    "at": "2026-11-09T19:38:50.508359+00:00",
+    "source_commit": "72c4d18135fd07afd188fecaac37c5b90ec674b4",
+    "pristine_source_files_checked": 27,
+    "adapted_files_checked": [
+      "app.py",
+      "region_review.py",
+      "review_api.py",
+      "review_evidence.py",
+      "safety_summary.py",
+      "safety_summary_ui.py",
+      "tracking.py",
+      "tracking_ui.py",
+      "cv_pipeline/detection.py",
+      "cv_pipeline/enhancement.py",
+      "cv_pipeline/fusion.py",
+      "cv_pipeline/motion.py",
+      "cv_pipeline/shapes.py",
+      "cv_pipeline/__init__.py",
+      "utils/benchmark.py",
+      "utils/drawing.py",
+      "utils/__init__.py"
+    ],
+    "patch_output": "patching file app.py\npatching file cv_pipeline/detection.py\npatching file region_review.py\npatching file review_api.py\npatching file review_evidence.py\npatching file safety_summary.py\npatching file safety_summary_ui.py\npatching file tracking.py\npatching file tracking_ui.py\npatching file utils/drawing.py\n",
+    "exit_code": 0,
+    "passed": true
+  },
+  "runtime": {
+    "ultralytics": "8.3.228",
+    "lap": "0.5.14",
+    "streamlit": "1.51.0",
+    "pip_check": "passed",
+    "service_health": "passed"
+  },
+  "limits": [
+    "Track IDs are local to one review and are not employee identities.",
+    "Events are pixel-region candidates, not distance or regulatory conclusions.",
+    "Tracking cannot recover detector misses or guarantee ID continuity under severe occlusion.",
+    "Open-vocabulary detection was evaluated in research only and is not in the main demo."
+  ],
+  "streamlit_apptest": {
+    "passed": true,
+    "method": "Source deployed app via Streamlit AppTest + real CPU detector/video; initial render then detection click",
+    "tracking_heading_visible": true,
+    "summary_heading_visible": true,
+    "external_api_calls": 0
+  }
+}

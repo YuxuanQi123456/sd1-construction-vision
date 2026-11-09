@@ -239,11 +239,56 @@ def _detection_references(frame):
     return references
 
 
-def _prepare_frames(directory, attempt, frames):
+def _event_context(directory, frame_count):
+    """Return event-derived keyframe positions without trusting event text."""
+    path = directory / "events.json"
+    if not path.is_file():
+        return [], []
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeError):
+        raise SafetySummaryError("候选事件证据格式无效，无法生成总结") from None
+    events = value.get("events") if isinstance(value, dict) else None
+    if not isinstance(events, list):
+        raise SafetySummaryError("候选事件证据格式无效，无法生成总结")
+    positions = []
+    compact = []
+    for item in events[:12]:
+        if not isinstance(item, dict):
+            continue
+        evidence = item.get("evidence", [])
+        if not isinstance(evidence, list):
+            continue
+        item_positions = []
+        for entry in evidence[:3]:
+            if not isinstance(entry, dict) or type(entry.get("frame_position")) is not int:
+                continue
+            position = entry["frame_position"]
+            if 0 <= position < frame_count:
+                positions.append(position)
+                item_positions.append(position)
+        if item_positions:
+            compact.append({"type": str(item.get("type", "candidate_event"))[:40],
+                            "track_id": str(item.get("track_id", ""))[:40],
+                            "frame_positions": sorted(set(item_positions)),
+                            "start_seconds": item.get("start_seconds"),
+                            "end_seconds": item.get("end_seconds")})
+    unique = sorted(set(positions))
+    if len(unique) > 3:
+        unique = [unique[0], unique[len(unique) // 2], unique[-1]]
+    return unique, compact
+
+
+def _prepare_frames(directory, attempt, frames, preferred_positions=None):
     import cv2
     import numpy as np
 
-    positions = sorted({0, len(frames) // 2, len(frames) - 1})
+    positions = sorted({position for position in (preferred_positions or [])
+                        if type(position) is int and 0 <= position < len(frames)})
+    if not positions:
+        positions = sorted({0, len(frames) // 2, len(frames) - 1})
+    if len(positions) > 3:
+        positions = [positions[0], positions[len(positions) // 2], positions[-1]]
     inputs, context = [], []
     for position in positions:
         frame = frames[position]
@@ -462,7 +507,12 @@ def generate_summary(review_dir, project_root):
         config = summary_request_config(load_review_config(project_root))
         secret = config["api_key"]
         record["request_backend"] = review_backend_snapshot(config, project_root)
-        inputs, context = _prepare_frames(directory, attempt, frames)
+        event_positions, event_context = _event_context(directory, len(frames))
+        inputs, context = _prepare_frames(directory, attempt, frames, event_positions)
+        if event_context:
+            for item in context:
+                item["candidate_event_references"] = event_context
+            record["event_context"] = event_context
         record["inputs"] = inputs
         record["input_basis"] = "Only selected saved unannotated frames; separate PNG previews, longest edge <=1280. Original inputs and detector results are unchanged."
         record["scope"] = {"detected_frame_count": len(frames),
