@@ -17,3 +17,15 @@ E:\workspace\云枢\水电一局演示Demo\downloads\client-videos\
 文件不进入 GitHub，不复制到公开 Release；`demo-media.json` 只登记文件名、SHA、尺寸和本地演示配置。迁移到新机器时，需要通过甲方授权的方式单独复制三段原视频，再按 SHA 校验。
 
 当前适配是固定素材演示配置：三段视频统一使用远景输入和 0.30 阈值。第一轮真实 CPU 对照显示远景配置比 standard 更适合这三段；“室外工人极小”中的人目标仍然很小，页面重点应放在人员/车辆轨迹，不把极小目标包装成稳定 PPE 识别。
+
+## 人工标注与固定素材适配
+
+本机已经生成标注包：
+
+```text
+E:\workspace\云枢\水电一局演示Demo\downloads\client-labeling-pack\
+```
+
+如果 LabelImg 在当前电脑上启动后退出，可以双击项目内的 `scripts\start_client_labeler.cmd`，用 Edge/Chrome 打开无安装的本地标注页。点击“选择 client-labeling-pack 文件夹”，选择上面的目录；在图片上拖框，右侧选择类别，松开鼠标后会自动保存到 `labels\train\`。页面支持放大、上一张/下一张、删除框和清空当前图片。
+
+优先标注 `Person`、`Hardhat`、`Safety Vest`；能确认未佩戴时再标 `NO-Hardhat`、`NO-Safety Vest`。路障、栏杆、钢管不要标成 `Person`；没有人的画面保留空标签，作为误检抑制的负样本。标注完成后保留原文件名并告知主智能体，之后会单独训练演示权重，不覆盖通用权重。
