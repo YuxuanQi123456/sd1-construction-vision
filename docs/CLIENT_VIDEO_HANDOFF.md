@@ -26,6 +26,6 @@ E:\workspace\云枢\水电一局演示Demo\downloads\client-videos\
 E:\workspace\云枢\水电一局演示Demo\downloads\client-labeling-pack\
 ```
 
-如果 LabelImg 在当前电脑上启动后退出，可以双击项目内的 `scripts\start_client_labeler.cmd`，用 Edge/Chrome 打开无安装的本地标注页。点击“选择 client-labeling-pack 文件夹”，选择上面的目录；在图片上拖框，右侧选择类别，松开鼠标后会自动保存到 `labels\train\`。页面支持放大、上一张/下一张、删除框和清空当前图片。
+如果 LabelImg 在当前电脑上启动后退出，可以双击项目内的 `scripts\start_client_labeler.cmd`，用 Edge/Chrome 打开无安装的本地标注页。页面由本机服务自动读取上面的标注包，不再需要浏览器选择文件夹；在图片上拖框，右侧选择类别，松开鼠标后会自动保存到 `labels\train\`。页面支持放大、上一张/下一张、删除框和清空当前图片。
 
 优先标注 `Person`、`Hardhat`、`Safety Vest`；能确认未佩戴时再标 `NO-Hardhat`、`NO-Safety Vest`。路障、栏杆、钢管不要标成 `Person`；没有人的画面保留空标签，作为误检抑制的负样本。标注完成后保留原文件名并告知主智能体，之后会单独训练演示权重，不覆盖通用权重。

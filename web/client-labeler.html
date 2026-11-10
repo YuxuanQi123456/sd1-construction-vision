@@ -47,12 +47,12 @@
 <body>
   <header>
     <h1>甲方三段视频 · 本地 YOLO 标注</h1>
-    <p>所有图片和标签只在本机读写；不会上传视频。先选择 client-labeling-pack 文件夹，再逐张框选。</p>
+    <p>所有图片和标签只在本机读写；不会上传视频。页面会自动连接本机标注服务，打开后直接逐张框选。</p>
   </header>
   <main>
     <section class="card">
       <div class="top">
-        <button id="pick" class="primary">选择 client-labeling-pack 文件夹</button>
+        <button id="pick" class="primary">重新加载标注包</button>
         <button id="prev" disabled>上一张（A）</button>
         <select id="image-select" disabled aria-label="选择图片"></select>
         <button id="next" disabled>下一张（D）</button>
@@ -84,7 +84,7 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const canvas = $('canvas'), ctx = canvas.getContext('2d');
-    let rootHandle = null, imageDir = null, labelDir = null, images = [], classes = [];
+    let images = [], classes = [];
     let index = 0, boxes = [], selected = -1, image = null, imageUrl = null, viewScale = 1;
     let drawing = null;
     const colors = ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899'];
@@ -96,12 +96,11 @@
     }
     function getColor(cls) { return colors[cls % colors.length]; }
     function chooseDirectory(parent, name, create=false) { return parent.getDirectoryHandle(name, {create}); }
-    async function readTextFile(dir, name) {
-      const h = await dir.getFileHandle(name); return await (await h.getFile()).text();
-    }
     async function readLabels(name) {
       try {
-        const txt = await readTextFile(labelDir, baseName(name) + '.txt');
+        const r = await fetch('/api/labels/' + encodeURIComponent(baseName(name) + '.txt'), {cache:'no-store'});
+        if (!r.ok) return [];
+        const txt = (await r.json()).text || '';
         return txt.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
           const p = line.split(/\s+/).map(Number);
           if (p.length !== 5 || p.some(Number.isNaN)) return null;
@@ -110,10 +109,13 @@
       } catch (e) { return []; }
     }
     async function saveCurrent(silent=false) {
-      if (!labelDir || !images[index]) return;
+      if (!images[index]) return;
       const lines = boxes.map(b => [b.cls,b.cx,b.cy,b.w,b.h].map((v,i) => i === 0 ? String(Math.round(v)) : Number(v).toFixed(6)).join(' '));
-      const h = await labelDir.getFileHandle(baseName(images[index].name) + '.txt', {create:true});
-      const w = await h.createWritable(); await w.write(lines.length ? lines.join('\n') + '\n' : ''); await w.close();
+      const r = await fetch('/api/labels/' + encodeURIComponent(baseName(images[index].name) + '.txt'), {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text: lines.length ? lines.join('\n') + '\n' : ''})
+      });
+      if (!r.ok) throw new Error((await r.json()).message || '标签保存失败');
       if (!silent) setStatus(`已保存 ${images[index].name}：${boxes.length} 个框。`, 'success');
       updateStats();
     }
@@ -164,26 +166,22 @@
       if (image) await saveCurrent(true);
       index=Math.max(0,Math.min(images.length-1,newIndex)); $('image-select').value=String(index);
       boxes=await readLabels(images[index].name); selected=-1;
-      if (imageUrl) URL.revokeObjectURL(imageUrl);
-      imageUrl=URL.createObjectURL(await images[index].handle.getFile()); image=new Image();
+      imageUrl='/api/images/' + encodeURIComponent(images[index].name); image=new Image();
       image.onload=()=>{draw();updateStats();}; image.src=imageUrl;
       setStatus(`${images[index].name}：${boxes.length} 个已有框。`); updateStats();
     }
     async function openPack() {
-      if (!window.showDirectoryPicker) { setStatus('当前浏览器不支持本地目录读写，请用最新版 Edge 或 Chrome，并通过本地 HTTP 地址打开。','error'); return; }
       try {
-        rootHandle=await window.showDirectoryPicker({mode:'readwrite'});
-        imageDir=await chooseDirectory(await chooseDirectory(rootHandle,'images'),'train');
-        labelDir=await chooseDirectory(await chooseDirectory(rootHandle,'labels'),'train',true);
-        classes=(await readTextFile(rootHandle,'classes.txt')).split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-        images=[]; for await (const [name,handle] of imageDir.entries()) if (handle.kind==='file' && /\.(jpg|jpeg|png)$/i.test(name)) images.push({name,handle});
-        images.sort((a,b)=>a.name.localeCompare(b.name,'zh-CN',{numeric:true}));
+        const r=await fetch('/api/info',{cache:'no-store'});
+        const data=await r.json();
+        if (!r.ok || data.status !== 'ok') throw new Error(data.message || '本地标注服务未连接');
+        classes=data.classes || []; images=(data.images || []).map(name=>({name}));
         if (!images.length) throw new Error('images/train 中没有 JPG/PNG 图片');
         $('class-select').innerHTML=''; classes.forEach((name,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${i}: ${name}`;$('class-select').appendChild(o);});
         $('image-select').innerHTML=''; images.forEach((x,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${i+1}/${images.length} · ${x.name}`;$('image-select').appendChild(o);});
         $('image-select').onchange=()=>loadImage(Number($('image-select').value));
         setEnabled(true); viewScale=1; $('zoom').value=100; $('zoom-value').textContent='100%';
-        setStatus(`已打开 ${images.length} 张图片、${classes.length} 个类别。`,'success'); await loadImage(0);
+        setStatus(`已连接本地标注服务：${images.length} 张图片、${classes.length} 个类别。`,'success'); await loadImage(0);
       } catch (e) { setStatus(`打开失败：${e.message || e}`,'error'); }
     }
     $('pick').onclick=openPack;
@@ -194,6 +192,7 @@
     canvas.addEventListener('mousemove',e=>{if(!drawing)return;drawing.now=imgPoint(e);draw();});
     canvas.addEventListener('mouseup',async e=>{if(!drawing)return;drawing.now=imgPoint(e);const b=toBox(drawing.start,drawing.now);drawing=null;if(b.w*image.naturalWidth<3||b.h*image.naturalHeight<3){draw();return;}boxes.push(b);selected=boxes.length-1;renderBoxes();draw();await saveCurrent(true);setStatus(`已添加 ${classes[b.cls]} 框并自动保存。`,'success');});
     document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return; if(e.key.toLowerCase()==='a')loadImage(index-1); if(e.key.toLowerCase()==='d')loadImage(index+1); if(e.key.toLowerCase()==='s'){e.preventDefault();saveCurrent();} if(e.key==='Delete'&&selected>=0){boxes.splice(selected,1);selected=-1;renderBoxes();draw();}});
+    window.addEventListener('load', openPack);
   </script>
 </body>
 </html>
