@@ -50,7 +50,8 @@ st.markdown(f'''<div class="sd1-masthead">
   <div class="sd1-step"><b>03</b><div><strong>轨迹事件与人工留证</strong><span>核对候选事件，导出影像与记录</span></div></div>
 </div>''', unsafe_allow_html=True)
 MODEL_LABELS = {"sitewatch": "施工场景识别",
-                "constructelligence-v03": "近景防护识别"}
+                "constructelligence-v03": "近景防护识别",
+                "client-person-demo": "甲方人员适配（仅人员）"}
 
 
 def demo_media_entries() -> list[dict]:

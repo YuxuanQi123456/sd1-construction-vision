@@ -1,0 +1,432 @@
+{
+  "schema": "visual-validation-v1",
+  "id": "V19_CLIENT_PERSON_ADAPTATION",
+  "date": "2026-11-10",
+  "scope": "Fixed-material leadership demo; single-class person detection only",
+  "data": {
+    "frames": 45,
+    "positive_frames": 26,
+    "person_boxes": 145,
+    "per_video": {
+      "室外工人极小": {
+        "frames": 15,
+        "positive_frames": 15,
+        "person_boxes": 60
+      },
+      "山路货车": {
+        "frames": 19,
+        "positive_frames": 0,
+        "person_boxes": 0
+      },
+      "脚手架工人施工": {
+        "frames": 11,
+        "positive_frames": 11,
+        "person_boxes": 85
+      }
+    },
+    "negative_frames_preserved": 19,
+    "raw_videos_not_copied_to_git": true
+  },
+  "training": {
+    "base_weight": "downloads/sitewatch/repository/models/sitewatch_best.pt",
+    "base_weight_license": "AGPL-3.0",
+    "epochs": 20,
+    "imgsz": 640,
+    "batch": 2,
+    "device": "cpu",
+    "workers": 0,
+    "augmentation": "disabled for fixed-material adaptation",
+    "dataset_yaml": ".runtime/client-person/dataset/client_person.yaml",
+    "class_names": [
+      "person"
+    ]
+  },
+  "checkpoint": {
+    "path": "downloads/client-person/client-person-overfit.pt",
+    "bytes": 52027265,
+    "sha256": "7d23f5c8ceed77625b6b3d8934cc019918fe36ae5e9bd8588ca7e8772cfa7602",
+    "model_id": "client-person-demo",
+    "inference_imgsz": 640
+  },
+  "training_metrics": {
+    "best_by_combined_map": {
+      "epoch": 19,
+      "precision": 0.96327,
+      "recall": 0.92414,
+      "map50": 0.94971,
+      "map50_95": 0.56127
+    },
+    "final": {
+      "epoch": 20,
+      "precision": 0.96327,
+      "recall": 0.92414,
+      "map50": 0.94971,
+      "map50_95": 0.56127
+    },
+    "all_epochs": [
+      {
+        "epoch": 1,
+        "precision": 0.94355,
+        "recall": 0.71724,
+        "map50": 0.82499,
+        "map50_95": 0.35842
+      },
+      {
+        "epoch": 2,
+        "precision": 0.9738,
+        "recall": 0.83448,
+        "map50": 0.85801,
+        "map50_95": 0.4449
+      },
+      {
+        "epoch": 3,
+        "precision": 0.80861,
+        "recall": 0.845,
+        "map50": 0.80512,
+        "map50_95": 0.41241
+      },
+      {
+        "epoch": 4,
+        "precision": 0.97459,
+        "recall": 0.84828,
+        "map50": 0.86251,
+        "map50_95": 0.48337
+      },
+      {
+        "epoch": 5,
+        "precision": 0.96303,
+        "recall": 0.89655,
+        "map50": 0.91891,
+        "map50_95": 0.48257
+      },
+      {
+        "epoch": 6,
+        "precision": 0.96303,
+        "recall": 0.89655,
+        "map50": 0.91891,
+        "map50_95": 0.48257
+      },
+      {
+        "epoch": 7,
+        "precision": 0.98514,
+        "recall": 0.91724,
+        "map50": 0.93137,
+        "map50_95": 0.50132
+      },
+      {
+        "epoch": 8,
+        "precision": 0.96971,
+        "recall": 0.91034,
+        "map50": 0.93202,
+        "map50_95": 0.50839
+      },
+      {
+        "epoch": 9,
+        "precision": 0.97026,
+        "recall": 0.90006,
+        "map50": 0.93453,
+        "map50_95": 0.52146
+      },
+      {
+        "epoch": 10,
+        "precision": 0.97026,
+        "recall": 0.90006,
+        "map50": 0.93453,
+        "map50_95": 0.52146
+      },
+      {
+        "epoch": 11,
+        "precision": 0.98097,
+        "recall": 0.92414,
+        "map50": 0.93957,
+        "map50_95": 0.5422
+      },
+      {
+        "epoch": 12,
+        "precision": 0.97808,
+        "recall": 0.92321,
+        "map50": 0.95017,
+        "map50_95": 0.5346
+      },
+      {
+        "epoch": 13,
+        "precision": 0.97808,
+        "recall": 0.92321,
+        "map50": 0.95017,
+        "map50_95": 0.5346
+      },
+      {
+        "epoch": 14,
+        "precision": 0.93591,
+        "recall": 0.92414,
+        "map50": 0.9326,
+        "map50_95": 0.51823
+      },
+      {
+        "epoch": 15,
+        "precision": 0.96297,
+        "recall": 0.89674,
+        "map50": 0.92527,
+        "map50_95": 0.51517
+      },
+      {
+        "epoch": 16,
+        "precision": 0.97001,
+        "recall": 0.90345,
+        "map50": 0.93105,
+        "map50_95": 0.53169
+      },
+      {
+        "epoch": 17,
+        "precision": 0.97001,
+        "recall": 0.90345,
+        "map50": 0.93105,
+        "map50_95": 0.53169
+      },
+      {
+        "epoch": 18,
+        "precision": 0.98059,
+        "recall": 0.91034,
+        "map50": 0.94696,
+        "map50_95": 0.54784
+      },
+      {
+        "epoch": 19,
+        "precision": 0.96327,
+        "recall": 0.92414,
+        "map50": 0.94971,
+        "map50_95": 0.56127
+      },
+      {
+        "epoch": 20,
+        "precision": 0.96327,
+        "recall": 0.92414,
+        "map50": 0.94971,
+        "map50_95": 0.56127
+      }
+    ]
+  },
+  "video_replay": {
+    "input_size": 640,
+    "thresholds": {
+      "0.15": {
+        "tp": 134,
+        "fp": 5,
+        "fn": 11,
+        "precision": 0.9640287769784173,
+        "recall": 0.9241379310344827,
+        "empty_frame_fp": 0,
+        "by_video": {
+          "室外工人极小": {
+            "tp": 60,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 60
+          },
+          "山路货车": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 0
+          },
+          "脚手架工人施工": {
+            "tp": 74,
+            "fp": 5,
+            "fn": 11,
+            "predictions": 79
+          }
+        }
+      },
+      "0.2": {
+        "tp": 134,
+        "fp": 5,
+        "fn": 11,
+        "precision": 0.9640287769784173,
+        "recall": 0.9241379310344827,
+        "empty_frame_fp": 0,
+        "by_video": {
+          "室外工人极小": {
+            "tp": 60,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 60
+          },
+          "山路货车": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 0
+          },
+          "脚手架工人施工": {
+            "tp": 74,
+            "fp": 5,
+            "fn": 11,
+            "predictions": 79
+          }
+        }
+      },
+      "0.25": {
+        "tp": 134,
+        "fp": 5,
+        "fn": 11,
+        "precision": 0.9640287769784173,
+        "recall": 0.9241379310344827,
+        "empty_frame_fp": 0,
+        "by_video": {
+          "室外工人极小": {
+            "tp": 60,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 60
+          },
+          "山路货车": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 0
+          },
+          "脚手架工人施工": {
+            "tp": 74,
+            "fp": 5,
+            "fn": 11,
+            "predictions": 79
+          }
+        }
+      },
+      "0.3": {
+        "tp": 133,
+        "fp": 5,
+        "fn": 12,
+        "precision": 0.9637681159420289,
+        "recall": 0.9172413793103448,
+        "empty_frame_fp": 0,
+        "by_video": {
+          "室外工人极小": {
+            "tp": 60,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 60
+          },
+          "山路货车": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 0
+          },
+          "脚手架工人施工": {
+            "tp": 73,
+            "fp": 5,
+            "fn": 12,
+            "predictions": 78
+          }
+        }
+      },
+      "0.35": {
+        "tp": 132,
+        "fp": 5,
+        "fn": 13,
+        "precision": 0.9635036496350365,
+        "recall": 0.9103448275862069,
+        "empty_frame_fp": 0,
+        "by_video": {
+          "室外工人极小": {
+            "tp": 60,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 60
+          },
+          "山路货车": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 0
+          },
+          "脚手架工人施工": {
+            "tp": 72,
+            "fp": 5,
+            "fn": 13,
+            "predictions": 77
+          }
+        }
+      },
+      "0.4": {
+        "tp": 132,
+        "fp": 5,
+        "fn": 13,
+        "precision": 0.9635036496350365,
+        "recall": 0.9103448275862069,
+        "empty_frame_fp": 0,
+        "by_video": {
+          "室外工人极小": {
+            "tp": 60,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 60
+          },
+          "山路货车": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 0
+          },
+          "脚手架工人施工": {
+            "tp": 72,
+            "fp": 5,
+            "fn": 13,
+            "predictions": 77
+          }
+        }
+      },
+      "0.5": {
+        "tp": 132,
+        "fp": 3,
+        "fn": 13,
+        "precision": 0.9777777777777777,
+        "recall": 0.9103448275862069,
+        "empty_frame_fp": 0,
+        "by_video": {
+          "室外工人极小": {
+            "tp": 60,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 60
+          },
+          "山路货车": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "predictions": 0
+          },
+          "脚手架工人施工": {
+            "tp": 72,
+            "fp": 3,
+            "fn": 13,
+            "predictions": 75
+          }
+        }
+      }
+    },
+    "recommended_threshold": 0.25,
+    "match_iou": 0.5
+  },
+  "ui_integration": {
+    "client-outdoor-tiny": {
+      "model_id": "client-person-demo",
+      "threshold": 0.25
+    },
+    "client-scaffold-worker": {
+      "model_id": "client-person-demo",
+      "threshold": 0.25
+    },
+    "client-truck-road": {
+      "model_id": "sitewatch",
+      "threshold": 0.3
+    }
+  },
+  "limits": [
+    "Same fixed frames are used for training and validation; metrics are not field accuracy.",
+    "Current adapted weight outputs Person only; it does not infer Hardhat, Safety Vest, vehicles or violations.",
+    "山路货车 has no positive Person labels in this round, so its person recall is not evaluated.",
+    "Original SiteWatch 25-class weight remains available as fallback."
+  ]
+}

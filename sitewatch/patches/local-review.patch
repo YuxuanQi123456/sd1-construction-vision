@@ -12,7 +12,7 @@
  import time
  from pathlib import Path
  
-@@ -14,18 +18,72 @@
+@@ -14,18 +18,73 @@
  from cv_pipeline.enhancement import enhance
  from cv_pipeline.fusion import LOG_PATH, fuse
  from cv_pipeline.motion import MotionDetector
@@ -50,7 +50,8 @@
 +  <div class="sd1-step"><b>03</b><div><strong>轨迹事件与人工留证</strong><span>核对候选事件，导出影像与记录</span></div></div>
 +</div>''', unsafe_allow_html=True)
 +MODEL_LABELS = {"sitewatch": "施工场景识别",
-+                "constructelligence-v03": "近景防护识别"}
++                "constructelligence-v03": "近景防护识别",
++                "client-person-demo": "甲方人员适配（仅人员）"}
 +
 +
 +def demo_media_entries() -> list[dict]:
@@ -90,7 +91,7 @@
  
  
  # ----- pipeline -------------------------------------------------------------
-@@ -62,11 +120,60 @@
+@@ -62,11 +121,60 @@
  
  
  # ----- sidebar --------------------------------------------------------------
@@ -156,7 +157,7 @@
  
  def render_violation_log() -> None:
      """Render the recent-violations table in the sidebar.
-@@ -74,7 +181,7 @@
+@@ -74,7 +182,7 @@
      Called at the *end* of the script so it reflects anything logged during this
      run (e.g. a freshly uploaded image), rather than the pre-processing state.
      """
@@ -165,7 +166,7 @@
          rows: list[list[str]] = []
          header: list[str] | None = None
          if LOG_PATH.exists():
-@@ -91,164 +198,318 @@
+@@ -91,164 +199,318 @@
                  height=300,
              )
          else:
@@ -678,7 +679,7 @@
  
  
  def _iou(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> float:
-@@ -52,36 +69,76 @@
+@@ -52,36 +69,84 @@
  
  
  class Detector:
@@ -726,11 +727,16 @@
 +        if profile not in {'standard', 'distant'}:
 +            raise ValueError('Unknown detection profile')
 +        self.profile = profile
-+        self.inference_imgsz = 1280 if profile == 'distant' else 640
-+        if model_id not in {'sitewatch', 'constructelligence-v03'}:
-+            raise ValueError('Only the baseline and explicitly registered comparison model are available')
++        # The fixed client-person weight was adapted at 640. Keeping its
++        # inference size fixed avoids the distant 1280 path merging very small
++        # adjacent workers during NMS; the generic SiteWatch distant branch
++        # continues to use 1280.
++        self.inference_imgsz = 640 if model_id == 'client-person-demo' else (1280 if profile == 'distant' else 640)
 +        specs = json.loads((Path(__file__).resolve().parents[2] / 'model-candidates.json').read_text())['models']
-+        spec = next(item for item in specs if item['id'] == model_id)
++        try:
++            spec = next(item for item in specs if item['id'] == model_id)
++        except StopIteration as exc:
++            raise ValueError(f'Unknown registered model: {model_id}') from exc
 +        project = Path(os.environ.get('SITEWATCH_PROJECT_ROOT', Path(__file__).resolve().parents[3]))
 +        default_path = os.environ.get('SITEWATCH_MODEL_PATH') if model_id == 'sitewatch' else None
 +        self.model_id = model_id
@@ -751,7 +757,10 @@
 +                           'profile': profile, 'inference_imgsz': self.inference_imgsz}
 +        self.person = None
 +        self.person_spec = None
-+        if profile == 'distant':
++        # The client-person demo weight is already a single person branch. Do
++        # not add the generic COCO companion on top of it, or the demo would
++        # produce duplicate person boxes and lose the fixed-model provenance.
++        if profile == 'distant' and model_id == 'sitewatch':
 +            companion = json.loads((Path(__file__).resolve().parents[2] / 'person-model.json').read_text())
 +            person_path = project / companion['weights']
 +            if (not person_path.is_file() or person_path.stat().st_size != companion['bytes']
@@ -776,7 +785,7 @@
          out: list[Detection] = []
          if not results:
              return out
-@@ -102,23 +159,41 @@
+@@ -102,23 +167,41 @@
                      bbox=(x1, y1, x2, y2),
                      source=source,
                      category=_category_for(class_name),

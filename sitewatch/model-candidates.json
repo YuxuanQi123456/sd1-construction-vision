@@ -129,6 +129,23 @@
       "revision": "79673cff5a8bb249fc8ec9cca3daa19e2ef95191",
       "url": "https://huggingface.co/constructelligence/construction-site-safety-hazards/resolve/79673cff5a8bb249fc8ec9cca3daa19e2ef95191/buildvision-hazards-v0.3.pt",
       "license": "AGPL-3.0"
+    },
+    {
+      "id": "client-person-demo",
+      "weights": "downloads/client-person/client-person-overfit.pt",
+      "sha256": "7d23f5c8ceed77625b6b3d8934cc019918fe36ae5e9bd8588ca7e8772cfa7602",
+      "bytes": 52027265,
+      "expected_names": [
+        "person"
+      ],
+      "classes": {
+        "person": 0
+      },
+      "source": "https://github.com/AitchEm-bot/sitewatch",
+      "revision": "72c4d18135fd07afd188fecaac37c5b90ec674b4+client-person-20261110",
+      "license": "AGPL-3.0 (derived local demo weight)",
+      "adaptation": "Fixed-material one-class person adaptation from the SiteWatch weight; local leadership demo only",
+      "training_scope": "45 frames from three client videos; 145 person boxes; 19 negative frames; no PPE labels"
     }
   ],
   "primary_task": [

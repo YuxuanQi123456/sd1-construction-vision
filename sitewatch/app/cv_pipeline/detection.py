@@ -92,11 +92,16 @@ class Detector:
         if profile not in {'standard', 'distant'}:
             raise ValueError('Unknown detection profile')
         self.profile = profile
-        self.inference_imgsz = 1280 if profile == 'distant' else 640
-        if model_id not in {'sitewatch', 'constructelligence-v03'}:
-            raise ValueError('Only the baseline and explicitly registered comparison model are available')
+        # The fixed client-person weight was adapted at 640. Keeping its
+        # inference size fixed avoids the distant 1280 path merging very small
+        # adjacent workers during NMS; the generic SiteWatch distant branch
+        # continues to use 1280.
+        self.inference_imgsz = 640 if model_id == 'client-person-demo' else (1280 if profile == 'distant' else 640)
         specs = json.loads((Path(__file__).resolve().parents[2] / 'model-candidates.json').read_text())['models']
-        spec = next(item for item in specs if item['id'] == model_id)
+        try:
+            spec = next(item for item in specs if item['id'] == model_id)
+        except StopIteration as exc:
+            raise ValueError(f'Unknown registered model: {model_id}') from exc
         project = Path(os.environ.get('SITEWATCH_PROJECT_ROOT', Path(__file__).resolve().parents[3]))
         default_path = os.environ.get('SITEWATCH_MODEL_PATH') if model_id == 'sitewatch' else None
         self.model_id = model_id
@@ -117,7 +122,10 @@ class Detector:
                            'profile': profile, 'inference_imgsz': self.inference_imgsz}
         self.person = None
         self.person_spec = None
-        if profile == 'distant':
+        # The client-person demo weight is already a single person branch. Do
+        # not add the generic COCO companion on top of it, or the demo would
+        # produce duplicate person boxes and lose the fixed-model provenance.
+        if profile == 'distant' and model_id == 'sitewatch':
             companion = json.loads((Path(__file__).resolve().parents[2] / 'person-model.json').read_text())
             person_path = project / companion['weights']
             if (not person_path.is_file() or person_path.stat().st_size != companion['bytes']
