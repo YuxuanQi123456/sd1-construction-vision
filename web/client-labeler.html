@@ -88,6 +88,12 @@
     let index = 0, boxes = [], selected = -1, image = null, imageUrl = null, viewScale = 1;
     let drawing = null;
     const colors = ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899'];
+    const cnNames = {
+      'Person':'人员', 'Hardhat':'安全帽', 'Safety Vest':'安全马甲',
+      'NO-Hardhat':'未戴安全帽', 'NO-Safety Vest':'未穿安全马甲',
+      'Excavator':'挖掘机', 'dump truck':'自卸车', 'machinery':'机械设备',
+      'Safety Cone':'安全锥', 'vehicle':'车辆'
+    };
 
     function setStatus(text, kind='') { $('status').textContent = text; $('status').className = kind; }
     function baseName(name) { return name.replace(/\.[^.]+$/, ''); }
@@ -177,7 +183,7 @@
         if (!r.ok || data.status !== 'ok') throw new Error(data.message || '本地标注服务未连接');
         classes=data.classes || []; images=(data.images || []).map(name=>({name}));
         if (!images.length) throw new Error('images/train 中没有 JPG/PNG 图片');
-        $('class-select').innerHTML=''; classes.forEach((name,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${i}: ${name}`;$('class-select').appendChild(o);});
+        $('class-select').innerHTML=''; classes.forEach((name,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${i}: ${cnNames[name] ? cnNames[name]+' / ' : ''}${name}`;$('class-select').appendChild(o);});
         $('image-select').innerHTML=''; images.forEach((x,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${i+1}/${images.length} · ${x.name}`;$('image-select').appendChild(o);});
         $('image-select').onchange=()=>loadImage(Number($('image-select').value));
         setEnabled(true); viewScale=1; $('zoom').value=100; $('zoom-value').textContent='100%';
