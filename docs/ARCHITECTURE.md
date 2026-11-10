@@ -29,11 +29,23 @@ flowchart LR
 
 如果存在候选事件，AI 巡查总结会优先选取事件关键帧，并把事件类型、对象 ID 和画面位置作为检测参考；模型不得输出 ID 或人工状态，最终仍由服务端分配问题编号、人工状态和报告。跟踪和区域事件均为本次 review 目录内的候选记录，不代表员工身份、跨摄像头跟踪或生产告警。契约见 [轨迹事件](../contracts/tracking-events-v1.md)。
 
-## 模型和素材
+## 原图局部复核与连续回放（V20）
+
+`object_review_ui.py` 复用当前 Streamlit 页面，通过轻量本地 `reviewer-component/index.html` 发送所选检测索引或人工矩形。`object_review.py` 按 `detection_dimensions_wh` 将检测坐标映射回原始照片/视频解码帧，保存无框 PNG；“头部参考”和“上身参考”仅按人员框位置裁剪，不当作装备识别。人工目标、帽、衣状态及备注独立保存在 `object-reviews/decisions.json`，保留历史及裁图 SHA，不修改检测 JSON。
+
+关键帧导航只索引同一检测 SHA 下的候选区域事件、巡查总结依据，并核对真实帧号与文件名。旧的无 SHA 事件仍可查看原表格，重新生成后支持定位。ByteTrack 适配器保留进程内单调 ID 分配，防止新建跟踪实例重置其他会话的活跃轨迹。
+
+`video_replay.py` 逐帧调用同一真实检测器与 ByteTrack，流式写 `frames.jsonl`，用 `imageio-ffmpeg==0.6.0` 提供的 FFmpeg 编码独立 H.264 MP4；不根据标注或采样框插值造连续检测。帧数、模型/原片/逐帧证据 SHA 校验通过后才发布 `video-replay/replay.json`，保留原视频。回放只覆盖当前分析时长，轨迹 ID 为回放内 ID。CPU 串行处理、低延迟编码限制内存；视频播放、裁图放大与人工保存无外部 API 调用。
+
+标注页的显示筛选独立于标签数组；服务端校验版本、归一化坐标并原子保存，在本地 `label-history/` 保留旧标签。完成进度单独存 `annotation-progress.json`，不会把隐藏人员框删掉。标注、视频、权重和截图均在忽略目录内。
+
+## 模型和素材（检测基线）
+
+甲方室外远景与脚手架条目当前默认 `client-person-demo` 单类别人员适配权重，固定640输入、不叠加COCO人员分支。帽衣自动识别等待补标训练，局部窗口目前可先保存人工意见；山路货车保留通用SiteWatch。
 
 SiteWatch 为 YOLOv8m PPE、25 目标类；Constructelligence v0.3 为 14 类近景候选。固定来源/revision/哈希与类别在 `SOURCE.json`、`model-candidates.json`。远景模式可加载固定 YOLOv8n，只补人员类别；不代替安全帽模型。默认只展示人员与 PPE，完整真实输出留在 JSON；模型未加载、校验失败均明确报错，无静默替代或人工造框。
 
-素材库 `demo-media.json` 为三视频、三照片，按条目选择实测模型与尺度。默认实际结构作业视频使用 SiteWatch standard；两条 4K 近景与两张高清照片使用 Constructelligence；砌筑对照照片使用 SiteWatch，展示原检测与区域第二意见的分歧。来源元数据不送入检测器，导出按原件 SHA 匹配 `media-sources.json`。轨道原件保留，撤下两个菜单入口。采样复核不运行运动、距离、形状或缺失装备推断规则。
+素材库 `demo-media.json` 当前为六视频、三照片，含三段甲方本地视频，按条目选择实测模型与尺度。默认实际结构作业视频使用 SiteWatch standard；两条 4K 近景与两张高清照片使用 Constructelligence；砌筑对照照片使用 SiteWatch，展示原检测与区域第二意见的分歧。来源元数据不送入检测器，导出按原件 SHA 匹配 `media-sources.json`。轨道原件保留，撤下两个菜单入口。采样复核不运行运动、距离、形状或缺失装备推断规则。
 
 ## GPT API 与状态
 

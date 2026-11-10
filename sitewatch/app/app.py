@@ -24,6 +24,8 @@ from safety_summary_ui import render_safety_summary
 from safety_summary import summary_export_lock
 from tracking import TrackingError, augment_tracking
 from tracking_ui import render_tracking_ui
+from object_review_ui import render_evidence_navigation, render_object_review
+from video_replay_ui import render_video_replay
 from utils.drawing import draw_overlay
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -166,7 +168,9 @@ with st.sidebar.expander("高级识别设置", expanded=False):
     st.caption('固定样例采用实测配置；清晰素材按推荐场景运行，上传视频默认远景。')
     if demo_entry and demo_entry.get('client_media'):
         st.caption(f"甲方视频演示配置：远景输入 {demo_entry.get('recommended_confidence_threshold', 0.4):.2f} 阈值；按固定素材适配，不代表通用现场精度。")
-    if profile == 'distant':
+    if model_id == 'client-person-demo':
+        st.caption('人员适配固定640输入；当前只检测人员，帽/衣可先人工复核，补充标注后再训练。')
+    elif profile == 'distant':
         st.caption('远景配置：防护装备1280输入，通用人员640输入；速度较慢。')
     if model_id != "sitewatch":
         st.caption('对照模型可能改善部分检出，仍有误报；当前是演示配置。')
@@ -323,9 +327,9 @@ with tab_live:
 with tab_review:
     st.markdown("### 影像识别与复核")
     st.caption("先选素材并开始识别，再查看检测框、复核局部区域，最后导出证据。")
-    show_all = st.checkbox(f"显示全部{len(detector.names)}类目标标签（含设备与车辆）", value=False,
+    show_all = st.checkbox(f"显示模型全部 {len(detector.names)} 类目标标签", value=False,
                            key=f"show-all-{model_id}")
-    st.caption('当前识别场景：' + ('远景视频 · 人员与防护装备' if profile == 'distant' else '照片 / 近景 · 人员与防护装备'))
+    st.caption('当前识别场景：' + ('甲方人员适配 · 仅人员' if model_id == 'client-person-demo' else '远景视频 · 人员与防护装备' if profile == 'distant' else '照片 / 近景 · 人员与防护装备'))
     display_mode = st.radio('画面显示', ['大图看检测结果', '左右对照'], horizontal=True, key='review-display')
     upload = None
     if source_choice == '自己上传':
@@ -408,23 +412,27 @@ with tab_review:
             st.caption('统计来自本次实际结果；待复核框按NO-*类别计次，非人员去重统计。')
             if result["media_type"] == "video":
                 st.caption("仅复核下列采样时间：" + ", ".join(f"{f['timestamp_seconds']:.2f}s" for f in result["frames"]))
+            frame_key = f"frame-{destination.name}"
+            render_evidence_navigation(destination, result, frame_key)
             selected = st.selectbox("查看采样画面", range(len(result["frames"])),
                                     format_func=lambda i: f"{result['frames'][i]['timestamp_seconds']:.2f}s / frame {result['frames'][i]['frame_index']}",
-                                    key=f"frame-{destination.name}")
+                                    key=frame_key)
             frame = result["frames"][selected]
             input_path = destination / frame['input_file']
             shown_path = destination / frame["overlay_file" if show_all else "review_overlay_file"]
             source_width, source_height = frame['source_dimensions_wh']
             image_width, image_height = frame['detection_dimensions_wh']
             st.caption(f'原片画面 {source_width}×{source_height}；本次保存画面 {image_width}×{image_height}。页面按屏幕缩放显示。')
-            if display_mode == '左右对照':
-                left, right = st.columns(2)
-                left.image(str(input_path), caption='本次输入画面', use_container_width=True)
-                right.image(str(shown_path), caption=f'{MODEL_LABELS[model_id]} · 检测结果', use_container_width=True)
-            else:
-                st.image(str(shown_path), caption=f'{MODEL_LABELS[model_id]} · 大图检测结果', use_container_width=True)
-                with st.expander('查看本次输入原图', expanded=False):
+            render_object_review(destination, result, selected, show_all=show_all)
+            with st.expander('查看完整检测框图与原图', expanded=display_mode == '左右对照'):
+                if display_mode == '左右对照':
+                    left, right = st.columns(2)
+                    left.image(str(input_path), caption='本次输入画面', use_container_width=True)
+                    right.image(str(shown_path), caption=f'{MODEL_LABELS[model_id]} · 检测结果', use_container_width=True)
+                else:
+                    st.image(str(shown_path), caption=f'{MODEL_LABELS[model_id]} · 完整检测框图', use_container_width=True)
                     st.image(str(input_path), caption='本次输入画面', use_container_width=True)
+            render_video_replay(destination, result, detector)
             downloads = st.columns(3)
             downloads[0].download_button('下载当前输入原图', input_path.read_bytes(), file_name=input_path.name,
                                         mime=media_mime(input_path), on_click='ignore', use_container_width=True)

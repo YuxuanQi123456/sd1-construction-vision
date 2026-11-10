@@ -8,6 +8,7 @@ import json
 import math
 from pathlib import Path
 import time
+import threading
 import uuid
 import zipfile
 
@@ -21,6 +22,8 @@ PPE_LABELS = {"Gloves", "Hardhat", "Mask", "NO-Hardhat", "NO-Mask", "NO-Safety V
               "hardhat", "no-hardhat", "safety vest", "no-safety vest", "no-mask", "gloves",
               "safety shoes", "goggles", "no-goggles", "no-gloves"}
 REVIEW_LABELS = PPE_LABELS | {'Person', 'person', 'human'}
+_ZIP_LOCK = threading.RLock()
+_ZIP_STATES = {}
 
 
 def source_provenance(digest):
@@ -194,8 +197,21 @@ def evidence_zip(review_dir):
     """One local download contains original bytes, all boxes, and all frames."""
     review_dir = Path(review_dir)
     target = review_dir / "evidence.zip"
-    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-        for path in sorted(review_dir.rglob('*')):
-            if path.is_file() and not path.is_symlink() and path != target:
-                archive.write(path, str(path.relative_to(review_dir)))
+    with _ZIP_LOCK:
+        files = [p for p in sorted(review_dir.rglob('*')) if p.is_file() and not p.is_symlink()
+                 and p != target and not p.name.endswith('.tmp')]
+        state = tuple((str(p.relative_to(review_dir)), p.stat().st_size, p.stat().st_mtime_ns) for p in files)
+        key = str(review_dir.resolve())
+        cached = _ZIP_STATES.get(key)
+        if target.is_file() and cached == (state, target.stat().st_size, target.stat().st_mtime_ns):
+            return target
+        temporary = target.with_name('evidence-' + uuid.uuid4().hex + '.tmp')
+        try:
+            with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED) as archive:
+                for path in files:
+                    archive.write(path, str(path.relative_to(review_dir)))
+            temporary.replace(target)
+            _ZIP_STATES[key] = (state, target.stat().st_size, target.stat().st_mtime_ns)
+        finally:
+            temporary.unlink(missing_ok=True)
     return target

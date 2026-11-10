@@ -12,6 +12,7 @@ import hashlib
 import importlib.metadata
 import json
 from pathlib import Path
+import threading
 from typing import Any
 
 import cv2
@@ -21,6 +22,7 @@ TRACKING_SCHEMA = "sitewatch-tracking-v1"
 ZONES_SCHEMA = "sitewatch-zones-v1"
 EVENTS_SCHEMA = "sitewatch-events-v1"
 TRACKER_REPOSITORY = "https://github.com/FoundationVision/ByteTrack"
+_ID_ALLOCATION_LOCK = threading.RLock()
 
 
 class TrackingError(ValueError):
@@ -90,13 +92,21 @@ class ByteTrackEvidence:
             from ultralytics.engine.results import Boxes
         except ImportError as exc:
             raise TrackingError("轨迹功能需要 lap、Torch 和 Ultralytics 跟踪依赖") from exc
-        self._BYTETracker = BYTETracker
+        class MonotonicBYTETracker(BYTETracker):
+            @staticmethod
+            def reset_id():
+                # The upstream constructor resets a process-global counter.
+                # Starting another Streamlit session must not reset live IDs.
+                pass
+
+        self._BYTETracker = MonotonicBYTETracker
         self._Boxes = Boxes
         self._torch = torch
         # Frame rate is the evidence sampling rate, not a claim about source FPS.
         self._frame_rate = max(1, round(1.0 / sample_seconds))
-        self._trackers = {group: BYTETracker(_args(), frame_rate=self._frame_rate)
-                          for group in ("person", "equipment")}
+        with _ID_ALLOCATION_LOCK:
+            self._trackers = {group: self._BYTETracker(_args(), frame_rate=self._frame_rate)
+                              for group in ("person", "equipment")}
         try:
             version = importlib.metadata.version("ultralytics")
         except importlib.metadata.PackageNotFoundError:
@@ -110,9 +120,14 @@ class ByteTrackEvidence:
             "sample_seconds": sample_seconds,
             "frame_rate_basis": "saved evidence sample interval",
             "track_buffer_samples": 15,
+            "id_allocation": "process-wide monotonic IDs; new sessions do not reset active trackers",
         }
 
     def update(self, detections: list[dict[str, Any]], dimensions_wh: list[int]) -> list[dict[str, Any]]:
+        with _ID_ALLOCATION_LOCK:
+            return self._update(detections, dimensions_wh)
+
+    def _update(self, detections: list[dict[str, Any]], dimensions_wh: list[int]) -> list[dict[str, Any]]:
         width, height = dimensions_wh
         grouped: dict[str, list[tuple[int, dict[str, Any]]]] = {"person": [], "equipment": []}
         for index, detection in enumerate(detections):
@@ -321,6 +336,7 @@ def save_zone_events(review_dir: str | Path, polygon: list[list[float]], name: s
     payload = {"schema": ZONES_SCHEMA, "updated_at": _utc_now(), "zones": [zone]}
     _atomic_json(review_dir / "zones.json", payload)
     event_payload = {"schema": EVENTS_SCHEMA, "updated_at": _utc_now(), "zone_id": zone["id"],
+                     "source_detections_sha256": tracking['source_detections_sha256'],
                      "events": events, "notice": "事件仅为算法候选，需人工确认。"}
     _atomic_json(review_dir / "events.json", event_payload)
     tracking["zones"] = [zone]

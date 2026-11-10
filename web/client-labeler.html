@@ -1,204 +1,50 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>甲方视频本地 YOLO 标注</title>
-  <style>
-    :root { color-scheme: light; --blue:#155eef; --ink:#172033; --muted:#64748b; --line:#dbe2ea; --bg:#f5f7fb; }
-    * { box-sizing: border-box; }
-    body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif; }
-    header { background:#0d2b52; color:white; padding:18px 24px; }
-    header h1 { margin:0 0 4px; font-size:22px; }
-    header p { margin:0; color:#dbeafe; }
-    main { max-width:1500px; margin:16px auto; padding:0 16px; }
-    .card { background:white; border:1px solid var(--line); border-radius:12px; box-shadow:0 4px 18px #0f172a0b; padding:14px; }
-    .top { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:12px; }
-    button, select, input { font:inherit; }
-    button { border:1px solid #b8c4d3; border-radius:8px; background:white; color:var(--ink); padding:7px 11px; cursor:pointer; }
-    button:hover { border-color:var(--blue); color:var(--blue); }
-    button.primary { background:var(--blue); border-color:var(--blue); color:white; }
-    button.danger { color:#b42318; }
-    button:disabled, select:disabled { opacity:.5; cursor:not-allowed; }
-    select { border:1px solid #b8c4d3; border-radius:8px; padding:7px 9px; background:white; min-width:220px; }
-    label.inline { display:flex; align-items:center; gap:7px; color:var(--muted); }
-    input[type=range] { width:130px; }
-    #status { color:var(--muted); min-height:22px; }
-    .workspace { display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:14px; }
-    .canvas-card { overflow:hidden; }
-    #canvas-wrap { min-height:480px; max-height:calc(100vh - 260px); overflow:auto; background:#111827; border-radius:8px; display:flex; align-items:flex-start; justify-content:flex-start; }
-    #canvas { display:block; background:#111827; cursor:crosshair; }
-    .help { color:var(--muted); margin:9px 0 0; }
-    .summary { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
-    .stat { background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:8px; }
-    .stat strong { display:block; font-size:17px; }
-    .stat span { color:var(--muted); font-size:12px; }
-    #boxes { display:flex; flex-direction:column; gap:6px; max-height:42vh; overflow:auto; }
-    .box-row { display:flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:7px; padding:6px; }
-    .box-row.selected { border-color:var(--blue); background:#eff6ff; }
-    .box-row button { padding:2px 6px; margin-left:auto; }
-    .swatch { width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
-    .note { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; border-radius:8px; padding:9px; margin-top:10px; }
-    .success { color:#067647; }
-    .error { color:#b42318; }
-    @media (max-width:900px) { .workspace { grid-template-columns:1fr; } #canvas-wrap { min-height:360px; } #boxes { max-height:220px; } }
-  </style>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>甲方视频 · 帽衣补充标注</title>
+  <link rel="stylesheet" href="/web/client-labeler.css">
 </head>
 <body>
-  <header>
-    <h1>甲方三段视频 · 本地 YOLO 标注</h1>
-    <p>所有图片和标签只在本机读写；不会上传视频。页面会自动连接本机标注服务，打开后直接逐张框选。</p>
-  </header>
-  <main>
-    <section class="card">
-      <div class="top">
-        <button id="pick" class="primary">重新加载标注包</button>
-        <button id="prev" disabled>上一张（A）</button>
-        <select id="image-select" disabled aria-label="选择图片"></select>
-        <button id="next" disabled>下一张（D）</button>
-        <button id="save" disabled>保存当前（S）</button>
-        <button id="clear" class="danger" disabled>清空当前框</button>
-        <label class="inline">画面放大 <input id="zoom" type="range" min="50" max="220" value="100" step="10" disabled><span id="zoom-value">100%</span></label>
-      </div>
-      <div id="status">还没有打开标注包。</div>
-    </section>
-
-    <div class="workspace" style="margin-top:14px">
-      <section class="card canvas-card">
-        <div id="canvas-wrap"><canvas id="canvas" width="1" height="1"></canvas></div>
-        <p class="help">操作：在画面上按住鼠标拖出框，松开后选择类别；点击右侧框可选中，Delete 删除。快捷键：A/D 切换，S 保存。</p>
-      </section>
-      <aside class="card">
-        <div class="summary">
-          <div class="stat"><strong id="image-count">0/0</strong><span>当前图片</span></div>
-          <div class="stat"><strong id="box-count">0</strong><span>当前框数</span></div>
-        </div>
-        <label for="class-select">新框类别</label>
-        <select id="class-select" disabled style="width:100%;margin:6px 0 12px"></select>
-        <div id="boxes"></div>
-        <div class="note">Person=真实人体；路障、栏杆、钢管不要画成 Person。没有人的画面可以保持空标签。</div>
-      </aside>
+<header><h1>甲方视频 · 帽衣补充标注</h1><p>原图本地读写 · 人员标签保留 · 先选类别，再拖框；看不清的装备不硬标</p></header>
+<main>
+  <section class="card">
+    <div class="toolbar">
+      <button id="reload">重新加载</button><button id="prev" disabled>上一张 A</button>
+      <select id="image-select" aria-label="选择图片" disabled></select><button id="next" disabled>下一张 D</button>
+      <button id="save" class="primary" disabled>保存 S</button>
+      <button id="complete" disabled>本帧帽衣标完，下一张</button>
+      <button id="export" disabled>下载当前标签草稿</button><button id="discard" disabled>放弃未保存修改并重读</button>
     </div>
-  </main>
-
-  <script>
-    const $ = (id) => document.getElementById(id);
-    const canvas = $('canvas'), ctx = canvas.getContext('2d');
-    let images = [], classes = [];
-    let index = 0, boxes = [], selected = -1, image = null, imageUrl = null, viewScale = 1;
-    let drawing = null;
-    const colors = ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899'];
-    const cnNames = {
-      'Person':'人员', 'Hardhat':'安全帽', 'Safety Vest':'安全马甲',
-      'NO-Hardhat':'未戴安全帽', 'NO-Safety Vest':'未穿安全马甲',
-      'Excavator':'挖掘机', 'dump truck':'自卸车', 'machinery':'机械设备',
-      'Safety Cone':'安全锥', 'vehicle':'车辆'
-    };
-
-    function setStatus(text, kind='') { $('status').textContent = text; $('status').className = kind; }
-    function baseName(name) { return name.replace(/\.[^.]+$/, ''); }
-    function setEnabled(enabled) {
-      ['prev','next','save','clear','image-select','class-select','zoom'].forEach(id => $(id).disabled = !enabled);
-    }
-    function getColor(cls) { return colors[cls % colors.length]; }
-    function chooseDirectory(parent, name, create=false) { return parent.getDirectoryHandle(name, {create}); }
-    async function readLabels(name) {
-      try {
-        const r = await fetch('/api/labels/' + encodeURIComponent(baseName(name) + '.txt'), {cache:'no-store'});
-        if (!r.ok) return [];
-        const txt = (await r.json()).text || '';
-        return txt.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
-          const p = line.split(/\s+/).map(Number);
-          if (p.length !== 5 || p.some(Number.isNaN)) return null;
-          return {cls:p[0], cx:p[1], cy:p[2], w:p[3], h:p[4]};
-        }).filter(b => b && b.cls >= 0 && b.cls < classes.length);
-      } catch (e) { return []; }
-    }
-    async function saveCurrent(silent=false) {
-      if (!images[index]) return;
-      const lines = boxes.map(b => [b.cls,b.cx,b.cy,b.w,b.h].map((v,i) => i === 0 ? String(Math.round(v)) : Number(v).toFixed(6)).join(' '));
-      const r = await fetch('/api/labels/' + encodeURIComponent(baseName(images[index].name) + '.txt'), {
-        method:'PUT', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({text: lines.length ? lines.join('\n') + '\n' : ''})
-      });
-      if (!r.ok) throw new Error((await r.json()).message || '标签保存失败');
-      if (!silent) setStatus(`已保存 ${images[index].name}：${boxes.length} 个框。`, 'success');
-      updateStats();
-    }
-    function imgPoint(event) {
-      const r = canvas.getBoundingClientRect();
-      const x = Math.max(0, Math.min(image.naturalWidth, (event.clientX-r.left) * canvas.width/r.width / viewScale));
-      const y = Math.max(0, Math.min(image.naturalHeight, (event.clientY-r.top) * canvas.height/r.height / viewScale));
-      return {x,y};
-    }
-    function toBox(a,b) {
-      const x1=Math.min(a.x,b.x), y1=Math.min(a.y,b.y), x2=Math.max(a.x,b.x), y2=Math.max(a.y,b.y);
-      return {cls:Number($('class-select').value||0), cx:(x1+x2)/2/image.naturalWidth, cy:(y1+y2)/2/image.naturalHeight, w:(x2-x1)/image.naturalWidth, h:(y2-y1)/image.naturalHeight};
-    }
-    function draw() {
-      if (!image) return;
-      canvas.width = Math.max(1, Math.round(image.naturalWidth * viewScale));
-      canvas.height = Math.max(1, Math.round(image.naturalHeight * viewScale));
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(image,0,0,canvas.width,canvas.height);
-      ctx.lineWidth = Math.max(2, 2*viewScale);
-      ctx.font = `${Math.max(13, 15*viewScale)}px system-ui`;
-      boxes.forEach((b,i) => {
-        const w=b.w*image.naturalWidth*viewScale, h=b.h*image.naturalHeight*viewScale;
-        const x=(b.cx-b.w/2)*image.naturalWidth*viewScale, y=(b.cy-b.h/2)*image.naturalHeight*viewScale;
-        const color=getColor(b.cls); ctx.strokeStyle = i===selected ? '#ffffff' : color; ctx.fillStyle = color+'33';
-        ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
-        const text=(classes[b.cls]||String(b.cls)); const tw=ctx.measureText(text).width+8;
-        ctx.fillStyle=color; ctx.fillRect(x,Math.max(0,y-20*viewScale),tw,20*viewScale);
-        ctx.fillStyle='#fff'; ctx.fillText(text,x+4,Math.max(14*viewScale,y-5*viewScale));
-      });
-      if (drawing) { const a=drawing.start,b=drawing.now; const x=Math.min(a.x,b.x)*viewScale,y=Math.min(a.y,b.y)*viewScale,w=Math.abs(a.x-b.x)*viewScale,h=Math.abs(a.y-b.y)*viewScale; ctx.strokeStyle='#fff';ctx.setLineDash([8,5]);ctx.strokeRect(x,y,w,h);ctx.setLineDash([]); }
-    }
-    function updateStats() {
-      $('image-count').textContent = `${images.length ? index+1 : 0}/${images.length}`;
-      $('box-count').textContent = String(boxes.length);
-      $('boxes').innerHTML='';
-      boxes.forEach((b,i) => {
-        const row=document.createElement('div'); row.className='box-row'+(i===selected?' selected':''); row.onclick=()=>{selected=i;renderBoxes();draw();};
-        const sw=document.createElement('span'); sw.className='swatch'; sw.style.background=getColor(b.cls);
-        const label=document.createElement('span'); label.textContent=`${i+1}. ${classes[b.cls]||b.cls}`;
-        const del=document.createElement('button'); del.textContent='删除'; del.onclick=(e)=>{e.stopPropagation();boxes.splice(i,1);selected=-1;renderBoxes();draw();};
-        row.append(sw,label,del); $('boxes').appendChild(row);
-      });
-    }
-    function renderBoxes() { updateStats(); }
-    async function loadImage(newIndex) {
-      if (!images.length) return;
-      if (image) await saveCurrent(true);
-      index=Math.max(0,Math.min(images.length-1,newIndex)); $('image-select').value=String(index);
-      boxes=await readLabels(images[index].name); selected=-1;
-      imageUrl='/api/images/' + encodeURIComponent(images[index].name); image=new Image();
-      image.onload=()=>{draw();updateStats();}; image.src=imageUrl;
-      setStatus(`${images[index].name}：${boxes.length} 个已有框。`); updateStats();
-    }
-    async function openPack() {
-      try {
-        const r=await fetch('/api/info',{cache:'no-store'});
-        const data=await r.json();
-        if (!r.ok || data.status !== 'ok') throw new Error(data.message || '本地标注服务未连接');
-        classes=data.classes || []; images=(data.images || []).map(name=>({name}));
-        if (!images.length) throw new Error('images/train 中没有 JPG/PNG 图片');
-        $('class-select').innerHTML=''; classes.forEach((name,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${i}: ${cnNames[name] ? cnNames[name]+' / ' : ''}${name}`;$('class-select').appendChild(o);});
-        $('image-select').innerHTML=''; images.forEach((x,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${i+1}/${images.length} · ${x.name}`;$('image-select').appendChild(o);});
-        $('image-select').onchange=()=>loadImage(Number($('image-select').value));
-        setEnabled(true); viewScale=1; $('zoom').value=100; $('zoom-value').textContent='100%';
-        setStatus(`已连接本地标注服务：${images.length} 张图片、${classes.length} 个类别。`,'success'); await loadImage(0);
-      } catch (e) { setStatus(`打开失败：${e.message || e}`,'error'); }
-    }
-    $('pick').onclick=openPack;
-    $('prev').onclick=()=>loadImage(index-1); $('next').onclick=()=>loadImage(index+1); $('save').onclick=()=>saveCurrent();
-    $('clear').onclick=()=>{boxes=[];selected=-1;renderBoxes();draw();setStatus('当前框已清空，点击“保存当前”后才会写入空标签。');};
-    $('zoom').oninput=()=>{viewScale=Number($('zoom').value)/100;$('zoom-value').textContent=$('zoom').value+'%';draw();};
-    canvas.addEventListener('mousedown',e=>{if(!image)return;drawing={start:imgPoint(e),now:imgPoint(e)};draw();});
-    canvas.addEventListener('mousemove',e=>{if(!drawing)return;drawing.now=imgPoint(e);draw();});
-    canvas.addEventListener('mouseup',async e=>{if(!drawing)return;drawing.now=imgPoint(e);const b=toBox(drawing.start,drawing.now);drawing=null;if(b.w*image.naturalWidth<3||b.h*image.naturalHeight<3){draw();return;}boxes.push(b);selected=boxes.length-1;renderBoxes();draw();await saveCurrent(true);setStatus(`已添加 ${classes[b.cls]} 框并自动保存。`,'success');});
-    document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return; if(e.key.toLowerCase()==='a')loadImage(index-1); if(e.key.toLowerCase()==='d')loadImage(index+1); if(e.key.toLowerCase()==='s'){e.preventDefault();saveCurrent();} if(e.key==='Delete'&&selected>=0){boxes.splice(selected,1);selected=-1;renderBoxes();draw();}});
-    window.addEventListener('load', openPack);
-  </script>
+    <div id="status" role="status">正在读取本地标注包…</div>
+  </section>
+  <section class="card controls">
+    <div class="toolbar">
+      <label>新框类别 <select id="class-select" disabled></select></label>
+      <button id="helmet" disabled>安全帽 H</button><button id="vest" disabled>反光衣 V</button>
+      <label><input id="hide-person" type="checkbox" checked>隐藏人员框</label>
+      <label><input id="current-only" type="checkbox">只看当前类别</label>
+      <label><input id="show-names" type="checkbox">显示框名</label>
+      <button id="original" disabled>按住看无框原图 X</button>
+    </div>
+    <div class="toolbar">
+      <label>放大 <input id="zoom" type="range" min="5" max="1000" value="100" step="5" disabled><span id="zoom-value">100%</span></label>
+      <button id="fit" disabled>适应窗口</button>
+      <select id="person-focus" aria-label="定位已标注人员" disabled></select><button id="focus" disabled>居中放大此人</button>
+      <span class="muted">空格＋拖动平移；H 帽 / V 衣；Delete 删除选中框</span>
+    </div>
+  </section>
+  <div class="workspace">
+    <section class="card canvas-card"><div id="canvas-wrap"><canvas id="canvas" width="1" height="1"></canvas></div></section>
+    <aside class="card">
+      <p id="counts">0 张图片</p><p id="coverage" class="muted">帽衣标注尚未确认</p>
+      <p class="muted">隐藏只是显示设置，保存时会保留所有类别。人员框不需要重画。</p>
+      <div id="boxes"></div>
+      <div class="note">安全帽只框帽子；反光衣只框上身反光衣。人太小或被挡住时先跳过，不把“看不清”标成未佩戴。</div>
+      <button id="undo" disabled>撤销最近修改</button>
+    </aside>
+  </div>
+</main>
+<script src="/web/client-labeler.js"></script>
 </body>
 </html>

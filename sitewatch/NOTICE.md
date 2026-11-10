@@ -1,5 +1,7 @@
 # 来源与使用说明
 
+V20连续回放复用本项目YOLO/ByteTrack实际逐帧推理，视频编码由 `imageio-ffmpeg==0.6.0`（BSD-2-Clause封装）调用其随包提供的 FFmpeg 7.0.2。封装来源 https://github.com/imageio/imageio-ffmpeg ，FFmpeg来源 https://ffmpeg.org/ ，随包编码器的构建与许可由其发行包保留。叠框MP4为另行编码的演示产物，原视频按原字节保留；本项目不将甲方视频或派生回放上传公开仓库。
+
 水电一局品牌组合标识来自https://1j.powerchina.cn/ 官方网站原始PNG，按原字节保存于branding/logo.png，来源/尺寸/本地SHA见branding/SOURCE.json。仅用于用户指定的水电一局演示界面识别，不重绘或重新授予该企业标识开源许可。
 
 新增清晰演示素材清单及原字节SHA见demo-media.json。两段3840×2160视频为Mikael Blomkvist/Pexels（8963856、8964378）；高清照片为This Viktọ（10202856）和Antoni Shkraba（4981775）。来源及Pexels License链接随素材显示；用于装备识别演示，非水电一局现场，不暗示人物为本产品背书。原件下载后本地锁定SHA，发布方未提供官方摘要，不冒称官方哈希验证。原片未增强/缩放；框为模型输出。许可适用https://www.pexels.com/license/ ，不能把人物用于负面/冒犯或背书语境。

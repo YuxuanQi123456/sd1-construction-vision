@@ -26,6 +26,19 @@ def _frame(index, timestamp, detections):
 
 
 class TrackingEvidenceTests(unittest.TestCase):
+    def test_another_review_does_not_reset_live_tracker_object_ids(self):
+        def people(count):
+            return [{'class_name': 'person', 'confidence': .9, 'bbox_xyxy': [20 + i * 120, 20, 60 + i * 120, 120],
+                     'category': 'worker', 'class_id': 0} for i in range(count)]
+        first = tracking.ByteTrackEvidence()
+        original = first.update(people(3), [600, 400])
+        first.update(people(3), [600, 400])
+        tracking.ByteTrackEvidence()  # Simulates another review/replay starting.
+        first.update(people(4), [600, 400])
+        current = first.update(people(4), [600, 400])
+        self.assertEqual(len(current), 4)
+        self.assertTrue({x['track_id'] for x in original}.issubset({x['track_id'] for x in current}))
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="sd1-tracking-")
         self.review = Path(self.temp.name)

@@ -1,0 +1,216 @@
+{
+  "schema": "visual-validation-v1",
+  "id": "V20_REVIEW_AND_REPLAY",
+  "date": "2026-11-11",
+  "verified_at": "2026-11-10T18:45:25.243127+00:00",
+  "base_commit": "8f91a1ab0d0d9a8b393f63637bfbc1b5114df2b4",
+  "scope": [
+    "Non-obscuring annotation of PPE while retaining Person labels",
+    "Original-pixel detected/manual region inspection and independent human decisions",
+    "Sampling / event / summary evidence keyframe navigation",
+    "Explicit local per-frame YOLO + ByteTrack H264 replay"
+  ],
+  "unit_regression": {
+    "modules": [
+      "test_tracking",
+      "test_object_review",
+      "test_video_replay",
+      "test_safety_summary",
+      "test_summary_api",
+      "test_review_api",
+      "test_bootstrap_runtime",
+      "test_client_labeler"
+    ],
+    "tests_run": 88,
+    "failures": 0,
+    "errors": 0,
+    "passed": true,
+    "elapsed_seconds": 38.83409905299959
+  },
+  "pip_check": "No broken requirements found.",
+  "annotation": {
+    "fixture_browser": {
+      "passed": true,
+      "browser": "157.0.4341.42",
+      "errors": [],
+      "hidden_people_retained": 4,
+      "helmet_save_delete_roundtrip": true,
+      "focus_zoom": "1000%",
+      "complete_and_next": true
+    },
+    "production_protocol": 2,
+    "production_frame_count": 45,
+    "preservation": {
+      "checked_frames": 45,
+      "person_rows_preserved": true,
+      "original_person_boxes": 145,
+      "current_counts_by_class_id": {
+        "8": 145
+      }
+    },
+    "raw_videos_images_labels_not_published": true
+  },
+  "original_pixel_review": {
+    "unit_cases": 6,
+    "production_browser": {
+      "passed": true,
+      "errors": [],
+      "review_dir": "/mnt/e/workspace/云枢/水电一局演示Demo/.runtime/sitewatch-env/runtime/reviews/20261111-024240-8dc7a716",
+      "manual_rectangle": true,
+      "crop_download_sha_verified": true,
+      "detection_bytes_unchanged": true,
+      "sample_count": 10
+    },
+    "manual_regions_are_detector_observations": false,
+    "human_ppe_opinions_are_model_outputs": false,
+    "original_detection_bytes_preserved": true
+  },
+  "navigation": {
+    "sample_next_previous_browser": true,
+    "candidate_event_browser": true,
+    "foreign_evidence_hashes_rejected": true
+  },
+  "real_replay": {
+    "decoded_frame_count": 210,
+    "fps": 15.0,
+    "duration_seconds": 14.0,
+    "elapsed_seconds": 41.70768464999992,
+    "source_dimensions_wh": [
+      1280,
+      720
+    ],
+    "output_dimensions_wh": [
+      1280,
+      720
+    ],
+    "video_sha256": "e1ae1f3b8c8173b74f26e9b46df2d3ca4dc0a5bc37e59970269fb2834df50382",
+    "frames_sha256": "f46c3d3e15cf64b91fb7375259b40d9a5f489c7de8a900411055200723d318d6",
+    "model_sha256": "7d23f5c8ceed77625b6b3d8934cc019918fe36ae5e9bd8588ca7e8772cfa7602",
+    "all_frames_have_ordered_jsonl_evidence": true,
+    "html_video_playback": {
+      "width": 1280,
+      "height": 720,
+      "duration": 14,
+      "currentTime": 0.1885
+    },
+    "source_and_detector_bytes_preserved": true
+  },
+  "provenance": {
+    "canonical": {
+      "at": "2026-11-10T18:38:37.002362+00:00",
+      "source_commit": "72c4d18135fd07afd188fecaac37c5b90ec674b4",
+      "pristine_source_files_checked": 27,
+      "adapted_files_checked": [
+        "app.py",
+        "object_review.py",
+        "object_review_ui.py",
+        "region_review.py",
+        "review_api.py",
+        "review_evidence.py",
+        "safety_summary.py",
+        "safety_summary_ui.py",
+        "tracking.py",
+        "tracking_ui.py",
+        "video_replay.py",
+        "video_replay_ui.py",
+        "cv_pipeline/detection.py",
+        "cv_pipeline/enhancement.py",
+        "cv_pipeline/fusion.py",
+        "cv_pipeline/motion.py",
+        "cv_pipeline/shapes.py",
+        "cv_pipeline/__init__.py",
+        "utils/benchmark.py",
+        "utils/drawing.py",
+        "utils/__init__.py"
+      ],
+      "patch_output": "patching file app.py\npatching file cv_pipeline/detection.py\npatching file object_review.py\npatching file object_review_ui.py\npatching file region_review.py\npatching file review_api.py\npatching file review_evidence.py\npatching file safety_summary.py\npatching file safety_summary_ui.py\npatching file tracking.py\npatching file tracking_ui.py\npatching file utils/drawing.py\npatching file video_replay.py\npatching file video_replay_ui.py\n",
+      "exit_code": 0,
+      "passed": true
+    },
+    "source": {
+      "at": "2026-11-10T18:38:37.255859+00:00",
+      "source_commit": "72c4d18135fd07afd188fecaac37c5b90ec674b4",
+      "pristine_source_files_checked": 27,
+      "adapted_files_checked": [
+        "app.py",
+        "object_review.py",
+        "object_review_ui.py",
+        "region_review.py",
+        "review_api.py",
+        "review_evidence.py",
+        "safety_summary.py",
+        "safety_summary_ui.py",
+        "tracking.py",
+        "tracking_ui.py",
+        "video_replay.py",
+        "video_replay_ui.py",
+        "cv_pipeline/detection.py",
+        "cv_pipeline/enhancement.py",
+        "cv_pipeline/fusion.py",
+        "cv_pipeline/motion.py",
+        "cv_pipeline/shapes.py",
+        "cv_pipeline/__init__.py",
+        "utils/benchmark.py",
+        "utils/drawing.py",
+        "utils/__init__.py"
+      ],
+      "patch_output": "patching file app.py\npatching file cv_pipeline/detection.py\npatching file object_review.py\npatching file object_review_ui.py\npatching file region_review.py\npatching file review_api.py\npatching file review_evidence.py\npatching file safety_summary.py\npatching file safety_summary_ui.py\npatching file tracking.py\npatching file tracking_ui.py\npatching file utils/drawing.py\npatching file video_replay.py\npatching file video_replay_ui.py\n",
+      "exit_code": 0,
+      "passed": true
+    }
+  },
+  "deployed_code_sha256": {
+    "sitewatch/app/app.py": "b12766f22dd3918876464f79d8d98a110c0e3aba8aadcff44c10e25c2761e494",
+    "sitewatch/app/object_review.py": "dbdcbbfd43027469b19084b81ac3ed3957a41c568603dd30c2ca23010688fd75",
+    "sitewatch/app/object_review_ui.py": "48142e554aabda0187526818b3a8eebeb54694b46de668c22106e64ad206b383",
+    "sitewatch/app/video_replay.py": "db6a0ff86ed405d36b0c5f87e12aee3b9b695587e391e7e589b6a6843dd33149",
+    "sitewatch/app/video_replay_ui.py": "0b76bae84c486650a5f098706e77a659eb1dc2f065c0a4d061c61293a465f279",
+    "sitewatch/app/review_evidence.py": "6b626e45c75718e1bfd61ff1561a5d844a28fc15ad23a8dee07051059f5625b9",
+    "sitewatch/app/tracking.py": "8f2a3661b261f803aa3b13c8ab01dcf4136c3c1759aded45c48bb11db25d63a9",
+    "sitewatch/reviewer-component/index.html": "5be3e2b7d48492ef6186dd31611844b73ad746c3f158677dd62eef0038c9b7c1",
+    "sitewatch/patches/local-review.patch": "68bbd66a64a8cff848cc10d662baa0c9dc975f210f92284255bf69f73b8f6425",
+    "sitewatch/NOTICE.md": "77bd348b7857080849edfbaf187e50643f677c21c00679e6efdc5dca3f6b0b31",
+    "config/bootstrap-ppe.txt": "6268e2c04f31205038971c61d59104cd2f3741296337f1d727878fccb2b6ede6",
+    "contracts/object-review-and-replay-v1.md": "f58fe93760dee54e55c8f8ca9f75014e4cad0347c3f4e95abb8ecf54ed663805"
+  },
+  "review": {
+    "independent_read_only_review": true,
+    "critical_open": 0,
+    "important_open": 0,
+    "bytetrack_interleaving_regression_red_before_fix": "3 tracks instead of 4",
+    "bytetrack_interleaving_green_after_fix": true
+  },
+  "failed_attempts_and_adjustments": [
+    "Original annotation overlay used fill, thick scale-dependent edges and names on tiny people; new view filters are independent of saved labels.",
+    "Review found cross-frame gestures, stale-save recovery, completion-before-save and focused-slider Space panning; fixes independently reproduced in fixtures.",
+    "Initial test runner via stdin could not spawn multiprocessing workers; reran stored runner with main guard, all88 passed.",
+    "Early browser checks hit transient stale DOM while rebuilding large ZIPs; incoming component state is consumed before rendering and unchanged ZIPs reused; full scenario then passed.",
+    "Initial WSL Playwright save_as was canceled by Windows Edge download path handling; native Windows CDP download folder then verified the downloaded PNG SHA."
+  ],
+  "no_new_training": true,
+  "new_remote_model_api_calls": 0,
+  "limits": [
+    "PPE model adaptation awaits user annotations; current client-person weight is unchanged and person-only.",
+    "Geometric head/torso crops and human PPE judgements are not new automatic detector results.",
+    "Display magnification does not restore missing image detail.",
+    "Continuous replay covers selected max_seconds only and is re-encoded separately from original.",
+    "Real replay measurement is for the14s1280x720 fixed client clip; it is not throughput or accuracy for other sites.",
+    "Task persistence/history and cross-camera identity are not added."
+  ],
+  "verification_commands": [
+    "python <project>/tests/test_client_labeler.py",
+    "<CPU-env>/bin/python -m unittest discover -s tests -p test_tracking.py",
+    "<CPU-env>/bin/python -m unittest discover -s tests -p test_object_review.py",
+    "<CPU-env>/bin/python -m unittest discover -s tests -p test_video_replay.py",
+    "python3 sitewatch/verify_provenance.py --output <report.json>",
+    "node --check web/client-labeler.js",
+    "<CPU-env>/bin/python -m pip check"
+  ],
+  "local_browser_evidence": [
+    ".runtime/v20/labeler-browser.json",
+    ".runtime/v20/demo-browser.json",
+    ".runtime/v20/source-browser.json",
+    ".runtime/v20/labels-before.json",
+    ".runtime/v20/labels-after.json"
+  ]
+}

@@ -6,3 +6,4 @@ numpy==2.2.6
 scipy==1.16.3
 lap==0.5.14
 pillow==11.3.0
+imageio-ffmpeg==0.6.0

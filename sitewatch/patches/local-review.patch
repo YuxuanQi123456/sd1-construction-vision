@@ -12,7 +12,7 @@
  import time
  from pathlib import Path
  
-@@ -14,18 +18,73 @@
+@@ -14,18 +18,75 @@
  from cv_pipeline.enhancement import enhance
  from cv_pipeline.fusion import LOG_PATH, fuse
  from cv_pipeline.motion import MotionDetector
@@ -23,6 +23,8 @@
 +from safety_summary import summary_export_lock
 +from tracking import TrackingError, augment_tracking
 +from tracking_ui import render_tracking_ui
++from object_review_ui import render_evidence_navigation, render_object_review
++from video_replay_ui import render_video_replay
  from utils.drawing import draw_overlay
  
  logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -91,7 +93,7 @@
  
  
  # ----- pipeline -------------------------------------------------------------
-@@ -62,11 +121,60 @@
+@@ -62,11 +123,62 @@
  
  
  # ----- sidebar --------------------------------------------------------------
@@ -145,7 +147,9 @@
 +    st.caption('固定样例采用实测配置；清晰素材按推荐场景运行，上传视频默认远景。')
 +    if demo_entry and demo_entry.get('client_media'):
 +        st.caption(f"甲方视频演示配置：远景输入 {demo_entry.get('recommended_confidence_threshold', 0.4):.2f} 阈值；按固定素材适配，不代表通用现场精度。")
-+    if profile == 'distant':
++    if model_id == 'client-person-demo':
++        st.caption('人员适配固定640输入；当前只检测人员，帽/衣可先人工复核，补充标注后再训练。')
++    elif profile == 'distant':
 +        st.caption('远景配置：防护装备1280输入，通用人员640输入；速度较慢。')
 +    if model_id != "sitewatch":
 +        st.caption('对照模型可能改善部分检出，仍有误报；当前是演示配置。')
@@ -157,7 +161,7 @@
  
  def render_violation_log() -> None:
      """Render the recent-violations table in the sidebar.
-@@ -74,7 +182,7 @@
+@@ -74,7 +186,7 @@
      Called at the *end* of the script so it reflects anything logged during this
      run (e.g. a freshly uploaded image), rather than the pre-processing state.
      """
@@ -166,7 +170,7 @@
          rows: list[list[str]] = []
          header: list[str] | None = None
          if LOG_PATH.exists():
-@@ -91,164 +199,318 @@
+@@ -91,164 +203,322 @@
                  height=300,
              )
          else:
@@ -434,9 +438,9 @@
 +with tab_review:
 +    st.markdown("### 影像识别与复核")
 +    st.caption("先选素材并开始识别，再查看检测框、复核局部区域，最后导出证据。")
-+    show_all = st.checkbox(f"显示全部{len(detector.names)}类目标标签（含设备与车辆）", value=False,
++    show_all = st.checkbox(f"显示模型全部 {len(detector.names)} 类目标标签", value=False,
 +                           key=f"show-all-{model_id}")
-+    st.caption('当前识别场景：' + ('远景视频 · 人员与防护装备' if profile == 'distant' else '照片 / 近景 · 人员与防护装备'))
++    st.caption('当前识别场景：' + ('甲方人员适配 · 仅人员' if model_id == 'client-person-demo' else '远景视频 · 人员与防护装备' if profile == 'distant' else '照片 / 近景 · 人员与防护装备'))
 +    display_mode = st.radio('画面显示', ['大图看检测结果', '左右对照'], horizontal=True, key='review-display')
 +    upload = None
 +    if source_choice == '自己上传':
@@ -519,23 +523,27 @@
 +            st.caption('统计来自本次实际结果；待复核框按NO-*类别计次，非人员去重统计。')
 +            if result["media_type"] == "video":
 +                st.caption("仅复核下列采样时间：" + ", ".join(f"{f['timestamp_seconds']:.2f}s" for f in result["frames"]))
++            frame_key = f"frame-{destination.name}"
++            render_evidence_navigation(destination, result, frame_key)
 +            selected = st.selectbox("查看采样画面", range(len(result["frames"])),
 +                                    format_func=lambda i: f"{result['frames'][i]['timestamp_seconds']:.2f}s / frame {result['frames'][i]['frame_index']}",
-+                                    key=f"frame-{destination.name}")
++                                    key=frame_key)
 +            frame = result["frames"][selected]
 +            input_path = destination / frame['input_file']
 +            shown_path = destination / frame["overlay_file" if show_all else "review_overlay_file"]
 +            source_width, source_height = frame['source_dimensions_wh']
 +            image_width, image_height = frame['detection_dimensions_wh']
 +            st.caption(f'原片画面 {source_width}×{source_height}；本次保存画面 {image_width}×{image_height}。页面按屏幕缩放显示。')
-+            if display_mode == '左右对照':
-+                left, right = st.columns(2)
-+                left.image(str(input_path), caption='本次输入画面', use_container_width=True)
-+                right.image(str(shown_path), caption=f'{MODEL_LABELS[model_id]} · 检测结果', use_container_width=True)
-+            else:
-+                st.image(str(shown_path), caption=f'{MODEL_LABELS[model_id]} · 大图检测结果', use_container_width=True)
-+                with st.expander('查看本次输入原图', expanded=False):
++            render_object_review(destination, result, selected, show_all=show_all)
++            with st.expander('查看完整检测框图与原图', expanded=display_mode == '左右对照'):
++                if display_mode == '左右对照':
++                    left, right = st.columns(2)
++                    left.image(str(input_path), caption='本次输入画面', use_container_width=True)
++                    right.image(str(shown_path), caption=f'{MODEL_LABELS[model_id]} · 检测结果', use_container_width=True)
++                else:
++                    st.image(str(shown_path), caption=f'{MODEL_LABELS[model_id]} · 完整检测框图', use_container_width=True)
 +                    st.image(str(input_path), caption='本次输入画面', use_container_width=True)
++            render_video_replay(destination, result, detector)
 +            downloads = st.columns(3)
 +            downloads[0].download_button('下载当前输入原图', input_path.read_bytes(), file_name=input_path.name,
 +                                        mime=media_mime(input_path), on_click='ignore', use_container_width=True)
@@ -839,6 +847,313 @@
  
  
  def _cli(path: str) -> None:
+--- /dev/null
++++ b/object_review.py
+@@ -0,0 +1,157 @@
++"""Original-pixel crops and independent human decisions for any detected object."""
++from contextlib import contextmanager
++from datetime import datetime, timezone
++import fcntl
++import hashlib
++import json
++import math
++from pathlib import Path
++import uuid
++
++import cv2
++
++
++PARTS = {'whole': '整个对象', 'head': '头部参考区域', 'torso': '上身参考区域'}
++TARGET_STATES = {'pending': '待人工复核', 'confirmed': '确认目标', 'dismissed': '排除误检', 'uncertain': '看不清'}
++PPE_STATES = {'pending': '尚未复核', 'visible': '可见已佩戴', 'suspected_missing': '疑似未佩戴', 'uncertain': '无法判断'}
++
++
++def _json(path):
++    return json.loads(Path(path).read_text(encoding='utf-8'))
++
++
++def _atomic(path, raw):
++    path = Path(path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    temp = path.with_name(path.name + '.' + uuid.uuid4().hex + '.tmp')
++    try:
++        temp.write_bytes(raw)
++        temp.replace(path)
++    finally:
++        temp.unlink(missing_ok=True)
++
++
++def _contained(root, name):
++    path = (root / name).resolve()
++    if not path.is_relative_to(root.resolve()) or not path.is_file():
++        raise ValueError('复核原文件不可用')
++    return path
++
++
++def crop_target(review_dir, frame_position, detection_index=None, manual_box=None, part='whole'):
++    """Crop original decoded pixels; person subregions are geometry references only."""
++    root = Path(review_dir)
++    record = _json(root / 'detections.json')
++    if type(frame_position) is not int or not 0 <= frame_position < len(record['frames']):
++        raise ValueError('帧位置无效')
++    frame = record['frames'][frame_position]
++    if detection_index is not None:
++        if type(detection_index) is not int or not 0 <= detection_index < len(frame['detections']):
++            raise ValueError('检测对象无效')
++        detection = frame['detections'][detection_index]
++        box = detection.get('bbox_xyxy', detection['bbox'])
++        origin = 'detector'
++    else:
++        detection = None
++        box = manual_box
++        origin = 'manual_region'
++    if not isinstance(box, (list, tuple)) or len(box) != 4 or not all(math.isfinite(float(x)) for x in box):
++        raise ValueError('请先选择对象或在原图上拖出复核区域')
++    x1, y1, x2, y2 = map(float, box)
++    dw, dh = frame['detection_dimensions_wh']
++    if not 0 <= x1 < x2 <= dw or not 0 <= y1 < y2 <= dh:
++        # Some detector boxes reach fractionally outside a frame; clip them.
++        x1, y1, x2, y2 = max(0., x1), max(0., y1), min(dw, x2), min(dh, y2)
++        if x2 <= x1 or y2 <= y1:
++            raise ValueError('复核区域超出画面')
++    target_box = [x1, y1, x2, y2]
++    if part not in PARTS:
++        raise ValueError('局部区域类型无效')
++    if part == 'head':
++        y2 = y1 + (y2 - y1) * .35
++    elif part == 'torso':
++        height = y2 - y1
++        y1, y2 = y1 + height * .2, y1 + height * .7
++    source = _contained(root, record['source_file'])
++    if hashlib.sha256(source.read_bytes()).hexdigest() != record['source_sha256']:
++        raise ValueError('原始影像校验失败，请保留证据并重新检测')
++    if record['media_type'] == 'image':
++        pixels = cv2.imread(str(source))
++    else:
++        cap = cv2.VideoCapture(str(source))
++        try:
++            cap.set(cv2.CAP_PROP_POS_FRAMES, frame['frame_index'])
++            ok, pixels = cap.read()
++            if not ok:
++                raise ValueError('不能读取原视频对应帧')
++        finally:
++            cap.release()
++    if pixels is None:
++        raise ValueError('原始画面不能解码')
++    sh, sw = pixels.shape[:2]
++    sx, sy = sw / dw, sh / dh
++    # Preserve integer pixel coverage, and never interpolate before cropping.
++    coords = [max(0, math.floor(x1 * sx)), max(0, math.floor(y1 * sy)),
++              min(sw, math.ceil(x2 * sx)), min(sh, math.ceil(y2 * sy))]
++    crop = pixels[coords[1]:coords[3], coords[0]:coords[2]].copy()
++    if not crop.size:
++        raise ValueError('裁剪区域为空')
++    ok, encoded = cv2.imencode('.png', crop)
++    if not ok:
++        raise ValueError('原图裁剪保存失败')
++    raw = encoded.tobytes()
++    identity = {'frame_position': frame_position, 'frame_index': frame['frame_index'],
++                'detection_index': detection_index, 'origin': origin, 'bbox_detection_xyxy': target_box}
++    target_id = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:20]
++    evidence = {**identity, 'target_id': target_id, 'timestamp_seconds': frame['timestamp_seconds'],
++                'part': part, 'part_label': PARTS[part], 'original_crop_xyxy': coords,
++                'original_frame_dimensions_wh': [sw, sh], 'crop_dimensions_wh': [crop.shape[1], crop.shape[0]],
++                'crop_sha256': hashlib.sha256(raw).hexdigest(), 'source_sha256': record['source_sha256'],
++                'detector_label': detection['class_name'] if detection else None,
++                'detector_confidence': detection['confidence'] if detection else None,
++                'subregion_notice': '头部/上身参考仅按人员框位置裁取，不是装备识别结论。'}
++    return raw, evidence
++
++
++@contextmanager
++def _locked(root):
++    path = root / 'object-reviews'
++    path.mkdir(exist_ok=True)
++    with (path / '.lock').open('a') as handle:
++        fcntl.flock(handle, fcntl.LOCK_EX)
++        try:
++            yield path
++        finally:
++            fcntl.flock(handle, fcntl.LOCK_UN)
++
++
++def load_object_reviews(review_dir):
++    path = Path(review_dir) / 'object-reviews/decisions.json'
++    return _json(path) if path.is_file() else {'schema': 'visual-object-review-v1', 'decisions': {}, 'history': []}
++
++
++def save_object_decision(review_dir, evidence, *, target_state, helmet_state, vest_state, note=''):
++    if target_state not in TARGET_STATES or helmet_state not in PPE_STATES or vest_state not in PPE_STATES:
++        raise ValueError('人工复核状态无效')
++    if not isinstance(note, str) or len(note) > 1000:
++        raise ValueError('备注最多1000字')
++    # Re-derive pixels from original evidence, rather than trusting a UI crop.
++    raw, current = crop_target(review_dir, evidence['frame_position'], evidence['detection_index'],
++                               evidence['bbox_detection_xyxy'] if evidence['origin'] == 'manual_region' else None,
++                               evidence['part'])
++    if current != evidence:
++        raise ValueError('原始证据已变化，请重新选择对象')
++    now = datetime.now(timezone.utc).isoformat()
++    record = {'at': now, 'evidence': current, 'target_state': target_state, 'helmet_state': helmet_state,
++              'vest_state': vest_state, 'note': note, 'judgement_source': 'human',
++              'notice': '人工复核独立记录，不修改检测器原框、类别或分数。'}
++    root = Path(review_dir)
++    with _locked(root) as folder:
++        payload = load_object_reviews(root)
++        key = current['target_id']
++        record['crop_file'] = f"object-reviews/crops/{key}-{current['part']}.png"
++        _atomic(root / record['crop_file'], raw)
++        payload['decisions'][key] = record
++        payload['history'].append(record)
++        _atomic(folder / 'decisions.json', json.dumps(payload, ensure_ascii=False, indent=2).encode())
++    return record
+--- /dev/null
++++ b/object_review_ui.py
+@@ -0,0 +1,144 @@
++"""Thin Streamlit view for local object crops, evidence navigation and human review."""
++import base64
++import hashlib
++import json
++from pathlib import Path
++
++import streamlit as st
++import streamlit.components.v1 as components
++
++from object_review import (PARTS, PPE_STATES, TARGET_STATES, crop_target,
++                           load_object_reviews, save_object_decision)
++from review_evidence import REVIEW_LABELS
++
++_scene = components.declare_component('visual_object_picker', path=str(Path(__file__).resolve().parents[1] / 'reviewer-component'))
++CN = {'person': '人员', 'Person': '人员', 'Hardhat': '安全帽', 'hardhat': '安全帽',
++      'Safety Vest': '反光衣', 'safety vest': '反光衣'}
++EVENT_TITLES = {'zone_enter': '进入区域', 'zone_stay': '持续停留', 'zone_leave': '离开区域'}
++
++
++def _jump(frame_key, position):
++    st.session_state[frame_key] = int(position)
++
++
++def evidence_index(review_dir, result):
++    """Index only frame references that resolve to this review's saved frames."""
++    root = Path(review_dir)
++    frames = result['frames']
++    entries = []
++    detection_sha = hashlib.sha256((root / 'detections.json').read_bytes()).hexdigest()
++    for filename, field, prefix in [('events.json', 'events', '区域事件')]:
++        path = root / filename
++        if not path.is_file():
++            continue
++        payload = json.loads(path.read_text(encoding='utf-8'))
++        if payload.get('source_detections_sha256') != detection_sha:
++            continue
++        for item in payload.get(field, []):
++            for ref in item.get('evidence', []):
++                pos = ref.get('frame_position')
++                if type(pos) is int and 0 <= pos < len(frames) and ref.get('frame_index') == frames[pos]['frame_index'] and ref.get('input_file') == frames[pos]['input_file']:
++                    entries.append({'label': f"{prefix} · {item.get('track_id', '')} · {EVENT_TITLES.get(item.get('type'), '候选事件')} · {frames[pos]['timestamp_seconds']:.2f}s", 'frame_position': pos})
++    # Summary outputs contain server-resolved evidence references already.
++    from safety_summary import load_summary
++    summary = load_summary(root)
++    success = root / 'safety-summary/latest-success.json'
++    if summary and (not success.is_file() or json.loads(success.read_text()).get('detections_sha256') != detection_sha):
++        summary = None
++    for finding in (summary or {}).get('findings', []):
++        for ref in finding.get('evidence', []):
++            pos = ref.get('frame_position')
++            if type(pos) is int and 0 <= pos < len(frames) and ref.get('frame_index') == frames[pos]['frame_index'] and ref.get('input_file') == frames[pos]['input_file']:
++                entries.append({'label': f"巡查疑点 · {finding.get('title', '')} · {frames[pos]['timestamp_seconds']:.2f}s", 'frame_position': pos})
++    return entries
++
++
++def render_evidence_navigation(review_dir, result, frame_key):
++    name = Path(review_dir).name
++    current = min(len(result['frames']) - 1, max(0, int(st.session_state.get(frame_key, 0))))
++    previous, following, text = st.columns([1, 1, 3])
++    previous.button('上一采样画面', key='sample-prev-' + name, disabled=current == 0,
++                    on_click=_jump, args=(frame_key, current - 1))
++    following.button('下一采样画面', key='sample-next-' + name, disabled=current == len(result['frames']) - 1,
++                     on_click=_jump, args=(frame_key, current + 1))
++    text.caption('点击疑点或区域事件，可跳转到其依据画面；时间基于本次视频采样。')
++    try:
++        entries = evidence_index(review_dir, result)
++    except (OSError, ValueError, TypeError, KeyError):
++        st.warning('部分疑点索引暂不可用，采样画面仍可逐张查看。')
++        entries = []
++    if entries:
++        choice = st.selectbox('疑点与事件关键帧', range(len(entries)), format_func=lambda i: entries[i]['label'], key='evidence-choice-' + name)
++        st.button('定位这条证据', key='evidence-go-' + name, on_click=_jump, args=(frame_key, entries[choice]['frame_position']))
++    else:
++        st.caption('暂无疑点或区域事件；下方可直接选采样时间并复核人员。')
++
++
++def render_object_review(review_dir, result, frame_position, *, show_all=False):
++    root = Path(review_dir)
++    frame = result['frames'][frame_position]
++    prefix = f'object-{root.name}-{frame_position}'
++    input_path = root / frame['input_file']
++    digest = hashlib.sha256(input_path.read_bytes()).hexdigest()
++    token = prefix + '-' + digest[:12]
++    choices = [i for i, d in enumerate(frame['detections']) if show_all or d['class_name'] in REVIEW_LABELS]
++    default = next((i for i in choices if frame['detections'][i].get('canonical_class') == 'person' or frame['detections'][i]['class_name'] in {'person', 'Person'}), choices[0] if choices else -1)
++    select_key = prefix + '-selected'
++    st.session_state.setdefault(select_key, default)
++    action = st.session_state.get(prefix + '-picker')
++    if isinstance(action, dict) and action.get('token') == token and action.get('nonce') != st.session_state.get(prefix + '-nonce'):
++        if action.get('kind') == 'detection' and action.get('index') in choices:
++            st.session_state[select_key] = action['index']
++        elif action.get('kind') == 'manual' and isinstance(action.get('bbox'), list) and len(action['bbox']) == 4:
++            st.session_state[select_key] = -1
++            st.session_state[prefix + '-manual'] = action['bbox']
++        st.session_state[prefix + '-nonce'] = action.get('nonce')
++    st.markdown('<span id="current-frame-review"></span>', unsafe_allow_html=True)
++    st.markdown('#### 原图局部复核')
++    left, right = st.columns([2, 1], gap='medium')
++    with left:
++        scene_boxes = [{'index': i, 'bbox': d.get('bbox_xyxy', d['bbox']), 'label': CN.get(d['class_name'], d['class_name'])}
++                       for i, d in enumerate(frame['detections']) if i in choices]
++        mime = 'image/png' if input_path.suffix == '.png' else 'image/jpeg'
++        _scene(image=f'data:{mime};base64,' + base64.b64encode(input_path.read_bytes()).decode(),
++                        boxes=scene_boxes, selected=st.session_state[select_key], token=token,
++                        key=prefix + '-picker', default=None)
++        with st.expander('检测对象列表（也可直接点左侧框）'):
++            st.selectbox('选择复核对象', [-1, *choices], key=select_key,
++                         format_func=lambda i: '手动框选区域' if i == -1 else f"框 {i + 1} · {CN.get(frame['detections'][i]['class_name'], frame['detections'][i]['class_name'])}")
++        st.caption(f"依据：{frame['timestamp_seconds']:.2f}s · 源帧 {frame['frame_index']}；右侧裁图来自未画框原始影像。")
++    selected = st.session_state[select_key]
++    with right:
++        part = st.selectbox('查看局部', list(PARTS), format_func=PARTS.get, key=prefix + '-part')
++        try:
++            raw, evidence = crop_target(root, frame_position, selected if selected >= 0 else None,
++                                         st.session_state.get(prefix + '-manual'), part)
++        except (OSError, ValueError, KeyError, TypeError) as exc:
++            st.info(str(exc))
++            return
++        width, height = evidence['crop_dimensions_wh']
++        zoom = st.slider('局部放大倍数', 1, 12, 4, key=prefix + '-zoom')
++        # CSS enlarges original pixels for inspection without manufacturing detail.
++        display_width = max(180, min(2400, width * zoom))
++        encoded = base64.b64encode(raw).decode()
++        components.html(f'<div style="height:285px;overflow:auto;background:#101b2c;border-radius:8px"><img alt="未画框原图局部" src="data:image/png;base64,{encoded}" style="width:{display_width}px;max-width:none;image-rendering:pixelated"></div>', height=295)
++        st.caption(f'原始裁图 {width}×{height} 像素；放大不增加原片细节。')
++        if part != 'whole':
++            st.caption('头部/上身按人员框位置截取，仅供定位；不表示已识别出帽子或反光衣。')
++        st.download_button('下载未画框局部原图', raw, file_name=f"visual-crop-{frame['frame_index']}-{evidence['target_id']}.png", mime='image/png', key=prefix + '-crop-download', on_click='ignore')
++        decision = load_object_reviews(root)['decisions'].get(evidence['target_id'], {})
++        form_key = prefix + '-' + evidence['target_id']
++        with st.form(form_key):
++            st.caption('以下为人工意见，独立于模型原结果。')
++            state = st.selectbox('目标复核', list(TARGET_STATES), index=list(TARGET_STATES).index(decision.get('target_state', 'pending')), format_func=TARGET_STATES.get)
++            helmet = st.selectbox('人工查看安全帽', list(PPE_STATES), index=list(PPE_STATES).index(decision.get('helmet_state', 'pending')), format_func=PPE_STATES.get)
++            vest = st.selectbox('人工查看反光衣', list(PPE_STATES), index=list(PPE_STATES).index(decision.get('vest_state', 'pending')), format_func=PPE_STATES.get)
++            note = st.text_area('复核备注', value=decision.get('note', ''), max_chars=1000)
++            submitted = st.form_submit_button('保存此对象人工复核')
++        if submitted:
++            try:
++                save_object_decision(root, evidence, target_state=state, helmet_state=helmet, vest_state=vest, note=note)
++            except Exception:
++                st.error('人工意见未保存，请重新选择对象后再保存。')
++            else:
++                st.success('此对象人工复核已保存，原模型结果保持。')
 --- /dev/null
 +++ b/region_review.py
 @@ -0,0 +1,162 @@
@@ -1394,7 +1709,7 @@
 +            "fresh_session": True, **metadata}
 --- /dev/null
 +++ b/review_evidence.py
-@@ -0,0 +1,201 @@
+@@ -0,0 +1,217 @@
 +"""Thin offline evidence adapter around SiteWatch's detector and drawing code."""
 +from __future__ import annotations
 +
@@ -1405,6 +1720,7 @@
 +import math
 +from pathlib import Path
 +import time
++import threading
 +import uuid
 +import zipfile
 +
@@ -1418,6 +1734,8 @@
 +              "hardhat", "no-hardhat", "safety vest", "no-safety vest", "no-mask", "gloves",
 +              "safety shoes", "goggles", "no-goggles", "no-gloves"}
 +REVIEW_LABELS = PPE_LABELS | {'Person', 'person', 'human'}
++_ZIP_LOCK = threading.RLock()
++_ZIP_STATES = {}
 +
 +
 +def source_provenance(digest):
@@ -1591,10 +1909,23 @@
 +    """One local download contains original bytes, all boxes, and all frames."""
 +    review_dir = Path(review_dir)
 +    target = review_dir / "evidence.zip"
-+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-+        for path in sorted(review_dir.rglob('*')):
-+            if path.is_file() and not path.is_symlink() and path != target:
-+                archive.write(path, str(path.relative_to(review_dir)))
++    with _ZIP_LOCK:
++        files = [p for p in sorted(review_dir.rglob('*')) if p.is_file() and not p.is_symlink()
++                 and p != target and not p.name.endswith('.tmp')]
++        state = tuple((str(p.relative_to(review_dir)), p.stat().st_size, p.stat().st_mtime_ns) for p in files)
++        key = str(review_dir.resolve())
++        cached = _ZIP_STATES.get(key)
++        if target.is_file() and cached == (state, target.stat().st_size, target.stat().st_mtime_ns):
++            return target
++        temporary = target.with_name('evidence-' + uuid.uuid4().hex + '.tmp')
++        try:
++            with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED) as archive:
++                for path in files:
++                    archive.write(path, str(path.relative_to(review_dir)))
++            temporary.replace(target)
++            _ZIP_STATES[key] = (state, target.stat().st_size, target.stat().st_mtime_ns)
++        finally:
++            temporary.unlink(missing_ok=True)
 +    return target
 --- /dev/null
 +++ b/safety_summary.py
@@ -2427,7 +2758,7 @@
 +    st.caption("完整证据包包含巡查总结、实际分析依据、生成记录和人工确认记录。")
 --- /dev/null
 +++ b/tracking.py
-@@ -0,0 +1,338 @@
+@@ -0,0 +1,354 @@
 +"""Open-source ByteTrack evidence and candidate zone events.
 +
 +This module consumes the detector's saved JSON. It never changes the original
@@ -2442,6 +2773,7 @@
 +import importlib.metadata
 +import json
 +from pathlib import Path
++import threading
 +from typing import Any
 +
 +import cv2
@@ -2451,6 +2783,7 @@
 +ZONES_SCHEMA = "sitewatch-zones-v1"
 +EVENTS_SCHEMA = "sitewatch-events-v1"
 +TRACKER_REPOSITORY = "https://github.com/FoundationVision/ByteTrack"
++_ID_ALLOCATION_LOCK = threading.RLock()
 +
 +
 +class TrackingError(ValueError):
@@ -2520,13 +2853,21 @@
 +            from ultralytics.engine.results import Boxes
 +        except ImportError as exc:
 +            raise TrackingError("轨迹功能需要 lap、Torch 和 Ultralytics 跟踪依赖") from exc
-+        self._BYTETracker = BYTETracker
++        class MonotonicBYTETracker(BYTETracker):
++            @staticmethod
++            def reset_id():
++                # The upstream constructor resets a process-global counter.
++                # Starting another Streamlit session must not reset live IDs.
++                pass
++
++        self._BYTETracker = MonotonicBYTETracker
 +        self._Boxes = Boxes
 +        self._torch = torch
 +        # Frame rate is the evidence sampling rate, not a claim about source FPS.
 +        self._frame_rate = max(1, round(1.0 / sample_seconds))
-+        self._trackers = {group: BYTETracker(_args(), frame_rate=self._frame_rate)
-+                          for group in ("person", "equipment")}
++        with _ID_ALLOCATION_LOCK:
++            self._trackers = {group: self._BYTETracker(_args(), frame_rate=self._frame_rate)
++                              for group in ("person", "equipment")}
 +        try:
 +            version = importlib.metadata.version("ultralytics")
 +        except importlib.metadata.PackageNotFoundError:
@@ -2540,9 +2881,14 @@
 +            "sample_seconds": sample_seconds,
 +            "frame_rate_basis": "saved evidence sample interval",
 +            "track_buffer_samples": 15,
++            "id_allocation": "process-wide monotonic IDs; new sessions do not reset active trackers",
 +        }
 +
 +    def update(self, detections: list[dict[str, Any]], dimensions_wh: list[int]) -> list[dict[str, Any]]:
++        with _ID_ALLOCATION_LOCK:
++            return self._update(detections, dimensions_wh)
++
++    def _update(self, detections: list[dict[str, Any]], dimensions_wh: list[int]) -> list[dict[str, Any]]:
 +        width, height = dimensions_wh
 +        grouped: dict[str, list[tuple[int, dict[str, Any]]]] = {"person": [], "equipment": []}
 +        for index, detection in enumerate(detections):
@@ -2751,6 +3097,7 @@
 +    payload = {"schema": ZONES_SCHEMA, "updated_at": _utc_now(), "zones": [zone]}
 +    _atomic_json(review_dir / "zones.json", payload)
 +    event_payload = {"schema": EVENTS_SCHEMA, "updated_at": _utc_now(), "zone_id": zone["id"],
++                     "source_detections_sha256": tracking['source_detections_sha256'],
 +                     "events": events, "notice": "事件仅为算法候选，需人工确认。"}
 +    _atomic_json(review_dir / "events.json", event_payload)
 +    tracking["zones"] = [zone]
@@ -2900,3 +3247,210 @@
  
      # Proximity-violation lines
      for pv in proximity_violations:
+--- /dev/null
++++ b/video_replay.py
+@@ -0,0 +1,169 @@
++"""Streaming, real per-frame inference and H.264 replay; no annotation interpolation."""
++from dataclasses import asdict
++from datetime import datetime, timezone
++import hashlib
++import json
++import math
++from pathlib import Path
++import shutil
++import subprocess
++import tempfile
++import time
++
++import cv2
++
++from cv_pipeline.enhancement import enhance
++from review_evidence import resize_long_edge
++from tracking import ByteTrackEvidence
++
++
++def _sha(path):
++    h = hashlib.sha256()
++    with Path(path).open('rb') as stream:
++        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
++            h.update(chunk)
++    return h.hexdigest()
++
++
++def existing_replay(review_dir):
++    root = Path(review_dir)
++    manifest = root / 'video-replay/replay.json'
++    if not manifest.is_file():
++        return None
++    item = json.loads(manifest.read_text())
++    if item.get('status') != 'complete' or item.get('detections_sha256') != _sha(root / 'detections.json'):
++        return None
++    original = json.loads((root / 'detections.json').read_text())
++    source = (root / original['source_file']).resolve()
++    if (not source.is_relative_to(root.resolve()) or not source.is_file()
++            or item.get('source_sha256') != original['source_sha256']
++            or _sha(source) != original['source_sha256']):
++        return None
++    for field, sha_field in [('video_file', 'video_sha256'), ('frames_file', 'frames_sha256')]:
++        path = (root / item[field]).resolve()
++        if not path.is_relative_to(root.resolve()) or not path.is_file() or _sha(path) != item[sha_field]:
++            return None
++    return item
++
++
++def build_video_replay(review_dir, detector, *, progress=None):
++    """Generate every frame in the sampled review's analysis range, sequentially."""
++    from imageio_ffmpeg import get_ffmpeg_exe
++
++    root = Path(review_dir).resolve()
++    raw_record = (root / 'detections.json').read_bytes()
++    record = json.loads(raw_record)
++    if record.get('status') != 'complete' or record.get('media_type') != 'video':
++        raise ValueError('连续回放需要已完成检测的视频任务')
++    for key in ['id', 'sha256', 'inference_imgsz', 'profile']:
++        if detector.provenance.get(key) != record['model'].get(key):
++            raise ValueError('当前模型与本次检测不一致，请重新检测后生成回放')
++    if detector.conf_threshold != record['settings']['confidence']:
++        raise ValueError('当前阈值与本次检测不一致')
++    ready = existing_replay(root)
++    if ready:
++        return ready
++    source = (root / record['source_file']).resolve()
++    if not source.is_relative_to(root) or _sha(source) != record['source_sha256']:
++        raise ValueError('回放原视频校验失败')
++    cap = cv2.VideoCapture(str(source))
++    if not cap.isOpened():
++        cap.release()
++        raise ValueError('不能解码回放原视频')
++    fps = float(cap.get(cv2.CAP_PROP_FPS))
++    count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
++    width, height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
++    if not math.isfinite(fps) or fps <= 0 or count <= 0 or width <= 0 or height <= 0:
++        cap.release()
++        raise ValueError('回放视频帧率或尺寸无效')
++    limit = min(count, math.ceil(record['settings']['max_seconds'] * fps))
++    tracker = ByteTrackEvidence(sample_seconds=1 / fps)
++    started = time.perf_counter()
++    output = root / 'video-replay'
++    # The temporary folder is outside this evidence package, so partial videos
++    # cannot be exported as a finished replay by a parallel page session.
++    with tempfile.TemporaryDirectory(prefix='.visual-replay-', dir=root.parent) as temporary:
++        stage = Path(temporary)
++        movie, frames_path = stage / 'replay.mp4', stage / 'frames.jsonl'
++        command = [get_ffmpeg_exe(), '-hide_banner', '-loglevel', 'error', '-y',
++                   '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{width}x{height}', '-r', str(fps),
++                   '-i', 'pipe:0', '-an', '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2',
++                   '-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'zerolatency', '-crf', '18', '-threads', '2',
++                   '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(movie)]
++        processed = 0
++        try:
++            with (stage / 'encoder.log').open('wb') as log, frames_path.open('w', encoding='utf-8') as evidence:
++                encoder = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=log)
++                try:
++                    for index in range(limit):
++                        ok, frame = cap.read()
++                        if not ok:
++                            raise ValueError(f'回放在源帧 {index} 提前解码结束，需要 {limit} 帧')
++                        image = frame if record['settings']['preserve_resolution'] else resize_long_edge(frame)
++                        image = enhance(image) if record['settings']['image_enhancement'] else image
++                        detections, _, inference_ms = detector.detect_frame(image)
++                        ih, iw = image.shape[:2]
++                        values = [asdict(item) for item in detections]
++                        tracks = tracker.update(values, [iw, ih])
++                        by_detection = {item['detection_index']: item['track_id'] for item in tracks}
++                        display = frame.copy()
++                        sx, sy = width / iw, height / ih
++                        for number, detection in enumerate(detections):
++                            x1, y1, x2, y2 = detection.bbox
++                            box = (round(x1 * sx), round(y1 * sy), round(x2 * sx), round(y2 * sy))
++                            color = (60, 215, 80) if detection.category == 'worker' else (255, 195, 40)
++                            cv2.rectangle(display, box[:2], box[2:], color, 1)
++                            # Tiny targets stay unobscured; their complete scores
++                            # and IDs remain in the per-frame JSONL evidence.
++                            if box[2] - box[0] >= 35 and box[3] - box[1] >= 45:
++                                label = by_detection.get(number, detection.class_name) + f' {detection.confidence:.2f}'
++                                cv2.putText(display, label, (box[0], max(12, box[1] - 4)), cv2.FONT_HERSHEY_SIMPLEX, .42, color, 1, cv2.LINE_AA)
++                        cv2.putText(display, f'Analyzed replay | {index/fps:.2f}s | frame {index}', (12, 24), cv2.FONT_HERSHEY_SIMPLEX, .55, (0, 0, 0), 3, cv2.LINE_AA)
++                        cv2.putText(display, f'Analyzed replay | {index/fps:.2f}s | frame {index}', (12, 24), cv2.FONT_HERSHEY_SIMPLEX, .55, (255, 255, 255), 1, cv2.LINE_AA)
++                        evidence.write(json.dumps({'frame_index': index, 'timestamp_seconds': index / fps,
++                                                   'detection_dimensions_wh': [iw, ih], 'detections': values,
++                                                   'tracks': tracks, 'inference_ms': inference_ms}, ensure_ascii=False) + '\n')
++                        encoder.stdin.write(display.tobytes())
++                        processed += 1
++                        if progress and (index % max(1, round(fps)) == 0 or processed == limit):
++                            progress(processed, limit)
++                    encoder.stdin.close()
++                    if encoder.wait(timeout=30) != 0:
++                        raise ValueError('回放视频编码失败：' + (stage / 'encoder.log').read_text()[-400:])
++                finally:
++                    if encoder.poll() is None:
++                        encoder.kill()
++                        encoder.wait()
++                    if encoder.stdin and not encoder.stdin.closed:
++                        encoder.stdin.close()
++            probe = cv2.VideoCapture(str(movie))
++            try:
++                if not probe.isOpened() or int(probe.get(cv2.CAP_PROP_FRAME_COUNT)) != processed:
++                    raise ValueError('回放成片帧数校验失败')
++            finally:
++                probe.release()
++            info = {'schema': 'visual-video-replay-v1', 'status': 'complete',
++                    'at': datetime.now(timezone.utc).isoformat(), 'model': record['model'],
++                    'settings': record['settings'], 'source_sha256': record['source_sha256'],
++                    'detections_sha256': hashlib.sha256(raw_record).hexdigest(),
++                    'video_file': 'video-replay/replay.mp4', 'video_sha256': _sha(movie),
++                    'frames_file': 'video-replay/frames.jsonl', 'frames_sha256': _sha(frames_path),
++                    'decoded_frame_count': processed, 'fps': fps, 'source_dimensions_wh': [width, height],
++                    'output_dimensions_wh': [width + width % 2, height + height % 2],
++                    'duration_seconds': processed / fps, 'elapsed_seconds': time.perf_counter() - started,
++                    'timestamp_basis': 'decoded frame index / container FPS', 'audio_in_replay': False,
++                    'notice': '本地逐帧真实推理的已分析回放；轨迹ID仅在此回放内有效。MP4叠框另行编码，原视频保持原字节。'}
++            (stage / 'replay.json').write_text(json.dumps(info, ensure_ascii=False, indent=2))
++            if _sha(root / 'detections.json') != info['detections_sha256'] or _sha(source) != info['source_sha256']:
++                raise ValueError('处理期间原证据变化，未发布回放')
++            # Keep an existing valid output intact. Another session may have
++            # completed it while this session was generating the same task.
++            if output.exists():
++                ready = existing_replay(root)
++                if ready:
++                    return ready
++                raise ValueError('已存在不完整回放目录，请保留记录并重新建立检测任务')
++            stage.replace(output)
++            return info
++        finally:
++            cap.release()
+--- /dev/null
++++ b/video_replay_ui.py
+@@ -0,0 +1,32 @@
++"""Explicit local replay generation; no remote model calls."""
++from pathlib import Path
++import logging
++import streamlit as st
++
++from video_replay import build_video_replay, existing_replay
++
++
++def render_video_replay(review_dir, result, detector):
++    if result.get('media_type') != 'video':
++        return
++    root = Path(review_dir)
++    with st.expander('连续叠框视频回放', expanded=False):
++        st.caption('逐帧使用本次本地模型生成可播放MP4。首次生成需要等待；播放、放大和人工保存均不调用外部模型。')
++        replay = None
++        try:
++            replay = existing_replay(root)
++            if st.button('生成连续叠框回放' if replay is None else '检查已有连续回放', key='video-replay-' + root.name):
++                bar = st.progress(0., text='开始本地逐帧推理…')
++                def update(done, total):
++                    bar.progress(done / total, text=f'逐帧推理 {done}/{total} 帧')
++                try:
++                    replay = build_video_replay(root, detector, progress=update)
++                finally:
++                    bar.empty()
++        except Exception:
++            logging.getLogger(__name__).exception('Continuous replay generation failed')
++            st.error('连续回放尚未生成成功，已有采样检测仍可查看。请重试，或重新识别后建立新任务。')
++        if replay:
++            st.video(str(root / replay['video_file']))
++            st.caption(f"已分析回放：{replay['decoded_frame_count']} 帧 · {replay['fps']:.2f} FPS · {replay['duration_seconds']:.2f} 秒。不同于实时摄像头。")
++            st.download_button('下载连续叠框视频', (root / replay['video_file']).read_bytes(), file_name='visual-analyzed-replay.mp4', mime='video/mp4', key='replay-download-' + root.name, on_click='ignore')

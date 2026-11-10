@@ -1,0 +1,18 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><style>
+body{margin:0;font:14px system-ui;color:#183650}#wrap{overflow:auto;height:480px;background:#132137;border-radius:8px}canvas{display:block;touch-action:none;max-width:100%;cursor:crosshair}p{margin:5px 0;color:#64748b}label{margin-right:16px}
+</style><p><label><input id="manual" type="checkbox">手动框选复核区域</label><label><input id="labels" type="checkbox">显示框名</label></p><div id="wrap"><canvas id="scene"></canvas></div><p>点击检测框查看右侧原图；漏检对象可勾选“手动框选”。边框无填充，不遮挡人员。</p>
+<script>
+const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d');let args=null,img=new Image(),drag=null;
+const send=(type,extra={})=>parent.postMessage({isStreamlitMessage:true,type,...extra},'*');
+function height(){send('streamlit:setFrameHeight',{height:545});}
+function draw(){if(!args||!img.naturalWidth)return;canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;ctx.drawImage(img,0,0);const line=img.naturalWidth/Math.max(1,canvas.clientWidth);ctx.lineWidth=line;
+for(const b of args.boxes){const[x1,y1,x2,y2]=b.bbox;ctx.strokeStyle=b.index===args.selected?'#fbbf24':'#22d3ee';ctx.strokeRect(x1,y1,x2-x1,y2-y1);if(document.getElementById('labels').checked){ctx.font=`${12*line}px system-ui`;ctx.fillStyle='#fff';ctx.fillText(b.label,x1,Math.max(12*line,y1-3*line));}}
+if(drag){ctx.strokeStyle='#fff';ctx.setLineDash([6,4]);ctx.strokeRect(drag.a.x,drag.a.y,drag.b.x-drag.a.x,drag.b.y-drag.a.y);ctx.setLineDash([]);}}
+function point(e){const r=canvas.getBoundingClientRect();return{x:Math.max(0,Math.min(canvas.width,(e.clientX-r.left)*canvas.width/r.width)),y:Math.max(0,Math.min(canvas.height,(e.clientY-r.top)*canvas.height/r.height))};}
+function select(value){send('streamlit:setComponentValue',{value:{...value,token:args.token,nonce:Date.now()},dataType:'json'});}
+window.addEventListener('message',e=>{if(e.source!==parent||e.data.type!=='streamlit:render')return;args=e.data.args;img.onload=()=>{draw();height();};if(img.src!==args.image)img.src=args.image;else draw();});
+canvas.onpointerdown=e=>{if(!args)return;canvas.setPointerCapture(e.pointerId);const p=point(e);if(document.getElementById('manual').checked){drag={a:p,b:p};draw();return;}const hits=args.boxes.filter(b=>p.x>=b.bbox[0]&&p.x<=b.bbox[2]&&p.y>=b.bbox[1]&&p.y<=b.bbox[3]).sort((a,b)=>(a.bbox[2]-a.bbox[0])*(a.bbox[3]-a.bbox[1])-(b.bbox[2]-b.bbox[0])*(b.bbox[3]-b.bbox[1]));if(hits.length)select({kind:'detection',index:hits[0].index});};
+canvas.onpointermove=e=>{if(drag){drag.b=point(e);draw();}};canvas.onpointerup=e=>{if(!drag)return;const a=drag.a,b=point(e);drag=null;draw();if(Math.abs(b.x-a.x)>=1&&Math.abs(b.y-a.y)>=1)select({kind:'manual',bbox:[Math.min(a.x,b.x),Math.min(a.y,b.y),Math.max(a.x,b.x),Math.max(a.y,b.y)]});};
+canvas.onpointercancel=()=>{drag=null;draw();};document.getElementById('labels').onchange=draw;
+send('streamlit:componentReady',{apiVersion:1});height();
+</script></html>
