@@ -1,0 +1,1048 @@
+{
+  "task": "V18_CLIENT_VIDEO_INTEGRATION",
+  "date": "2026-11-10",
+  "passed": true,
+  "scope": "Three client-provided videos integrated as local-only demo media; fixed-material config selection and CPU evaluation. Original bytes are not committed or uploaded.",
+  "files": [
+    {
+      "file": "室外工人极小.mp4",
+      "bytes": 1724437,
+      "sha256": "b3459258f991dff18c0e4ddffd967cca18034d41de49a72e3be9f236da1a923e",
+      "width": 1280,
+      "height": 720,
+      "fps": 15.0,
+      "frame_count": 216,
+      "duration_seconds": 14.4
+    },
+    {
+      "file": "山路货车.mp4",
+      "bytes": 755438,
+      "sha256": "36c8b8806b126e96531d30096635ac7c429f066f03d627b993ae35734797b057",
+      "width": 1280,
+      "height": 720,
+      "fps": 15.0,
+      "frame_count": 275,
+      "duration_seconds": 18.333333333333332
+    },
+    {
+      "file": "脚手架工人施工.mp4",
+      "bytes": 871462,
+      "sha256": "22681c29b3b6c88245fea330af832feef01ea09960e37456ada6766013db0555",
+      "width": 1280,
+      "height": 720,
+      "fps": 15.0,
+      "frame_count": 153,
+      "duration_seconds": 10.2
+    }
+  ],
+  "manifest_entries": [
+    "client-outdoor-tiny",
+    "client-truck-road",
+    "client-scaffold-worker"
+  ],
+  "default_config": {
+    "model": "sitewatch",
+    "profile": "distant",
+    "confidence_threshold": 0.3,
+    "sample_seconds": 1.0,
+    "max_seconds_by_file": {
+      "室外工人极小.mp4": 14,
+      "山路货车.mp4": 18,
+      "脚手架工人施工.mp4": 10
+    }
+  },
+  "threshold_comparison": [
+    {
+      "file": "室外工人极小.mp4",
+      "threshold": 0.25,
+      "counts": {
+        "dump truck": 49,
+        "Person": 59,
+        "truck and trailer": 3,
+        "Excavator": 41,
+        "Safety Vest": 16,
+        "Hardhat": 8,
+        "vehicle": 7,
+        "SUV": 1
+      },
+      "frames": [
+        {
+          "dump truck": 4,
+          "Person": 4,
+          "truck and trailer": 1,
+          "Excavator": 2,
+          "Safety Vest": 1
+        },
+        {
+          "dump truck": 3,
+          "Person": 2,
+          "Excavator": 3,
+          "Safety Vest": 2,
+          "Hardhat": 1,
+          "truck and trailer": 2
+        },
+        {
+          "dump truck": 3,
+          "Excavator": 3,
+          "Person": 4,
+          "Safety Vest": 1,
+          "Hardhat": 2
+        },
+        {
+          "Excavator": 2,
+          "dump truck": 2,
+          "Person": 2,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "Person": 5,
+          "dump truck": 2,
+          "Excavator": 3,
+          "Safety Vest": 1,
+          "vehicle": 1
+        },
+        {
+          "dump truck": 4,
+          "Person": 4,
+          "Excavator": 3,
+          "Safety Vest": 1,
+          "vehicle": 1
+        },
+        {
+          "Person": 4,
+          "Excavator": 3,
+          "dump truck": 4,
+          "Safety Vest": 1,
+          "vehicle": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 4,
+          "dump truck": 4,
+          "Safety Vest": 1,
+          "vehicle": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 4,
+          "dump truck": 4,
+          "Safety Vest": 1,
+          "vehicle": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 3,
+          "dump truck": 3,
+          "Safety Vest": 1,
+          "SUV": 1
+        },
+        {
+          "Person": 4,
+          "Excavator": 3,
+          "dump truck": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 4,
+          "dump truck": 3,
+          "Safety Vest": 1,
+          "vehicle": 1,
+          "Hardhat": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 5,
+          "dump truck": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1,
+          "vehicle": 1
+        },
+        {
+          "dump truck": 3,
+          "Person": 4,
+          "Safety Vest": 1,
+          "Excavator": 2,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 4,
+          "Person": 6,
+          "Safety Vest": 1,
+          "Excavator": 2
+        }
+      ]
+    },
+    {
+      "file": "山路货车.mp4",
+      "threshold": 0.25,
+      "counts": {
+        "dump truck": 36,
+        "Safety Vest": 18,
+        "Person": 51,
+        "Hardhat": 18
+      },
+      "frames": [
+        {},
+        {
+          "dump truck": 2,
+          "Safety Vest": 1,
+          "Person": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 2,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "Person": 3,
+          "Safety Vest": 1,
+          "dump truck": 2,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "Person": 3,
+          "dump truck": 2,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Safety Vest": 1,
+          "Person": 3,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        }
+      ]
+    },
+    {
+      "file": "脚手架工人施工.mp4",
+      "threshold": 0.25,
+      "counts": {
+        "Safety Vest": 31,
+        "Hardhat": 18,
+        "Person": 30,
+        "Excavator": 11,
+        "person": 4
+      },
+      "frames": [
+        {
+          "Safety Vest": 2,
+          "Hardhat": 2,
+          "Person": 3,
+          "Excavator": 1,
+          "person": 1
+        },
+        {
+          "Safety Vest": 2,
+          "Person": 4,
+          "Hardhat": 2,
+          "Excavator": 1,
+          "person": 1
+        },
+        {
+          "Safety Vest": 3,
+          "Hardhat": 1,
+          "Excavator": 1,
+          "Person": 3
+        },
+        {
+          "Safety Vest": 4,
+          "Hardhat": 1,
+          "Excavator": 1,
+          "Person": 2,
+          "person": 1
+        },
+        {
+          "Excavator": 1,
+          "Safety Vest": 3,
+          "Hardhat": 1,
+          "Person": 3,
+          "person": 1
+        },
+        {
+          "Excavator": 1,
+          "Safety Vest": 4,
+          "Hardhat": 3,
+          "Person": 3
+        },
+        {
+          "Excavator": 1,
+          "Person": 3,
+          "Hardhat": 3,
+          "Safety Vest": 3
+        },
+        {
+          "Excavator": 1,
+          "Hardhat": 1,
+          "Person": 2,
+          "Safety Vest": 3
+        },
+        {
+          "Excavator": 1,
+          "Hardhat": 1,
+          "Person": 2,
+          "Safety Vest": 2
+        },
+        {
+          "Excavator": 1,
+          "Hardhat": 1,
+          "Person": 2,
+          "Safety Vest": 2
+        },
+        {
+          "Safety Vest": 3,
+          "Hardhat": 2,
+          "Excavator": 1,
+          "Person": 3
+        }
+      ]
+    },
+    {
+      "file": "室外工人极小.mp4",
+      "threshold": 0.3,
+      "counts": {
+        "dump truck": 42,
+        "Person": 45,
+        "truck and trailer": 1,
+        "Excavator": 39,
+        "Safety Vest": 16,
+        "Hardhat": 5,
+        "vehicle": 4
+      },
+      "frames": [
+        {
+          "dump truck": 3,
+          "Person": 4,
+          "truck and trailer": 1,
+          "Excavator": 2,
+          "Safety Vest": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 2,
+          "Excavator": 2,
+          "Safety Vest": 2,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 3,
+          "Excavator": 2,
+          "Person": 2,
+          "Safety Vest": 1,
+          "Hardhat": 2
+        },
+        {
+          "Excavator": 2,
+          "dump truck": 2,
+          "Person": 2,
+          "Safety Vest": 1
+        },
+        {
+          "Person": 1,
+          "dump truck": 2,
+          "Excavator": 3,
+          "Safety Vest": 1,
+          "vehicle": 1
+        },
+        {
+          "dump truck": 4,
+          "Person": 3,
+          "Excavator": 3,
+          "Safety Vest": 1
+        },
+        {
+          "Person": 3,
+          "Excavator": 3,
+          "dump truck": 4,
+          "Safety Vest": 1,
+          "vehicle": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 4,
+          "dump truck": 4,
+          "Safety Vest": 1,
+          "vehicle": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 3,
+          "dump truck": 3,
+          "Safety Vest": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 3,
+          "dump truck": 3,
+          "Safety Vest": 1
+        },
+        {
+          "Person": 3,
+          "Excavator": 3,
+          "dump truck": 2,
+          "Safety Vest": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 3,
+          "dump truck": 2,
+          "Safety Vest": 1,
+          "vehicle": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 4,
+          "dump truck": 2,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 3,
+          "Person": 4,
+          "Safety Vest": 1,
+          "Excavator": 2,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 3,
+          "Person": 4,
+          "Safety Vest": 1,
+          "Excavator": 2
+        }
+      ]
+    },
+    {
+      "file": "山路货车.mp4",
+      "threshold": 0.3,
+      "counts": {
+        "dump truck": 36,
+        "Safety Vest": 18,
+        "Person": 51,
+        "Hardhat": 16
+      },
+      "frames": [
+        {},
+        {
+          "dump truck": 2,
+          "Safety Vest": 1,
+          "Person": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 2,
+          "Safety Vest": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "Person": 3,
+          "Safety Vest": 1,
+          "dump truck": 2,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "Person": 3,
+          "dump truck": 2,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Safety Vest": 1,
+          "Person": 3,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        }
+      ]
+    },
+    {
+      "file": "脚手架工人施工.mp4",
+      "threshold": 0.3,
+      "counts": {
+        "Safety Vest": 28,
+        "Hardhat": 17,
+        "Person": 25,
+        "Excavator": 10,
+        "person": 2
+      },
+      "frames": [
+        {
+          "Safety Vest": 2,
+          "Hardhat": 2,
+          "Person": 3
+        },
+        {
+          "Safety Vest": 2,
+          "Person": 3,
+          "Hardhat": 2,
+          "Excavator": 1,
+          "person": 1
+        },
+        {
+          "Safety Vest": 2,
+          "Hardhat": 1,
+          "Excavator": 1,
+          "Person": 3
+        },
+        {
+          "Safety Vest": 4,
+          "Hardhat": 1,
+          "Excavator": 1,
+          "Person": 2,
+          "person": 1
+        },
+        {
+          "Excavator": 1,
+          "Safety Vest": 3,
+          "Hardhat": 1,
+          "Person": 2
+        },
+        {
+          "Excavator": 1,
+          "Safety Vest": 4,
+          "Hardhat": 2,
+          "Person": 3
+        },
+        {
+          "Excavator": 1,
+          "Person": 3,
+          "Hardhat": 3,
+          "Safety Vest": 3
+        },
+        {
+          "Excavator": 1,
+          "Hardhat": 1,
+          "Person": 2,
+          "Safety Vest": 2
+        },
+        {
+          "Excavator": 1,
+          "Hardhat": 1,
+          "Person": 1,
+          "Safety Vest": 2
+        },
+        {
+          "Excavator": 1,
+          "Hardhat": 1,
+          "Person": 2,
+          "Safety Vest": 2
+        },
+        {
+          "Safety Vest": 2,
+          "Hardhat": 2,
+          "Excavator": 1,
+          "Person": 1
+        }
+      ]
+    },
+    {
+      "file": "室外工人极小.mp4",
+      "threshold": 0.4,
+      "counts": {
+        "dump truck": 32,
+        "Person": 35,
+        "truck and trailer": 1,
+        "Excavator": 36,
+        "Safety Vest": 16,
+        "Hardhat": 2
+      },
+      "frames": [
+        {
+          "dump truck": 1,
+          "Person": 3,
+          "truck and trailer": 1,
+          "Excavator": 2,
+          "Safety Vest": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 2,
+          "Excavator": 2,
+          "Safety Vest": 2,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Excavator": 1,
+          "Person": 2,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "Excavator": 2,
+          "dump truck": 2,
+          "Person": 1,
+          "Safety Vest": 1
+        },
+        {
+          "Person": 1,
+          "dump truck": 2,
+          "Excavator": 2,
+          "Safety Vest": 1
+        },
+        {
+          "dump truck": 3,
+          "Person": 1,
+          "Excavator": 3,
+          "Safety Vest": 1
+        },
+        {
+          "Person": 1,
+          "Excavator": 3,
+          "dump truck": 3,
+          "Safety Vest": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 3,
+          "dump truck": 3,
+          "Safety Vest": 1
+        },
+        {
+          "Excavator": 2,
+          "Person": 3,
+          "dump truck": 2,
+          "Safety Vest": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 3,
+          "dump truck": 2,
+          "Safety Vest": 1
+        },
+        {
+          "Person": 3,
+          "Excavator": 3,
+          "dump truck": 2,
+          "Safety Vest": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 3,
+          "dump truck": 2,
+          "Safety Vest": 1
+        },
+        {
+          "Excavator": 3,
+          "Person": 3,
+          "dump truck": 2,
+          "Safety Vest": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Excavator": 2
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Excavator": 2
+        }
+      ]
+    },
+    {
+      "file": "山路货车.mp4",
+      "threshold": 0.4,
+      "counts": {
+        "dump truck": 30,
+        "Safety Vest": 18,
+        "Person": 48,
+        "Hardhat": 15
+      },
+      "frames": [
+        {},
+        {
+          "dump truck": 2,
+          "Safety Vest": 1,
+          "Person": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 1,
+          "Safety Vest": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 2,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "Person": 3,
+          "Safety Vest": 1,
+          "dump truck": 2,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "Person": 3,
+          "dump truck": 2,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 1,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 1,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 1,
+          "Safety Vest": 1,
+          "Person": 3
+        },
+        {
+          "dump truck": 1,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 2,
+          "Person": 2,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 1,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        },
+        {
+          "dump truck": 1,
+          "Person": 3,
+          "Safety Vest": 1,
+          "Hardhat": 1
+        }
+      ]
+    },
+    {
+      "file": "脚手架工人施工.mp4",
+      "threshold": 0.4,
+      "counts": {
+        "Safety Vest": 21,
+        "Hardhat": 15,
+        "Person": 17,
+        "Excavator": 10
+      },
+      "frames": [
+        {
+          "Safety Vest": 2,
+          "Hardhat": 2,
+          "Person": 1
+        },
+        {
+          "Safety Vest": 2,
+          "Person": 2,
+          "Hardhat": 2,
+          "Excavator": 1
+        },
+        {
+          "Safety Vest": 2,
+          "Hardhat": 1,
+          "Excavator": 1,
+          "Person": 2
+        },
+        {
+          "Safety Vest": 3,
+          "Hardhat": 1,
+          "Excavator": 1,
+          "Person": 2
+        },
+        {
+          "Excavator": 1,
+          "Safety Vest": 3,
+          "Hardhat": 1,
+          "Person": 2
+        },
+        {
+          "Excavator": 1,
+          "Safety Vest": 2,
+          "Hardhat": 1,
+          "Person": 2
+        },
+        {
+          "Excavator": 1,
+          "Person": 2,
+          "Hardhat": 2,
+          "Safety Vest": 2
+        },
+        {
+          "Excavator": 1,
+          "Hardhat": 1,
+          "Person": 1,
+          "Safety Vest": 1
+        },
+        {
+          "Excavator": 1,
+          "Hardhat": 1,
+          "Person": 1,
+          "Safety Vest": 1
+        },
+        {
+          "Excavator": 1,
+          "Hardhat": 1,
+          "Person": 1,
+          "Safety Vest": 1
+        },
+        {
+          "Safety Vest": 2,
+          "Hardhat": 2,
+          "Excavator": 1,
+          "Person": 1
+        }
+      ]
+    }
+  ],
+  "real_review_summary": [
+    {
+      "file": "室外工人极小.mp4",
+      "review_dir": "/mnt/e/workspace/云枢/sd1-construction-vision/.runtime/client-video-audit/reviews/室外工人极小",
+      "frames": 15,
+      "counts": {
+        "dump truck": 42,
+        "Person": 45,
+        "truck and trailer": 1,
+        "Excavator": 39,
+        "Safety Vest": 16,
+        "Hardhat": 5,
+        "vehicle": 4
+      }
+    },
+    {
+      "file": "山路货车.mp4",
+      "review_dir": "/mnt/e/workspace/云枢/sd1-construction-vision/.runtime/client-video-audit/reviews/山路货车",
+      "frames": 19,
+      "counts": {
+        "dump truck": 36,
+        "Safety Vest": 18,
+        "Person": 51,
+        "Hardhat": 16
+      }
+    },
+    {
+      "file": "脚手架工人施工.mp4",
+      "review_dir": "/mnt/e/workspace/云枢/sd1-construction-vision/.runtime/client-video-audit/reviews/脚手架工人施工",
+      "frames": 11,
+      "counts": {
+        "Safety Vest": 28,
+        "Hardhat": 17,
+        "Person": 25,
+        "Excavator": 10,
+        "person": 2
+      }
+    }
+  ],
+  "conclusions": {
+    "脚手架工人施工.mp4": "最适合展示人员/安全帽/反光背心与脚手架作业",
+    "山路货车.mp4": "适合展示货车/设备/人员候选与轨迹",
+    "室外工人极小.mp4": "适合展示远景人员/车辆轨迹；人员过小，不承诺PPE细节"
+  },
+  "limits": [
+    "固定素材配置属于演示适配/允许过拟合，不代表现场泛化准确率。",
+    "甲方视频只保存在本机 downloads/client-videos，不进入GitHub/Release。",
+    "模型输出仍需人工确认，远景极小目标不可包装为稳定安全帽识别。"
+  ],
+  "paid_api_calls": 0
+}

@@ -157,9 +157,14 @@ st.sidebar.caption(f'本次检测模型：{MODEL_LABELS[model_id]}。' +
 preserve_resolution = st.sidebar.checkbox('保留原片画质（较慢）', value=True, key='preserve-resolution')
 with st.sidebar.expander("高级识别设置", expanded=False):
     enhancement_requested = st.toggle("图像增强", value=False, disabled=preserve_resolution)
-    conf_threshold = st.slider("检测置信度阈值", 0.2, 0.8, 0.4, 0.05)
+    recommended_confidence = float(demo_entry.get('recommended_confidence_threshold', 0.4)) if demo_entry else 0.4
+    recommended_confidence = min(0.8, max(0.2, recommended_confidence))
+    conf_threshold = st.slider("检测置信度阈值", 0.2, 0.8, recommended_confidence, 0.05,
+                               key=f"conf-threshold-{demo_entry['id'] if demo_entry else 'upload'}")
     st.caption('分数表示模型对当前检测框的判断强度，不代表准确率；调高阈值会减少显示框，也可能漏掉目标。')
     st.caption('固定样例采用实测配置；清晰素材按推荐场景运行，上传视频默认远景。')
+    if demo_entry and demo_entry.get('client_media'):
+        st.caption(f"甲方视频演示配置：远景输入 {demo_entry.get('recommended_confidence_threshold', 0.4):.2f} 阈值；按固定素材适配，不代表通用现场精度。")
     if profile == 'distant':
         st.caption('远景配置：防护装备1280输入，通用人员640输入；速度较慢。')
     if model_id != "sitewatch":
@@ -216,8 +221,13 @@ with st.sidebar.expander("模型来源与许可", expanded=False):
         st.json(detector.provenance['person_companion'])
 
 st.sidebar.markdown("### 视频分析范围")
-sample_seconds = st.sidebar.select_slider("视频采样间隔（秒）", options=[0.5, 1.0, 2.0], value=1.0)
-max_seconds = st.sidebar.slider("视频复核起始时长（秒）", 1, 30, 8)
+recommended_sample_seconds = float(demo_entry.get('recommended_sample_seconds', 1.0)) if demo_entry else 1.0
+recommended_sample_seconds = recommended_sample_seconds if recommended_sample_seconds in {0.5, 1.0, 2.0} else 1.0
+sample_seconds = st.sidebar.select_slider("视频采样间隔（秒）", options=[0.5, 1.0, 2.0], value=recommended_sample_seconds)
+recommended_max_seconds = int(demo_entry.get('recommended_max_seconds', 8)) if demo_entry else 8
+recommended_max_seconds = min(30, max(1, recommended_max_seconds))
+max_seconds = st.sidebar.slider("视频复核起始时长（秒）", 1, 30, recommended_max_seconds,
+                                key=f"max-seconds-{demo_entry['id'] if demo_entry else 'upload'}")
 st.sidebar.caption("仅分析指定范围内的采样画面。")
 
 
@@ -331,10 +341,13 @@ with tab_review:
             tmp_path, contents = checked_demo_media(demo_entry)
             media_name = tmp_path.name
             st.caption(f"演示素材：{demo_entry['title']}")
-            st.caption('公开演示素材，非水电一局现场。')
+            st.caption('甲方提供的本地内部演示素材。' if demo_entry.get('client_media') else '公开演示素材，非水电一局现场。')
             with st.expander('素材来源与使用说明', expanded=False):
-                st.markdown(f"作者：{demo_entry['author']} · [来源]({demo_entry['source']}) · "
-                            f"[{demo_entry['license']}]({demo_entry['license_url']})")
+                source_label = (f"[来源]({demo_entry['source']})" if demo_entry.get('source', '').startswith('http')
+                                else f"来源：{demo_entry.get('source', '未登记')}")
+                license_label = (f"[{demo_entry['license']}]({demo_entry['license_url']})"
+                                 if demo_entry.get('license_url') else demo_entry.get('license', '许可信息未登记'))
+                st.markdown(f"作者：{demo_entry['author']} · {source_label} · {license_label}")
                 st.caption(demo_entry.get('description', '公开演示素材，非水电一局现场。'))
         except (OSError, ValueError, KeyError, TypeError):
             st.session_state.pop('review', None)

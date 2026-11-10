@@ -21,3 +21,5 @@ Ultralytics YOLO 及 `sitewatch_best.pt` 衍生权重适用 AGPL-3.0；完整 Ul
 远景演示配置补回上游原本的通用人员分支：Ultralytics官方YOLOv8n COCO权重，固定HF revision27f858f2dc238503a66ce10248cf7ec71a3ded5d、SHA31e20dde3def09e2cf938c7be6fe23d9150bbbe503982af13345706515f2ef95、AGPL-3.0，只允许class0/person。manifest见person-model.json。PPE专用模型仍是原固定权重；照片640/视频1280配置及人员640分支分开记录，保留去重前原始分支。当前为固定素材演示适配，不把样例调参或同片训练效果当泛化成绩。
 
 轨迹候选事件复用 ByteTrack 算法，并通过当前 Ultralytics 运行时的 `BYTETracker` 入口调用；上游仓库 https://github.com/FoundationVision/ByteTrack 及其 MIT 许可作为算法来源记录。运行时 Ultralytics 及其依赖仍遵循本项目已有 AGPL 许可说明；`lap==0.5.14` 是轨迹匹配依赖。轨迹 ID 只在本次影像内有效，事件不是生产告警。
+
+甲方提供的三段视频（`downloads/client-videos/`）属于本地内部演示素材，当前不进入 GitHub 或 Release。文件名、SHA、分辨率、时长和固定演示配置登记在 `demo-media.json`；未取得公开再分发许可前，不复制到公开协作包。
